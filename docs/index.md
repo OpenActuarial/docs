@@ -23,15 +23,15 @@ pip install actuarialpy lossmodels risksim extremeloss
 ```
 
 Each package can be installed and used on its own; `extremeloss` and `risksim` offer
-optional bridges to each other and to `lossmodels` when those are present.
+optional integrations with each other and with `lossmodels` when those are present.
 
-## A taste
+## Example
 
 ```python
 import numpy as np
 import extremeloss as el
 
-# fit a heavy tail from data and read off a 1-in-1000 loss
+# fit a heavy tail and compute a 1-in-1000 loss
 losses = np.random.default_rng(0).pareto(2.0, 50_000) * 100_000
 fit = el.fit_pot(losses, threshold=np.quantile(losses, 0.95))
 print(fit.xi, fit.beta)            # GPD shape and scale

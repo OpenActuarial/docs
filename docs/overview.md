@@ -26,7 +26,7 @@ The division of labor:
 - **risksim** simulates a portfolio of those models and applies reinsurance layers and
   contracts, yielding the pooled-loss distribution and exceedance probabilities.
 
-## The design principle
+## Design principle
 
 The libraries are **general mathematics**, kept public and reusable. They carry no
 domain data and no proprietary conventions. The data they run on — and any
@@ -34,14 +34,14 @@ organization-specific configuration — stays separate, in your own code. The sa
 library call runs on a synthetic demo dataset or on real claims; only the input
 changes. This is what lets the math be open while the data stays wherever it belongs.
 
-## Bridges
+## Integration between packages
 
-When more than one package is installed, optional adapters connect them:
+When more than one package is installed, optional adapter functions connect them:
 
 - `extremeloss.fit_pot_from_lossmodel` / `sample_lossmodel` — fit or sample a tail
   against a `lossmodels` severity.
 - `extremeloss.losses_from_risksim` / `tail_summary_from_risksim` — pull a simulated
   loss vector from a `risksim` result and analyze its tail.
 
-These are optional: each library works standalone, and imports the others only where a
-bridge is explicitly used.
+These are optional: each library works standalone, and imports the others only where one
+of these integrations is explicitly used.
