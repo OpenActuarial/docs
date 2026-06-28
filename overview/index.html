@@ -349,10 +349,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-design-principle" class="md-nav__link">
+  <a href="#design-principle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The design principle
+        Design principle
       
     </span>
   </a>
@@ -360,10 +360,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bridges" class="md-nav__link">
+  <a href="#integration-between-packages" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Bridges
+        Integration between packages
       
     </span>
   </a>
@@ -576,10 +576,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-design-principle" class="md-nav__link">
+  <a href="#design-principle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The design principle
+        Design principle
       
     </span>
   </a>
@@ -587,10 +587,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bridges" class="md-nav__link">
+  <a href="#integration-between-packages" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Bridges
+        Integration between packages
       
     </span>
   </a>
@@ -640,22 +640,22 @@ large-claim and pooling analysis uses all four:</p>
 <li><strong>risksim</strong> simulates a portfolio of those models and applies reinsurance layers and
   contracts, yielding the pooled-loss distribution and exceedance probabilities.</li>
 </ul>
-<h2 id="the-design-principle">The design principle<a class="headerlink" href="#the-design-principle" title="Permanent link">&para;</a></h2>
+<h2 id="design-principle">Design principle<a class="headerlink" href="#design-principle" title="Permanent link">&para;</a></h2>
 <p>The libraries are <strong>general mathematics</strong>, kept public and reusable. They carry no
 domain data and no proprietary conventions. The data they run on — and any
 organization-specific configuration — stays separate, in your own code. The same
 library call runs on a synthetic demo dataset or on real claims; only the input
 changes. This is what lets the math be open while the data stays wherever it belongs.</p>
-<h2 id="bridges">Bridges<a class="headerlink" href="#bridges" title="Permanent link">&para;</a></h2>
-<p>When more than one package is installed, optional adapters connect them:</p>
+<h2 id="integration-between-packages">Integration between packages<a class="headerlink" href="#integration-between-packages" title="Permanent link">&para;</a></h2>
+<p>When more than one package is installed, optional adapter functions connect them:</p>
 <ul>
 <li><code>extremeloss.fit_pot_from_lossmodel</code> / <code>sample_lossmodel</code> — fit or sample a tail
   against a <code>lossmodels</code> severity.</li>
 <li><code>extremeloss.losses_from_risksim</code> / <code>tail_summary_from_risksim</code> — pull a simulated
   loss vector from a <code>risksim</code> result and analyze its tail.</li>
 </ul>
-<p>These are optional: each library works standalone, and imports the others only where a
-bridge is explicitly used.</p>
+<p>These are optional: each library works standalone, and imports the others only where one
+of these integrations is explicitly used.</p>
 
 
 
