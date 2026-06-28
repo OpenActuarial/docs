@@ -1,0 +1,8 @@
+mkdocs-material>=9.5
+mkdocstrings[python]>=0.26
+black  # formats rendered signatures
+# the packages themselves, so the API reference can introspect their docstrings
+actuarialpy
+lossmodels
+risksim
+extremeloss

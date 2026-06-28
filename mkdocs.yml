@@ -1,0 +1,71 @@
+site_name: actuarialpy
+site_description: A composable toolkit for actuarial experience, loss, risk, and tail modeling
+site_url: https://actuarialpy.github.io/
+repo_url: https://github.com/actuarialpy
+repo_name: actuarialpy
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - content.code.copy
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - How they fit together: overview.md
+  - Packages:
+      - actuarialpy: actuarialpy.md
+      - lossmodels: lossmodels.md
+      - risksim: risksim.md
+      - extremeloss: extremeloss.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_root_heading: true
+            show_source: true
+            show_signature_annotations: true
+            separate_signature: true
+            members_order: source
+            group_by_category: true
+            heading_level: 3
+            filters: ["!^_"]
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
