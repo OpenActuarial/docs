@@ -1,4 +1,4 @@
-# actuarialpy documentation site
+# OpenActuarial documentation site
 
 One shared documentation site for the four packages — `actuarialpy`, `lossmodels`,
 `risksim`, `extremeloss` — built with [MkDocs](https://www.mkdocs.org/) +

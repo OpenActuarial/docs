@@ -1,8 +1,8 @@
-site_name: actuarialpy
+site_name: OpenActuarial
 site_description: A composable toolkit for actuarial experience, loss, risk, and tail modeling
-site_url: https://actuarialpy.github.io/
-repo_url: https://github.com/actuarialpy
-repo_name: actuarialpy
+site_url: https://openactuarial.github.io/docs/
+repo_url: https://github.com/OpenActuarial/docs
+repo_name: OpenActuarial/docs
 
 theme:
   name: material

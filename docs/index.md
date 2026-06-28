@@ -1,7 +1,7 @@
-# actuarialpy
+# OpenActuarial
 
-A set of four small, composable Python libraries for actuarial and risk modeling.
-Each does one thing and has a clean public API; together they cover experience
+OpenActuarial is a set of four small, composable Python libraries for actuarial and risk
+modeling. Each does one thing and has a clean public API; together they cover experience
 analysis, loss-distribution modeling, Monte Carlo risk simulation, and extreme-value
 tail estimation. They share a deliberate design: general, reusable math in public
 libraries — the data they run on stays wherever you keep it.
