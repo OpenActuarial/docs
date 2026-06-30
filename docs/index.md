@@ -20,7 +20,7 @@ pip install actuarialpy        # or any package below
     trend, completion, seasonality, **credibility**, **financial math**, and
     **exposure**. Everything else builds on it.
 
-    [:octicons-arrow-right-24: Documentation](https://openactuarial.org/actuarialpy/)
+    [:octicons-arrow-right-24: Documentation](actuarialpy.md)
 
 -   __ratingmodels__ · pricing
 
@@ -29,7 +29,7 @@ pip install actuarialpy        # or any package below
     Group rate build-up and indication: manual and experience rating, an
     auditable build-up engine, GLM relativities, retention gross-up, and renewal.
 
-    [:octicons-arrow-right-24: Documentation](https://openactuarial.org/ratingmodels/)
+    [:octicons-arrow-right-24: Documentation](ratingmodels.md)
 
 -   __lossmodels__ · loss modeling
 
@@ -38,7 +38,7 @@ pip install actuarialpy        # or any package below
     Loss-distribution modeling: severity and frequency fitting, and aggregate
     loss.
 
-    [:octicons-arrow-right-24: Documentation](https://openactuarial.org/lossmodels/)
+    [:octicons-arrow-right-24: Documentation](lossmodels.md)
 
 -   __extremeloss__ · tails
 
@@ -47,7 +47,7 @@ pip install actuarialpy        # or any package below
     Extreme-value tail estimation: peaks-over-threshold / GPD and large-claim
     loading.
 
-    [:octicons-arrow-right-24: Documentation](https://openactuarial.org/extremeloss/)
+    [:octicons-arrow-right-24: Documentation](extremeloss.md)
 
 -   __risksim__ · capital
 
@@ -55,7 +55,7 @@ pip install actuarialpy        # or any package below
 
     Portfolio Monte Carlo simulation and risk measures.
 
-    [:octicons-arrow-right-24: Documentation](https://openactuarial.org/risksim/)
+    [:octicons-arrow-right-24: Documentation](risksim.md)
 
 </div>
 

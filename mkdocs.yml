@@ -1,6 +1,6 @@
 site_name: OpenActuarial
-site_description: A composable toolkit for actuarial experience, loss, risk, and tail modeling
-site_url: https://openactuarial.github.io/docs/
+site_description: A composable toolkit for actuarial experience, pricing, loss, risk, and tail modeling
+site_url: https://openactuarial.org/
 repo_url: https://github.com/OpenActuarial/docs
 repo_name: OpenActuarial/docs
 
@@ -31,6 +31,7 @@ nav:
   - How they fit together: overview.md
   - Packages:
       - actuarialpy: actuarialpy.md
+      - ratingmodels: ratingmodels.md
       - lossmodels: lossmodels.md
       - risksim: risksim.md
       - extremeloss: extremeloss.md
@@ -53,6 +54,8 @@ plugins:
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
   - pymdownx.details
   - toc:
       permalink: true
