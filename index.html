@@ -6,11 +6,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A composable toolkit for actuarial experience, loss, risk, and tail modeling">
+        <meta name="description" content="A composable toolkit for actuarial experience, pricing, loss, risk, and tail modeling">
       
       
       
-        <link rel="canonical" href="https://openactuarial.github.io/docs/">
+        <link rel="canonical" href="https://openactuarial.org/">
       
       
       
@@ -320,10 +320,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#install" class="md-nav__link">
+  <a href="#the-ecosystem" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install
+        The ecosystem
       
     </span>
   </a>
@@ -331,10 +331,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
+  <a href="#how-they-fit-together" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example
+        How they fit together
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-workflow-across-the-ecosystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A workflow across the ecosystem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting started
       
     </span>
   </a>
@@ -443,6 +465,34 @@
     
   
     actuarialpy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ratingmodels/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ratingmodels
   
 
     
@@ -574,10 +624,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#install" class="md-nav__link">
+  <a href="#the-ecosystem" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install
+        The ecosystem
       
     </span>
   </a>
@@ -585,10 +635,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
+  <a href="#how-they-fit-together" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example
+        How they fit together
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-workflow-across-the-ecosystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A workflow across the ecosystem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting started
       
     </span>
   </a>
@@ -616,54 +688,91 @@
 
 
 <h1 id="openactuarial">OpenActuarial<a class="headerlink" href="#openactuarial" title="Permanent link">&para;</a></h1>
-<p>OpenActuarial is a set of four small, composable Python libraries for actuarial and risk
-modeling. Each does one thing and has a clean public API; together they cover experience
-analysis, loss-distribution modeling, Monte Carlo risk simulation, and extreme-value
-tail estimation. They share a deliberate design: general, reusable math in public
-libraries — the data they run on stays wherever you keep it.</p>
-<table>
-<thead>
-<tr>
-<th>Package</th>
-<th>What it does</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="actuarialpy/"><strong>actuarialpy</strong></a></td>
-<td>Experience analysis on a single tidy table: loss ratios, PMPM, trend, credibility, completion/reserving, seasonality, pooling. numpy + pandas only.</td>
-</tr>
-<tr>
-<td><a href="lossmodels/"><strong>lossmodels</strong></a></td>
-<td>Severity and frequency distributions, fitting, goodness-of-fit, and collective-risk (compound) models.</td>
-</tr>
-<tr>
-<td><a href="risksim/"><strong>risksim</strong></a></td>
-<td>Monte Carlo simulation of portfolios of risk models, with reinsurance contracts and layers.</td>
-</tr>
-<tr>
-<td><a href="extremeloss/"><strong>extremeloss</strong></a></td>
-<td>Extreme-value theory: peaks-over-threshold (GPD) and block-maxima (GEV) tail fitting, tail risk measures, and bootstrap uncertainty.</td>
-</tr>
-</tbody>
-</table>
-<p>See <a href="overview/">How they fit together</a> for the way the four compose into a single
-pipeline.</p>
-<h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>actuarialpy<span class="w"> </span>lossmodels<span class="w"> </span>risksim<span class="w"> </span>extremeloss
+<p><strong>Open-source actuarial tooling for Python.</strong> A small, composable ecosystem for
+experience analysis, pricing, loss modeling, and capital — built on a shared
+core, with light dependencies (numpy / pandas) throughout.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>actuarialpy<span class="w">        </span><span class="c1"># or any package below</span>
 </code></pre></div>
-<p>Each package can be installed and used on its own; <code>extremeloss</code> and <code>risksim</code> offer
-optional integrations with each other and with <code>lossmodels</code> when those are present.</p>
-<h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span> <span class="nn">extremeloss</span> <span class="k">as</span> <span class="nn">el</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># fit a heavy tail and compute a 1-in-1000 loss</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">losses</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">pareto</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mi">50_000</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100_000</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">fit</span> <span class="o">=</span> <span class="n">el</span><span class="o">.</span><span class="n">fit_pot</span><span class="p">(</span><span class="n">losses</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">losses</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">))</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">xi</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span>            <span class="c1"># GPD shape and scale</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">el</span><span class="o">.</span><span class="n">return_level</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="n">fit</span><span class="p">))</span>  <span class="c1"># the 1-in-1000 return level</span>
+<h2 id="the-ecosystem">The ecosystem<a class="headerlink" href="#the-ecosystem" title="Permanent link">&para;</a></h2>
+<div class="grid cards">
+<ul>
+<li>
+<p><strong>actuarialpy</strong> · the core</p>
+<hr />
+<p>Experience analysis and the shared primitives: PMPM and loss-ratio metrics,
+trend, completion, seasonality, <strong>credibility</strong>, <strong>financial math</strong>, and
+<strong>exposure</strong>. Everything else builds on it.</p>
+<p><a href="actuarialpy/">:octicons-arrow-right-24: Documentation</a></p>
+</li>
+<li>
+<p><strong>ratingmodels</strong> · pricing</p>
+<hr />
+<p>Group rate build-up and indication: manual and experience rating, an
+auditable build-up engine, GLM relativities, retention gross-up, and renewal.</p>
+<p><a href="ratingmodels/">:octicons-arrow-right-24: Documentation</a></p>
+</li>
+<li>
+<p><strong>lossmodels</strong> · loss modeling</p>
+<hr />
+<p>Loss-distribution modeling: severity and frequency fitting, and aggregate
+loss.</p>
+<p><a href="lossmodels/">:octicons-arrow-right-24: Documentation</a></p>
+</li>
+<li>
+<p><strong>extremeloss</strong> · tails</p>
+<hr />
+<p>Extreme-value tail estimation: peaks-over-threshold / GPD and large-claim
+loading.</p>
+<p><a href="extremeloss/">:octicons-arrow-right-24: Documentation</a></p>
+</li>
+<li>
+<p><strong>risksim</strong> · capital</p>
+<hr />
+<p>Portfolio Monte Carlo simulation and risk measures.</p>
+<p><a href="risksim/">:octicons-arrow-right-24: Documentation</a></p>
+</li>
+</ul>
+</div>
+<h2 id="how-they-fit-together">How they fit together<a class="headerlink" href="#how-they-fit-together" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>experience  →  pricing  →  loss  →  tail  →  capital
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  actuarialpy   ratingmodels   lossmodels   extremeloss   risksim
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  └──────────────────────  shared core  ──────────────────────┘
 </code></pre></div>
+<p><code>actuarialpy</code> is the foundation. The cross-cutting primitives — credibility,
+trend, financial mathematics, exposure — live there <strong>once</strong>, and the other
+packages depend on it rather than re-implementing them. That shared core is what
+makes these a system rather than five overlapping scripts.</p>
+<h2 id="a-workflow-across-the-ecosystem">A workflow across the ecosystem<a class="headerlink" href="#a-workflow-across-the-ecosystem" title="Permanent link">&para;</a></h2>
+<p>The packages are designed to compose. Here credibility comes from the core and
+the rate build-up and indication come from <code>ratingmodels</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span> <span class="nn">actuarialpy</span> <span class="k">as</span> <span class="nn">ap</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span> <span class="nn">ratingmodels</span> <span class="k">as</span> <span class="nn">rm</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># core: credibility for the group&#39;s own experience</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">z</span> <span class="o">=</span> <span class="n">ap</span><span class="o">.</span><span class="n">limited_fluctuation_z</span><span class="p">(</span><span class="n">exposure</span><span class="o">=</span><span class="mi">96_000</span><span class="p">,</span> <span class="n">full_credibility_standard</span><span class="o">=</span><span class="mi">120_000</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># pricing: build the manual rate, blend against experience, and indicate</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">manual</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ManualRate</span><span class="p">(</span><span class="n">base_pmpm</span><span class="o">=</span><span class="mi">480</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="mf">1.05</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">:</span> <span class="mf">0.97</span><span class="p">})</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">indication</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RateIndication</span><span class="p">(</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">experience_claims_pmpm</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">manual_claims_pmpm</span><span class="o">=</span><span class="n">manual</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">(),</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">credibility</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">current_rate</span><span class="o">=</span><span class="mi">560</span><span class="p">,</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">target_loss_ratio</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="p">)</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="nb">print</span><span class="p">(</span><span class="n">indication</span><span class="o">.</span><span class="n">indicated_rate_change</span><span class="p">())</span>       <span class="c1"># the indicated rate change</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="nb">print</span><span class="p">(</span><span class="n">indication</span><span class="o">.</span><span class="n">rate_change_decomposition</span><span class="p">())</span>   <span class="c1"># why it moved, reconciled exactly</span>
+</code></pre></div>
+<p>The same pattern extends across the stack: develop and trend experience in
+<code>actuarialpy</code>, price in <code>ratingmodels</code>, model the loss distribution in
+<code>lossmodels</code>, estimate the tail in <code>extremeloss</code>, and aggregate to capital in
+<code>risksim</code>.</p>
+<h2 id="getting-started">Getting started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h2>
+<p>Pick the package for your task from the grid above, <code>pip install</code> it, and follow
+its guide. Each package has its own quickstart and full API reference, all under
+<a href="https://openactuarial.org">openactuarial.org</a>.</p>
 
 
 

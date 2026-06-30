@@ -6,11 +6,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A composable toolkit for actuarial experience, loss, risk, and tail modeling">
+        <meta name="description" content="A composable toolkit for actuarial experience, pricing, loss, risk, and tail modeling">
       
       
       
-        <link rel="canonical" href="https://openactuarial.github.io/docs/overview/">
+        <link rel="canonical" href="https://openactuarial.org/overview/">
       
       
         <link rel="prev" href="..">
@@ -465,6 +465,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../ratingmodels/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ratingmodels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../lossmodels/" class="md-nav__link">
         
   
@@ -618,8 +646,9 @@
 
 
 <h1 id="how-they-fit-together">How they fit together<a class="headerlink" href="#how-they-fit-together" title="Permanent link">&para;</a></h1>
-<p>The four libraries are separate installs, but they are designed to compose. A typical
-large-claim and pooling analysis uses all four:</p>
+<p>The five packages are separate installs, but they are designed to compose. A large-claim
+and pooling analysis uses the loss-and-capital chain below; pricing runs on the same
+experience core through <code>ratingmodels</code>:</p>
 <pre class="mermaid"><code>flowchart LR
     A[Claims &amp; eligibility&lt;br/&gt;one tidy table] --&gt; AP[actuarialpy&lt;br/&gt;experience, exposure,&lt;br/&gt;trend, completion]
     A --&gt; EL[extremeloss&lt;br/&gt;fit the book tail&lt;br/&gt;GPD / POT]
@@ -627,12 +656,18 @@ large-claim and pooling analysis uses all four:</p>
     AP -- frequency / exposure --&gt; LM
     LM -- per-group models --&gt; RS[risksim&lt;br/&gt;simulate portfolio,&lt;br/&gt;layers &amp; contracts]
     RS --&gt; O[Pooled-loss distribution,&lt;br/&gt;charge adequacy, retained CV]
-    AP --&gt; O</code></pre>
+    AP --&gt; O
+    AP -- experience &amp; credibility --&gt; RM[ratingmodels&lt;br/&gt;rate build-up,&lt;br/&gt;blend &amp; indication]
+    RM --&gt; P[Indicated rates,&lt;br/&gt;renewal actions]</code></pre>
 <p>The division of labor:</p>
 <ul>
 <li><strong>actuarialpy</strong> owns the deterministic, exposure-based side — member-months, loss
   ratios, PMPM, trend, completion/development, and the retained-experience primitives
   (<code>retained_cv</code>, <code>retention_for_target_cv</code>).</li>
+<li><strong>ratingmodels</strong> prices coverage on top of that core: it builds a manual rate from a
+  base and relativities, blends a group's own experience by credibility (sourced from
+  <code>actuarialpy</code>), grosses up through retention, and returns an indicated rate with an
+  auditable rate-change decomposition.</li>
 <li><strong>extremeloss</strong> estimates the heavy tail. A single block is usually too small to own
   a credible tail, so you fit one book-wide GPD and apply its <em>shape</em> across groups.</li>
 <li><strong>lossmodels</strong> turns a frequency assumption and a severity (whose tail can come from
@@ -654,8 +689,11 @@ changes. This is what lets the math be open while the data stays wherever it bel
 <li><code>extremeloss.losses_from_risksim</code> / <code>tail_summary_from_risksim</code> — pull a simulated
   loss vector from a <code>risksim</code> result and analyze its tail.</li>
 </ul>
-<p>These are optional: each library works standalone, and imports the others only where one
-of these integrations is explicitly used.</p>
+<p><code>ratingmodels</code> is a firmer link than these adapters: it depends on <code>actuarialpy</code> directly
+for credibility — the primitives live once in the core — rather than through an optional
+adapter.</p>
+<p>The adapters above are optional: each library works standalone, and imports the others
+only where one of these integrations is explicitly used.</p>
 
 
 
