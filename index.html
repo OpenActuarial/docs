@@ -252,8 +252,7 @@
 <h1>OpenActuarial<a class="headerlink" href="#openactuarial" title="Link to this heading">¶</a></h1>
 <p>A small ecosystem of dependency-light Python libraries for the group health
 pricing and risk workflow — experience analysis, rate building, loss modeling,
-tail estimation, and portfolio capital — built on one shared core. numpy and
-pandas only.</p>
+tail estimation, and portfolio capital — organized around one shared core.</p>
 <section id="the-ecosystem">
 <h2>The ecosystem<a class="headerlink" href="#the-ecosystem" title="Link to this heading">¶</a></h2>
 <div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
@@ -265,7 +264,7 @@ pandas only.</p>
 actuarialpy</div>
 <p class="sd-card-text"><strong>The core.</strong> Experience analysis on a tidy table, plus the shared
 primitives — credibility, trend, completion, seasonality, financial
-mathematics, and exposure — that everything else builds on.</p>
+mathematics, and exposure — that <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code> builds on directly.</p>
 </div>
 <a class="sd-stretched-link sd-hide-link-text reference internal" href="actuarialpy.html"><span class="doc">actuarialpy</span></a></div>
 </div>
@@ -311,15 +310,25 @@ risksim</div>
 </div>
 </div>
 </section>
-<section id="how-they-fit-together">
-<h2>How they fit together<a class="headerlink" href="#how-they-fit-together" title="Link to this heading">¶</a></h2>
+<section id="the-workflow">
+<h2>The workflow<a class="headerlink" href="#the-workflow" title="Link to this heading">¶</a></h2>
+<p>Left to right, the packages trace one analysis — experience, pricing, loss, tail,
+and capital:</p>
 <pre  class="mermaid">
         flowchart LR
-    AP[&quot;actuarialpy&lt;br/&gt;experience&quot;] --&gt; RM[&quot;ratingmodels&lt;br/&gt;pricing&quot;] --&gt; LM[&quot;lossmodels&lt;br/&gt;loss&quot;] --&gt; EL[&quot;extremeloss&lt;br/&gt;tail&quot;] --&gt; RS[&quot;risksim&lt;br/&gt;capital&quot;]
-    </pre><p><code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> is the foundation: cross-cutting primitives — credibility, trend,
-financial mathematics, exposure — live there once, and the other packages depend
-on it rather than re-implementing them. Light dependencies throughout (numpy /
-pandas).</p>
+    AP[&quot;actuarialpy&lt;br/&gt;experience&quot;]:::core
+    RM[&quot;ratingmodels&lt;br/&gt;pricing&quot;]
+    LM[&quot;lossmodels&lt;br/&gt;loss&quot;]
+    EL[&quot;extremeloss&lt;br/&gt;tail&quot;]
+    RS[&quot;risksim&lt;br/&gt;capital&quot;]
+    AP --&gt; RM --&gt; LM --&gt; EL --&gt; RS
+    classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
+    </pre><p>The arrows are the analytical sequence, not install requirements. <code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code>
+is the shared core — credibility, trend, financial math, and exposure live there
+once — and <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code> builds directly on it. <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code>, <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">risksim</span></code> install independently (<code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> can optionally integrate
+<code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> for severity splicing). Dependencies stay light: numpy and pandas,
+with scipy where the loss and tail work needs it.</p>
 </section>
 <section id="a-cross-package-example">
 <h2>A cross-package example<a class="headerlink" href="#a-cross-package-example" title="Link to this heading">¶</a></h2>
@@ -403,7 +412,7 @@ dependency.</p>
             <ul>
 <li><a class="reference internal" href="#">OpenActuarial</a><ul>
 <li><a class="reference internal" href="#the-ecosystem">The ecosystem</a></li>
-<li><a class="reference internal" href="#how-they-fit-together">How they fit together</a></li>
+<li><a class="reference internal" href="#the-workflow">The workflow</a></li>
 <li><a class="reference internal" href="#a-cross-package-example">A cross-package example</a></li>
 <li><a class="reference internal" href="#install">Install</a></li>
 </ul>
