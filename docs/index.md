@@ -1,91 +1,81 @@
 # OpenActuarial
 
-**Open-source actuarial tooling for Python.** A small, composable ecosystem for
-experience analysis, pricing, loss modeling, and capital — built on a shared
-core, with light dependencies (numpy / pandas) throughout.
-
-```bash
-pip install actuarialpy        # or any package below
-```
+A small ecosystem of dependency-light Python libraries for the group health
+pricing and risk workflow — experience analysis, rate building, loss modeling,
+tail estimation, and portfolio capital — built on one shared core. numpy and
+pandas only.
 
 ## The ecosystem
 
-<div class="grid cards" markdown>
+::::{grid} 1 2 2 3
+:gutter: 3
 
--   __actuarialpy__ · the core
+:::{grid-item-card} actuarialpy
+:link: actuarialpy
+:link-type: doc
 
-    ---
+**The core.** Experience analysis on a tidy table, plus the shared
+primitives — credibility, trend, completion, seasonality, financial
+mathematics, and exposure — that everything else builds on.
+:::
 
-    Experience analysis and the shared primitives: PMPM and loss-ratio metrics,
-    trend, completion, seasonality, **credibility**, **financial math**, and
-    **exposure**. Everything else builds on it.
+:::{grid-item-card} ratingmodels
+:link: ratingmodels
+:link-type: doc
 
-    [:octicons-arrow-right-24: Documentation](actuarialpy.md)
+**Pricing.** Manual and experience rate build-up, credibility blending,
+rate indication and decomposition, GLM relativities, and renewal constraints.
+:::
 
--   __ratingmodels__ · pricing
+:::{grid-item-card} lossmodels
+:link: lossmodels
+:link-type: doc
 
-    ---
+**Loss modeling.** Severity and frequency fitting, and aggregate loss
+distributions.
+:::
 
-    Group rate build-up and indication: manual and experience rating, an
-    auditable build-up engine, GLM relativities, retention gross-up, and renewal.
+:::{grid-item-card} extremeloss
+:link: extremeloss
+:link-type: doc
 
-    [:octicons-arrow-right-24: Documentation](ratingmodels.md)
+**Tails.** Extreme-value tail estimation — peaks-over-threshold / GPD and
+large-claim loading.
+:::
 
--   __lossmodels__ · loss modeling
+:::{grid-item-card} risksim
+:link: risksim
+:link-type: doc
 
-    ---
+**Capital.** Portfolio Monte Carlo simulation and risk measures.
+:::
 
-    Loss-distribution modeling: severity and frequency fitting, and aggregate
-    loss.
-
-    [:octicons-arrow-right-24: Documentation](lossmodels.md)
-
--   __extremeloss__ · tails
-
-    ---
-
-    Extreme-value tail estimation: peaks-over-threshold / GPD and large-claim
-    loading.
-
-    [:octicons-arrow-right-24: Documentation](extremeloss.md)
-
--   __risksim__ · capital
-
-    ---
-
-    Portfolio Monte Carlo simulation and risk measures.
-
-    [:octicons-arrow-right-24: Documentation](risksim.md)
-
-</div>
+::::
 
 ## How they fit together
 
-```mermaid
+:::{mermaid}
 flowchart LR
     AP["actuarialpy<br/>experience"] --> RM["ratingmodels<br/>pricing"] --> LM["lossmodels<br/>loss"] --> EL["extremeloss<br/>tail"] --> RS["risksim<br/>capital"]
-```
+:::
 
-`actuarialpy` is the foundation. The cross-cutting primitives — credibility,
-trend, financial mathematics, exposure — live there **once**, and the other
-packages depend on it rather than re-implementing them. That shared core is what
-makes these a system rather than five overlapping scripts.
+`actuarialpy` is the foundation: cross-cutting primitives — credibility, trend,
+financial mathematics, exposure — live there once, and the other packages depend
+on it rather than re-implementing them. Light dependencies throughout (numpy /
+pandas).
 
-## A workflow across the ecosystem
+## A cross-package example
 
-The packages are designed to compose. Here credibility comes from the core and
-the rate build-up and indication come from `ratingmodels`:
+Blend an experience rate with a manual rate and read the indicated change:
 
 ```python
 import actuarialpy as ap
 import ratingmodels as rm
 
-# core: credibility for the group's own experience
+# credibility from exposure (lives in actuarialpy; ratingmodels delegates to it)
 z = ap.limited_fluctuation_z(exposure=96_000, full_credibility_standard=120_000)
 
-# pricing: build the manual rate, blend against experience, and indicate
 manual = rm.ManualRate(base_pmpm=480, factors={"area": 1.05, "industry": 0.97})
-
 indication = rm.RateIndication(
     experience_claims_pmpm=512,
     manual_claims_pmpm=manual.claims_pmpm(),
@@ -94,17 +84,27 @@ indication = rm.RateIndication(
     target_loss_ratio=0.85,
 )
 
-print(indication.indicated_rate_change())       # the indicated rate change
-print(indication.rate_change_decomposition())   # why it moved, reconciled exactly
+indication.indicated_rate_change()        # blended, credibility-weighted change
+indication.rate_change_decomposition()    # attribute the change to each driver
 ```
 
-The same pattern extends across the stack: develop and trend experience in
-`actuarialpy`, price in `ratingmodels`, model the loss distribution in
-`lossmodels`, estimate the tail in `extremeloss`, and aggregate to capital in
-`risksim`.
+## Install
 
-## Getting started
+```bash
+pip install actuarialpy ratingmodels lossmodels extremeloss risksim
+```
 
-Pick the package for your task from the grid above, `pip install` it, and follow
-its guide. Each package has its own quickstart and full API reference, all under
-[openactuarial.org](https://openactuarial.org).
+Each package installs independently; `ratingmodels` pulls in `actuarialpy` as a
+dependency.
+
+:::{toctree}
+:hidden:
+:maxdepth: 1
+
+overview
+actuarialpy
+ratingmodels
+lossmodels
+extremeloss
+risksim
+:::

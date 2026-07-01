@@ -1,0 +1,9 @@
+/* Slightly roomier content and tighter API signatures. */
+.sig-name { font-weight: 600; }
+dl.py dt {
+  border-left: 3px solid var(--color-brand-primary);
+  padding-left: 0.6rem;
+}
+.sd-card { border-radius: 10px; }
+.sd-card .sd-card-title { font-family: var(--font-stack--monospace); font-size: 1.05rem; }
+table.docutils td, table.docutils th { padding: 0.4rem 0.7rem; }

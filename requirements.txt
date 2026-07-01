@@ -1,9 +1,15 @@
-mkdocs-material>=9.5
-mkdocstrings[python]>=0.26
-black  # formats rendered signatures
-# the packages themselves, so the API reference can introspect their docstrings
-actuarialpy
-ratingmodels
+# Documentation build for the OpenActuarial ecosystem.
+sphinx>=8.0,<9
+furo>=2024.8
+myst-parser>=4.0
+sphinx-design>=0.6
+sphinxcontrib-mermaid>=1.0
+
+# Packages introspected by autodoc for the API reference.
+# Published on PyPI:
 lossmodels
-risksim
 extremeloss
+risksim
+# Not yet published — installed from source so the API reference renders:
+actuarialpy @ git+https://github.com/OpenActuarial/actuarialpy.git@main
+ratingmodels @ git+https://github.com/OpenActuarial/ratingmodels.git@main

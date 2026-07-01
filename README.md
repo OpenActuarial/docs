@@ -1,42 +1,35 @@
-# OpenActuarial documentation site
+# OpenActuarial documentation
 
-One shared documentation site for the five packages — `actuarialpy`, `ratingmodels`,
-`lossmodels`, `risksim`, `extremeloss` — built with [MkDocs](https://www.mkdocs.org/) +
-[Material](https://squidfunk.github.io/mkdocs-material/). The API reference is generated
-from each package's docstrings via
-[mkdocstrings](https://mkdocstrings.github.io/), so the reference pages improve
-automatically as docstrings improve.
+Source for the unified documentation site at <https://openactuarial.org> — one
+Sphinx site covering all five packages in the OpenActuarial ecosystem
+(actuarialpy, ratingmodels, lossmodels, extremeloss, risksim).
 
 ## Build locally
 
-```bash
-pip install -r requirements.txt
-mkdocs serve          # live preview at http://127.0.0.1:8000
-mkdocs build          # static site into ./site
-```
+    pip install -r requirements.txt
+    make html            # or: sphinx-build -b html docs _build/html
+    make serve           # build + serve at http://localhost:8000
 
-The packages must be importable (they are listed in `requirements.txt`) because the
-API reference introspects them at build time.
-
-## Deploy
-
-Pushing to `main` runs `.github/workflows/docs.yml`, which builds and publishes to the
-`gh-pages` branch via `mkdocs gh-deploy`. Enable GitHub Pages on that branch in the
-repository settings.
+`autodoc` introspects the *installed* packages, so the API reference reflects the
+versions in your environment. For local iteration, install the packages editable
+(`pip install -e ../actuarialpy` etc.) and rebuild.
 
 ## Structure
 
-```
-mkdocs.yml            site config, navigation, theme, plugins
-docs/
-  index.md            landing: the five packages + install
-  overview.md         how they compose (with a diagram)
-  actuarialpy.md      overview + quickstart + API reference
-  ratingmodels.md
-  lossmodels.md
-  risksim.md
-  extremeloss.md
-```
+    docs/
+      conf.py            Sphinx configuration
+      index.md           landing page: the five packages + install
+      overview.md        how they compose
+      actuarialpy.md     narrative + API reference
+      ratingmodels.md
+      lossmodels.md
+      extremeloss.md
+      risksim.md
+      _static/           custom CSS
+      CNAME              custom domain
 
-Each package page ends with a `::: packagename` block that mkdocstrings expands into the
-full API reference from docstrings.
+## Deploy
+
+Pushing to `main` runs `.github/workflows/docs.yml`, which builds the site and
+publishes it to the `gh-pages` branch. Let CI own the deploy — don't also run it
+from a laptop, or the two will fight over `gh-pages`.
