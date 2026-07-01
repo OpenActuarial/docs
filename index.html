@@ -702,42 +702,40 @@ core, with light dependencies (numpy / pandas) throughout.</p>
 <p>Experience analysis and the shared primitives: PMPM and loss-ratio metrics,
 trend, completion, seasonality, <strong>credibility</strong>, <strong>financial math</strong>, and
 <strong>exposure</strong>. Everything else builds on it.</p>
-<p><a href="actuarialpy/">:octicons-arrow-right-24: Documentation</a></p>
+<p><a href="actuarialpy/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Documentation</a></p>
 </li>
 <li>
 <p><strong>ratingmodels</strong> · pricing</p>
 <hr />
 <p>Group rate build-up and indication: manual and experience rating, an
 auditable build-up engine, GLM relativities, retention gross-up, and renewal.</p>
-<p><a href="ratingmodels/">:octicons-arrow-right-24: Documentation</a></p>
+<p><a href="ratingmodels/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Documentation</a></p>
 </li>
 <li>
 <p><strong>lossmodels</strong> · loss modeling</p>
 <hr />
 <p>Loss-distribution modeling: severity and frequency fitting, and aggregate
 loss.</p>
-<p><a href="lossmodels/">:octicons-arrow-right-24: Documentation</a></p>
+<p><a href="lossmodels/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Documentation</a></p>
 </li>
 <li>
 <p><strong>extremeloss</strong> · tails</p>
 <hr />
 <p>Extreme-value tail estimation: peaks-over-threshold / GPD and large-claim
 loading.</p>
-<p><a href="extremeloss/">:octicons-arrow-right-24: Documentation</a></p>
+<p><a href="extremeloss/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Documentation</a></p>
 </li>
 <li>
 <p><strong>risksim</strong> · capital</p>
 <hr />
 <p>Portfolio Monte Carlo simulation and risk measures.</p>
-<p><a href="risksim/">:octicons-arrow-right-24: Documentation</a></p>
+<p><a href="risksim/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Documentation</a></p>
 </li>
 </ul>
 </div>
 <h2 id="how-they-fit-together">How they fit together<a class="headerlink" href="#how-they-fit-together" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>experience  →  pricing  →  loss  →  tail  →  capital
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  actuarialpy   ratingmodels   lossmodels   extremeloss   risksim
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  └──────────────────────  shared core  ──────────────────────┘
-</code></pre></div>
+<pre class="mermaid"><code>flowchart LR
+    AP["actuarialpy&lt;br/&gt;experience"] --&gt; RM["ratingmodels&lt;br/&gt;pricing"] --&gt; LM["lossmodels&lt;br/&gt;loss"] --&gt; EL["extremeloss&lt;br/&gt;tail"] --&gt; RS["risksim&lt;br/&gt;capital"]</code></pre>
 <p><code>actuarialpy</code> is the foundation. The cross-cutting primitives — credibility,
 trend, financial mathematics, exposure — live there <strong>once</strong>, and the other
 packages depend on it rather than re-implementing them. That shared core is what
@@ -745,25 +743,25 @@ makes these a system rather than five overlapping scripts.</p>
 <h2 id="a-workflow-across-the-ecosystem">A workflow across the ecosystem<a class="headerlink" href="#a-workflow-across-the-ecosystem" title="Permanent link">&para;</a></h2>
 <p>The packages are designed to compose. Here credibility comes from the core and
 the rate build-up and indication come from <code>ratingmodels</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span> <span class="nn">actuarialpy</span> <span class="k">as</span> <span class="nn">ap</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span> <span class="nn">ratingmodels</span> <span class="k">as</span> <span class="nn">rm</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># core: credibility for the group&#39;s own experience</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">z</span> <span class="o">=</span> <span class="n">ap</span><span class="o">.</span><span class="n">limited_fluctuation_z</span><span class="p">(</span><span class="n">exposure</span><span class="o">=</span><span class="mi">96_000</span><span class="p">,</span> <span class="n">full_credibility_standard</span><span class="o">=</span><span class="mi">120_000</span><span class="p">)</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># pricing: build the manual rate, blend against experience, and indicate</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">manual</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ManualRate</span><span class="p">(</span><span class="n">base_pmpm</span><span class="o">=</span><span class="mi">480</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="mf">1.05</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">:</span> <span class="mf">0.97</span><span class="p">})</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">indication</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RateIndication</span><span class="p">(</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">experience_claims_pmpm</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">manual_claims_pmpm</span><span class="o">=</span><span class="n">manual</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">(),</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">credibility</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">current_rate</span><span class="o">=</span><span class="mi">560</span><span class="p">,</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">target_loss_ratio</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="p">)</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="nb">print</span><span class="p">(</span><span class="n">indication</span><span class="o">.</span><span class="n">indicated_rate_change</span><span class="p">())</span>       <span class="c1"># the indicated rate change</span>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="nb">print</span><span class="p">(</span><span class="n">indication</span><span class="o">.</span><span class="n">rate_change_decomposition</span><span class="p">())</span>   <span class="c1"># why it moved, reconciled exactly</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span> <span class="nn">actuarialpy</span> <span class="k">as</span> <span class="nn">ap</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span> <span class="nn">ratingmodels</span> <span class="k">as</span> <span class="nn">rm</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># core: credibility for the group&#39;s own experience</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">z</span> <span class="o">=</span> <span class="n">ap</span><span class="o">.</span><span class="n">limited_fluctuation_z</span><span class="p">(</span><span class="n">exposure</span><span class="o">=</span><span class="mi">96_000</span><span class="p">,</span> <span class="n">full_credibility_standard</span><span class="o">=</span><span class="mi">120_000</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># pricing: build the manual rate, blend against experience, and indicate</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">manual</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ManualRate</span><span class="p">(</span><span class="n">base_pmpm</span><span class="o">=</span><span class="mi">480</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="mf">1.05</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">:</span> <span class="mf">0.97</span><span class="p">})</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">indication</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RateIndication</span><span class="p">(</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">experience_claims_pmpm</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">manual_claims_pmpm</span><span class="o">=</span><span class="n">manual</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">(),</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">credibility</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">current_rate</span><span class="o">=</span><span class="mi">560</span><span class="p">,</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">target_loss_ratio</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="p">)</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="nb">print</span><span class="p">(</span><span class="n">indication</span><span class="o">.</span><span class="n">indicated_rate_change</span><span class="p">())</span>       <span class="c1"># the indicated rate change</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="nb">print</span><span class="p">(</span><span class="n">indication</span><span class="o">.</span><span class="n">rate_change_decomposition</span><span class="p">())</span>   <span class="c1"># why it moved, reconciled exactly</span>
 </code></pre></div>
 <p>The same pattern extends across the stack: develop and trend experience in
 <code>actuarialpy</code>, price in <code>ratingmodels</code>, model the loss distribution in

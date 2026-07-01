@@ -2427,33 +2427,26 @@ loss ratio falls out as an output, not an input); the factor values stay in your
 trend, manual and experience rate construction, credibility blending, rate
 indication, rate-change decomposition, GLM relativity estimation, and renewal
 constraints. Part of the OpenActuarial ecosystem.</p>
+<p>Quick start:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span> <span class="nn">ratingmodels</span> <span class="k">as</span> <span class="nn">rm</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">exp</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ExperienceRate</span><span class="p">(</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">incurred_claims</span><span class="o">=</span><span class="mi">4_200_000</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="mi">96_000</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">trend_annual</span><span class="o">=</span><span class="mf">0.075</span><span class="p">,</span> <span class="n">trend_years</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">pooled_excess</span><span class="o">=</span><span class="mi">350_000</span><span class="p">,</span> <span class="n">pooling_charge_pmpm</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">target_loss_ratio</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">man</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ManualRate</span><span class="p">(</span><span class="n">base_pmpm</span><span class="o">=</span><span class="mi">480</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="mf">1.05</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">:</span> <span class="mf">0.97</span><span class="p">})</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">z</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">limited_fluctuation_credibility</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">96_000</span><span class="p">,</span> <span class="n">n_full</span><span class="o">=</span><span class="mi">120_000</span><span class="p">)</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">ind</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RateIndication</span><span class="p">(</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">experience_claims_pmpm</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">(),</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">manual_claims_pmpm</span><span class="o">=</span><span class="n">man</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">(),</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">credibility</span><span class="o">=</span><span class="n">z</span><span class="p">,</span> <span class="n">current_rate</span><span class="o">=</span><span class="mi">560</span><span class="p">,</span> <span class="n">target_loss_ratio</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">trend_total_factor</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">trend_factor</span><span class="p">(),</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="p">)</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="nb">round</span><span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">indicated_rate_change</span><span class="p">(),</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre></div>
 
-
-<details class="quick-start" open>
-  <summary>Quick start</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>import ratingmodels as rm
-exp = rm.ExperienceRate(
-...     incurred_claims=4_200_000, exposure=96_000,
-...     trend_annual=0.075, trend_years=1.5,
-...     pooled_excess=350_000, pooling_charge_pmpm=4.0,
-...     target_loss_ratio=0.85,
-... )
-man = rm.ManualRate(base_pmpm=480, factors={"area": 1.05, "industry": 0.97})
-z = rm.limited_fluctuation_credibility(n=96_000, n_full=120_000)
-ind = rm.RateIndication(
-...     experience_claims_pmpm=exp.claims_pmpm(),
-...     manual_claims_pmpm=man.claims_pmpm(),
-...     credibility=z, current_rate=560, target_loss_ratio=0.85,
-...     trend_total_factor=exp.trend_factor(),
-... )
-round(ind.indicated_rate_change(), 4)  # doctest: +SKIP</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
 
 
