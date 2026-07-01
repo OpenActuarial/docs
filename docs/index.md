@@ -2,8 +2,7 @@
 
 A small ecosystem of dependency-light Python libraries for the group health
 pricing and risk workflow — experience analysis, rate building, loss modeling,
-tail estimation, and portfolio capital — built on one shared core. numpy and
-pandas only.
+tail estimation, and portfolio capital — organized around one shared core.
 
 ## The ecosystem
 
@@ -16,7 +15,7 @@ pandas only.
 
 **The core.** Experience analysis on a tidy table, plus the shared
 primitives — credibility, trend, completion, seasonality, financial
-mathematics, and exposure — that everything else builds on.
+mathematics, and exposure — that `ratingmodels` builds on directly.
 :::
 
 :::{grid-item-card} ratingmodels
@@ -52,17 +51,28 @@ large-claim loading.
 
 ::::
 
-## How they fit together
+## The workflow
+
+Left to right, the packages trace one analysis — experience, pricing, loss, tail,
+and capital:
 
 :::{mermaid}
 flowchart LR
-    AP["actuarialpy<br/>experience"] --> RM["ratingmodels<br/>pricing"] --> LM["lossmodels<br/>loss"] --> EL["extremeloss<br/>tail"] --> RS["risksim<br/>capital"]
+    AP["actuarialpy<br/>experience"]:::core
+    RM["ratingmodels<br/>pricing"]
+    LM["lossmodels<br/>loss"]
+    EL["extremeloss<br/>tail"]
+    RS["risksim<br/>capital"]
+    AP --> RM --> LM --> EL --> RS
+    classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
 :::
 
-`actuarialpy` is the foundation: cross-cutting primitives — credibility, trend,
-financial mathematics, exposure — live there once, and the other packages depend
-on it rather than re-implementing them. Light dependencies throughout (numpy /
-pandas).
+The arrows are the analytical sequence, not install requirements. `actuarialpy`
+is the shared core — credibility, trend, financial math, and exposure live there
+once — and `ratingmodels` builds directly on it. `lossmodels`, `extremeloss`, and
+`risksim` install independently (`extremeloss` can optionally integrate
+`lossmodels` for severity splicing). Dependencies stay light: numpy and pandas,
+with scipy where the loss and tail work needs it.
 
 ## A cross-package example
 
