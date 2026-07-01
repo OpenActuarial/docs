@@ -1,7 +1,7 @@
 # OpenActuarial documentation site
 
-One shared documentation site for the four packages — `actuarialpy`, `lossmodels`,
-`risksim`, `extremeloss` — built with [MkDocs](https://www.mkdocs.org/) +
+One shared documentation site for the five packages — `actuarialpy`, `ratingmodels`,
+`lossmodels`, `risksim`, `extremeloss` — built with [MkDocs](https://www.mkdocs.org/) +
 [Material](https://squidfunk.github.io/mkdocs-material/). The API reference is generated
 from each package's docstrings via
 [mkdocstrings](https://mkdocstrings.github.io/), so the reference pages improve
@@ -29,9 +29,10 @@ repository settings.
 ```
 mkdocs.yml            site config, navigation, theme, plugins
 docs/
-  index.md            landing: the four packages + install
-  overview.md         how the four compose (with a diagram)
+  index.md            landing: the five packages + install
+  overview.md         how they compose (with a diagram)
   actuarialpy.md      overview + quickstart + API reference
+  ratingmodels.md
   lossmodels.md
   risksim.md
   extremeloss.md

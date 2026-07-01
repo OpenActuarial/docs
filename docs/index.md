@@ -61,10 +61,9 @@ pip install actuarialpy        # or any package below
 
 ## How they fit together
 
-```
-experience  →  pricing  →  loss  →  tail  →  capital
-  actuarialpy   ratingmodels   lossmodels   extremeloss   risksim
-  └──────────────────────  shared core  ──────────────────────┘
+```mermaid
+flowchart LR
+    AP["actuarialpy<br/>experience"] --> RM["ratingmodels<br/>pricing"] --> LM["lossmodels<br/>loss"] --> EL["extremeloss<br/>tail"] --> RS["risksim<br/>capital"]
 ```
 
 `actuarialpy` is the foundation. The cross-cutting primitives — credibility,
