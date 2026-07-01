@@ -3,10 +3,10 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Overview" href="overview.html">
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="actuarialpy" href="actuarialpy.html"><link rel="prev" title="OpenActuarial" href="index.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
-        <title>OpenActuarial</title>
+        <title>Overview - OpenActuarial</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
@@ -170,7 +170,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="#"><div class="brand">OpenActuarial</div></a>
+      <a href="index.html"><div class="brand">OpenActuarial</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -189,7 +189,7 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="#">
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   <span class="sidebar-brand-text">OpenActuarial</span>
   
@@ -199,8 +199,8 @@
   <input type="hidden" name="area" value="default">
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <ul>
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+  <ul class="current">
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
@@ -226,12 +226,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/OpenActuarial/docs/blob/main/docs/index.md?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/OpenActuarial/docs/blob/main/docs/overview.md?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/OpenActuarial/docs/edit/main/docs/index.md" rel="edit" title="Edit this page">
+  <a class="muted-link" href="https://github.com/OpenActuarial/docs/edit/main/docs/overview.md" rel="edit" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -248,111 +248,51 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section class="tex2jax_ignore mathjax_ignore" id="openactuarial">
-<h1>OpenActuarial<a class="headerlink" href="#openactuarial" title="Link to this heading">¶</a></h1>
-<p>A small ecosystem of dependency-light Python libraries for the group health
-pricing and risk workflow — experience analysis, rate building, loss modeling,
-tail estimation, and portfolio capital — built on one shared core. numpy and
-pandas only.</p>
-<section id="the-ecosystem">
-<h2>The ecosystem<a class="headerlink" href="#the-ecosystem" title="Link to this heading">¶</a></h2>
-<div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
-<div class="sd-row sd-row-cols-1 sd-row-cols-xs-1 sd-row-cols-sm-2 sd-row-cols-md-2 sd-row-cols-lg-3 sd-g-3 sd-g-xs-3 sd-g-sm-3 sd-g-md-3 sd-g-lg-3 docutils">
-<div class="sd-col sd-d-flex-row docutils">
-<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
-<div class="sd-card-body docutils">
-<div class="sd-card-title sd-font-weight-bold docutils">
-actuarialpy</div>
-<p class="sd-card-text"><strong>The core.</strong> Experience analysis on a tidy table, plus the shared
-primitives — credibility, trend, completion, seasonality, financial
-mathematics, and exposure — that everything else builds on.</p>
-</div>
-<a class="sd-stretched-link sd-hide-link-text reference internal" href="actuarialpy.html"><span class="doc">actuarialpy</span></a></div>
-</div>
-<div class="sd-col sd-d-flex-row docutils">
-<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
-<div class="sd-card-body docutils">
-<div class="sd-card-title sd-font-weight-bold docutils">
-ratingmodels</div>
-<p class="sd-card-text"><strong>Pricing.</strong> Manual and experience rate build-up, credibility blending,
-rate indication and decomposition, GLM relativities, and renewal constraints.</p>
-</div>
-<a class="sd-stretched-link sd-hide-link-text reference internal" href="ratingmodels.html"><span class="doc">ratingmodels</span></a></div>
-</div>
-<div class="sd-col sd-d-flex-row docutils">
-<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
-<div class="sd-card-body docutils">
-<div class="sd-card-title sd-font-weight-bold docutils">
-lossmodels</div>
-<p class="sd-card-text"><strong>Loss modeling.</strong> Severity and frequency fitting, and aggregate loss
-distributions.</p>
-</div>
-<a class="sd-stretched-link sd-hide-link-text reference internal" href="lossmodels.html"><span class="doc">lossmodels</span></a></div>
-</div>
-<div class="sd-col sd-d-flex-row docutils">
-<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
-<div class="sd-card-body docutils">
-<div class="sd-card-title sd-font-weight-bold docutils">
-extremeloss</div>
-<p class="sd-card-text"><strong>Tails.</strong> Extreme-value tail estimation — peaks-over-threshold / GPD and
-large-claim loading.</p>
-</div>
-<a class="sd-stretched-link sd-hide-link-text reference internal" href="extremeloss.html"><span class="doc">extremeloss</span></a></div>
-</div>
-<div class="sd-col sd-d-flex-row docutils">
-<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
-<div class="sd-card-body docutils">
-<div class="sd-card-title sd-font-weight-bold docutils">
-risksim</div>
-<p class="sd-card-text"><strong>Capital.</strong> Portfolio Monte Carlo simulation and risk measures.</p>
-</div>
-<a class="sd-stretched-link sd-hide-link-text reference internal" href="risksim.html"><span class="doc">risksim</span></a></div>
-</div>
-</div>
-</div>
+          <section class="tex2jax_ignore mathjax_ignore" id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h1>
+<p>The OpenActuarial packages cover one workflow — from raw experience to portfolio
+capital — as five focused libraries over a shared core.</p>
+<section id="division-of-labor">
+<h2>Division of labor<a class="headerlink" href="#division-of-labor" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>actuarialpy</strong> — experience analysis on a tidy table, and the shared
+primitives: PMPM and loss-ratio metrics, trend, completion, seasonality,
+credibility, financial mathematics (time value of money), and exposure /
+age bases. Everything else depends on it.</p></li>
+<li><p><strong>ratingmodels</strong> — the pricing layer: manual and experience rate build-up,
+credibility blending, rate indication and rate-change decomposition, GLM
+relativities, and renewal constraints.</p></li>
+<li><p><strong>lossmodels</strong> — loss-distribution modeling: severity and frequency fitting,
+and aggregate loss.</p></li>
+<li><p><strong>extremeloss</strong> — the tail: peaks-over-threshold / GPD estimation and
+large-claim loading.</p></li>
+<li><p><strong>risksim</strong> — portfolio Monte Carlo and risk measures.</p></li>
+</ul>
 </section>
-<section id="how-they-fit-together">
-<h2>How they fit together<a class="headerlink" href="#how-they-fit-together" title="Link to this heading">¶</a></h2>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">¶</a></h2>
 <pre  class="mermaid">
-        flowchart LR
-    AP[&quot;actuarialpy&lt;br/&gt;experience&quot;] --&gt; RM[&quot;ratingmodels&lt;br/&gt;pricing&quot;] --&gt; LM[&quot;lossmodels&lt;br/&gt;loss&quot;] --&gt; EL[&quot;extremeloss&lt;br/&gt;tail&quot;] --&gt; RS[&quot;risksim&lt;br/&gt;capital&quot;]
-    </pre><p><code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> is the foundation: cross-cutting primitives — credibility, trend,
-financial mathematics, exposure — live there once, and the other packages depend
-on it rather than re-implementing them. Light dependencies throughout (numpy /
-pandas).</p>
+        flowchart TD
+    AP[&quot;actuarialpy&quot;]
+    RM[&quot;ratingmodels&quot;]
+    LM[&quot;lossmodels&quot;]
+    EL[&quot;extremeloss&quot;]
+    RS[&quot;risksim&quot;]
+    AP --&gt;|credibility, trend, TVM| RM
+    AP -.-&gt; LM
+    AP -.-&gt; EL
+    AP -.-&gt; RS
+    </pre><p><code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> holds the cross-cutting primitives so each downstream package can
+stay small. The strongest link is <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code>, which delegates its
+credibility to <code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> rather than carrying its own. Dependencies stay
+light throughout — numpy and pandas, no scipy.</p>
 </section>
-<section id="a-cross-package-example">
-<h2>A cross-package example<a class="headerlink" href="#a-cross-package-example" title="Link to this heading">¶</a></h2>
-<p>Blend an experience rate with a manual rate and read the indicated change:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">actuarialpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ap</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">ratingmodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rm</span>
-
-<span class="c1"># credibility from exposure (lives in actuarialpy; ratingmodels delegates to it)</span>
-<span class="n">z</span> <span class="o">=</span> <span class="n">ap</span><span class="o">.</span><span class="n">limited_fluctuation_z</span><span class="p">(</span><span class="n">exposure</span><span class="o">=</span><span class="mi">96_000</span><span class="p">,</span> <span class="n">full_credibility_standard</span><span class="o">=</span><span class="mi">120_000</span><span class="p">)</span>
-
-<span class="n">manual</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ManualRate</span><span class="p">(</span><span class="n">base_pmpm</span><span class="o">=</span><span class="mi">480</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="mf">1.05</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">:</span> <span class="mf">0.97</span><span class="p">})</span>
-<span class="n">indication</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RateIndication</span><span class="p">(</span>
-    <span class="n">experience_claims_pmpm</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
-    <span class="n">manual_claims_pmpm</span><span class="o">=</span><span class="n">manual</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">(),</span>
-    <span class="n">credibility</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
-    <span class="n">current_rate</span><span class="o">=</span><span class="mi">560</span><span class="p">,</span>
-    <span class="n">target_loss_ratio</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">indication</span><span class="o">.</span><span class="n">indicated_rate_change</span><span class="p">()</span>        <span class="c1"># blended, credibility-weighted change</span>
-<span class="n">indication</span><span class="o">.</span><span class="n">rate_change_decomposition</span><span class="p">()</span>    <span class="c1"># attribute the change to each driver</span>
-</pre></div>
-</div>
-</section>
-<section id="install">
-<h2>Install<a class="headerlink" href="#install" title="Link to this heading">¶</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>actuarialpy<span class="w"> </span>ratingmodels<span class="w"> </span>lossmodels<span class="w"> </span>extremeloss<span class="w"> </span>risksim
-</pre></div>
-</div>
-<p>Each package installs independently; <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code> pulls in <code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> as a
-dependency.</p>
-<div class="toctree-wrapper compound">
-</div>
+<section id="conventions">
+<h2>Conventions<a class="headerlink" href="#conventions" title="Link to this heading">¶</a></h2>
+<p>Every package works on plain numpy arrays and pandas Series/DataFrames. There is
+no framework to buy into: functions take and return the data structures you
+already have, and the classes (<code class="docutils literal notranslate"><span class="pre">Experience</span></code>, <code class="docutils literal notranslate"><span class="pre">ManualRate</span></code>, <code class="docutils literal notranslate"><span class="pre">RateIndication</span></code>, …)
+are thin, inspectable wrappers over those functions.</p>
 </section>
 </section>
 
@@ -361,16 +301,26 @@ dependency.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="overview.html">
+          <a class="next-page" href="actuarialpy.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Overview</div>
+                <div class="title">actuarialpy</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          
+          <a class="prev-page" href="index.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Home</div>
+                
+              </div>
+            </a>
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -401,11 +351,10 @@ dependency.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">OpenActuarial</a><ul>
-<li><a class="reference internal" href="#the-ecosystem">The ecosystem</a></li>
-<li><a class="reference internal" href="#how-they-fit-together">How they fit together</a></li>
-<li><a class="reference internal" href="#a-cross-package-example">A cross-package example</a></li>
-<li><a class="reference internal" href="#install">Install</a></li>
+<li><a class="reference internal" href="#">Overview</a><ul>
+<li><a class="reference internal" href="#division-of-labor">Division of labor</a></li>
+<li><a class="reference internal" href="#dependencies">Dependencies</a></li>
+<li><a class="reference internal" href="#conventions">Conventions</a></li>
 </ul>
 </li>
 </ul>

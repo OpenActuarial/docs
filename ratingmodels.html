@@ -1,0 +1,1250 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="lossmodels" href="lossmodels.html"><link rel="prev" title="actuarialpy" href="actuarialpy.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
+        <title>ratingmodels - OpenActuarial</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=1ce1b86a" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --color-brand-primary: #0b6bcb;
+  --color-brand-content: #0b6bcb;
+  --font-stack--monospace: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #4098e6;
+  --color-brand-content: #4098e6;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #4098e6;
+  --color-brand-content: #4098e6;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">OpenActuarial</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  <span class="sidebar-brand-text">OpenActuarial</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">ratingmodels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extremeloss.html">extremeloss</a></li>
+<li class="toctree-l1"><a class="reference internal" href="risksim.html">risksim</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/OpenActuarial/docs/blob/main/docs/ratingmodels.md?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/OpenActuarial/docs/edit/main/docs/ratingmodels.md" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section class="tex2jax_ignore mathjax_ignore" id="ratingmodels">
+<h1>ratingmodels<a class="headerlink" href="#ratingmodels" title="Link to this heading">¶</a></h1>
+<p>The pricing layer of the ecosystem: manual and experience rate construction,
+credibility blending, rate indication and rate-change decomposition, GLM
+relativity estimation, and renewal constraints — an auditable build-up from base
+rate to filed rate. Depends on <code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> for its credibility and trend
+primitives.</p>
+<section id="quickstart">
+<h2>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading">¶</a></h2>
+<p>Blend an experience rate with a manual rate and read the indicated change:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ratingmodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rm</span>
+
+<span class="n">z</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">limited_fluctuation_credibility</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">96_000</span><span class="p">,</span> <span class="n">n_full</span><span class="o">=</span><span class="mi">120_000</span><span class="p">)</span>
+
+<span class="n">manual</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ManualRate</span><span class="p">(</span><span class="n">base_pmpm</span><span class="o">=</span><span class="mi">480</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="mf">1.05</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">:</span> <span class="mf">0.97</span><span class="p">})</span>
+
+<span class="n">indication</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RateIndication</span><span class="p">(</span>
+    <span class="n">experience_claims_pmpm</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+    <span class="n">manual_claims_pmpm</span><span class="o">=</span><span class="n">manual</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">(),</span>
+    <span class="n">credibility</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+    <span class="n">current_rate</span><span class="o">=</span><span class="mi">560</span><span class="p">,</span>
+    <span class="n">target_loss_ratio</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">indication</span><span class="o">.</span><span class="n">indicated_rate_change</span><span class="p">()</span>        <span class="c1"># blended, credibility-weighted change</span>
+<span class="n">indication</span><span class="o">.</span><span class="n">rate_change_decomposition</span><span class="p">()</span>    <span class="c1"># attribute the change to each driver</span>
+</pre></div>
+</div>
+</section>
+<section id="the-build-up-engine">
+<h2>The build-up engine<a class="headerlink" href="#the-build-up-engine" title="Link to this heading">¶</a></h2>
+<p>Rate build-ups are a sequence of typed steps — start, add, multiply,
+checkpoint — evaluated into a result that carries the full audit trail:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ratingmodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rm</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">evaluate</span><span class="p">([</span>
+    <span class="n">rm</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="s2">&quot;Par base claim cost&quot;</span><span class="p">,</span> <span class="mf">941.63</span><span class="p">),</span>
+    <span class="n">rm</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;$30 specialist copay&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mf">11.44</span><span class="p">),</span>
+    <span class="n">rm</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="s2">&quot;Rating region&quot;</span><span class="p">,</span> <span class="mf">1.083</span><span class="p">),</span>
+    <span class="n">rm</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="s2">&quot;Net claim cost PMPM&quot;</span><span class="p">),</span>
+<span class="p">])</span>
+
+<span class="n">result</span><span class="o">.</span><span class="n">value</span>        <span class="c1"># final PMPM</span>
+<span class="n">result</span><span class="o">.</span><span class="n">to_frame</span><span class="p">()</span>   <span class="c1"># every step as a DataFrame — inputs, factors, running total</span>
+</pre></div>
+</div>
+<p>Because each step is explicit, the build-up is reproducible and reviewable: the
+same object renders the number and the audit trail behind it.</p>
+</section>
+<section id="module-ratingmodels">
+<span id="api-reference"></span><h2>API reference<a class="headerlink" href="#module-ratingmodels" title="Link to this heading">¶</a></h2>
+<p>ratingmodels – actuarial pricing and rate-indication tools.</p>
+<p>A small, dependency-light toolkit for the group rating workflow: credibility,
+trend, manual and experience rate construction, credibility blending, rate
+indication, rate-change decomposition, GLM relativity estimation, and renewal
+constraints. Part of the OpenActuarial ecosystem.</p>
+<p>Quick start:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ratingmodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rm</span>
+
+<span class="n">exp</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ExperienceRate</span><span class="p">(</span>
+    <span class="n">incurred_claims</span><span class="o">=</span><span class="mi">4_200_000</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="mi">96_000</span><span class="p">,</span>
+    <span class="n">trend_annual</span><span class="o">=</span><span class="mf">0.075</span><span class="p">,</span> <span class="n">trend_years</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+    <span class="n">pooled_excess</span><span class="o">=</span><span class="mi">350_000</span><span class="p">,</span> <span class="n">pooling_charge_pmpm</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span>
+    <span class="n">target_loss_ratio</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">man</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ManualRate</span><span class="p">(</span><span class="n">base_pmpm</span><span class="o">=</span><span class="mi">480</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="mf">1.05</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">:</span> <span class="mf">0.97</span><span class="p">})</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">limited_fluctuation_credibility</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">96_000</span><span class="p">,</span> <span class="n">n_full</span><span class="o">=</span><span class="mi">120_000</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RateIndication</span><span class="p">(</span>
+    <span class="n">experience_claims_pmpm</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">(),</span>
+    <span class="n">manual_claims_pmpm</span><span class="o">=</span><span class="n">man</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">(),</span>
+    <span class="n">credibility</span><span class="o">=</span><span class="n">z</span><span class="p">,</span> <span class="n">current_rate</span><span class="o">=</span><span class="mi">560</span><span class="p">,</span> <span class="n">target_loss_ratio</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
+    <span class="n">trend_total_factor</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">trend_factor</span><span class="p">(),</span>
+<span class="p">)</span>
+<span class="nb">round</span><span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">indicated_rate_change</span><span class="p">(),</span> <span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.full_credibility_standard">
+<span class="sig-name descname"><span class="pre">full_credibility_standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.90</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cv_severity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/credibility.html#full_credibility_standard"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.full_credibility_standard" title="Link to this definition">¶</a></dt>
+<dd><p>Expected claim count required for full credibility.</p>
+<p>Delegates to <a class="reference internal" href="actuarialpy.html#actuarialpy.full_credibility_claims" title="actuarialpy.full_credibility_claims"><code class="xref py py-func docutils literal notranslate"><span class="pre">actuarialpy.full_credibility_claims()</span></code></a>. Returns
+<span class="math notranslate nohighlight">\((z_{(1+p)/2}/k)^2\)</span>, inflated by <span class="math notranslate nohighlight">\(1 + \mathrm{cv}^2\)</span> when
+<code class="docutils literal notranslate"><span class="pre">cv_severity</span></code> is supplied (aggregate losses rather than pure frequency).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">round</span><span class="p">(</span><span class="n">full_credibility_standard</span><span class="p">(</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">))</span>
+<span class="go">1082</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.limited_fluctuation_credibility">
+<span class="sig-name descname"><span class="pre">limited_fluctuation_credibility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_full</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/credibility.html#limited_fluctuation_credibility"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.limited_fluctuation_credibility" title="Link to this definition">¶</a></dt>
+<dd><p>Partial credibility by the square-root rule, <code class="docutils literal notranslate"><span class="pre">min(1,</span> <span class="pre">sqrt(n</span> <span class="pre">/</span> <span class="pre">n_full))</span></code>.</p>
+<p>Delegates to <a class="reference internal" href="actuarialpy.html#actuarialpy.limited_fluctuation_z" title="actuarialpy.limited_fluctuation_z"><code class="xref py py-func docutils literal notranslate"><span class="pre">actuarialpy.limited_fluctuation_z()</span></code></a>. <code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">n_full</span></code>
+are in consistent units (claims, members, member-months, …).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.buhlmann_credibility">
+<span class="sig-name descname"><span class="pre">buhlmann_credibility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vhm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/credibility.html#buhlmann_credibility"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.buhlmann_credibility" title="Link to this definition">¶</a></dt>
+<dd><p>Bühlmann credibility factor <span class="math notranslate nohighlight">\(Z = n / (n + k)\)</span>, <code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">=</span> <span class="pre">EPV/VHM</span></code>.</p>
+<p>This is the credibility <em>factor</em> given structural parameters; the
+greatest-accuracy <em>estimators</em> (fitting EPV/VHM from data) live in
+<a class="reference internal" href="actuarialpy.html#actuarialpy.Buhlmann" title="actuarialpy.Buhlmann"><code class="xref py py-class docutils literal notranslate"><span class="pre">actuarialpy.Buhlmann</span></code></a> / <a class="reference internal" href="actuarialpy.html#actuarialpy.BuhlmannStraub" title="actuarialpy.BuhlmannStraub"><code class="xref py py-class docutils literal notranslate"><span class="pre">actuarialpy.BuhlmannStraub</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.buhlmann_straub">
+<span class="sig-name descname"><span class="pre">buhlmann_straub</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">period</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.BuhlmannStraubResult" title="ratingmodels.credibility.BuhlmannStraubResult"><span class="pre">BuhlmannStraubResult</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/credibility.html#buhlmann_straub"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.buhlmann_straub" title="Link to this definition">¶</a></dt>
+<dd><p>Empirical Bühlmann-Straub credibility from grouped exposure data.</p>
+<p>Thin wrapper over <a class="reference internal" href="actuarialpy.html#actuarialpy.BuhlmannStraub.from_frame" title="actuarialpy.BuhlmannStraub.from_frame"><code class="xref py py-meth docutils literal notranslate"><span class="pre">actuarialpy.BuhlmannStraub.from_frame()</span></code></a> (the general
+unbiased estimators) that returns a <a class="reference internal" href="#ratingmodels.BuhlmannStraubResult" title="ratingmodels.BuhlmannStraubResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">BuhlmannStraubResult</span></code></a> with
+per-group credibility and credibility-weighted means.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataFrame</em>) – Long-format data: one row per (group, period).</p></li>
+<li><p><strong>group</strong> (<em>str</em>) – Column names. <code class="docutils literal notranslate"><span class="pre">value</span></code> is the per-unit observation (e.g. loss per
+member-month); <code class="docutils literal notranslate"><span class="pre">exposure</span></code> is the weight <span class="math notranslate nohighlight">\(m_{ij}\)</span>.</p></li>
+<li><p><strong>period</strong> (<em>str</em>) – Column names. <code class="docutils literal notranslate"><span class="pre">value</span></code> is the per-unit observation (e.g. loss per
+member-month); <code class="docutils literal notranslate"><span class="pre">exposure</span></code> is the weight <span class="math notranslate nohighlight">\(m_{ij}\)</span>.</p></li>
+<li><p><strong>value</strong> (<em>str</em>) – Column names. <code class="docutils literal notranslate"><span class="pre">value</span></code> is the per-unit observation (e.g. loss per
+member-month); <code class="docutils literal notranslate"><span class="pre">exposure</span></code> is the weight <span class="math notranslate nohighlight">\(m_{ij}\)</span>.</p></li>
+<li><p><strong>exposure</strong> (<em>str</em>) – Column names. <code class="docutils literal notranslate"><span class="pre">value</span></code> is the per-unit observation (e.g. loss per
+member-month); <code class="docutils literal notranslate"><span class="pre">exposure</span></code> is the weight <span class="math notranslate nohighlight">\(m_{ij}\)</span>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.BuhlmannStraubResult">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BuhlmannStraubResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vhm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overall_mean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_means</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">credibility</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">credibility_weighted</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/credibility.html#BuhlmannStraubResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.BuhlmannStraubResult" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Result of an empirical Bühlmann-Straub fit, keyed by group.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.trend_factor">
+<span class="sig-name descname"><span class="pre">trend_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">annual_trend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">years</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/trend.html#trend_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.trend_factor" title="Link to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\((1 + \text{annual\_trend})^{\text{years}}\)</span>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.trend_factor_between">
+<span class="sig-name descname"><span class="pre">trend_factor_between</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">annual_trend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experience_period</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rating_period</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/trend.html#trend_factor_between"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.trend_factor_between" title="Link to this definition">¶</a></dt>
+<dd><p>Midpoint-to-midpoint trend factor from two date ranges.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.apply_trend">
+<span class="sig-name descname"><span class="pre">apply_trend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">annual_trend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">years</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/trend.html#apply_trend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.apply_trend" title="Link to this definition">¶</a></dt>
+<dd><p>Trend a value forward (or back, for negative <code class="docutils literal notranslate"><span class="pre">years</span></code>).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.combine_trend">
+<span class="sig-name descname"><span class="pre">combine_trend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">util_trend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cost_trend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/trend.html#combine_trend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.combine_trend" title="Link to this definition">¶</a></dt>
+<dd><p>Combine utilization and unit-cost trends: <span class="math notranslate nohighlight">\((1+t_u)(1+t_c)-1\)</span>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.split_total_trend">
+<span class="sig-name descname"><span class="pre">split_total_trend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_trend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">util_trend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/trend.html#split_total_trend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.split_total_trend" title="Link to this definition">¶</a></dt>
+<dd><p>Back out the unit-cost trend implied by a total and a utilization trend.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.period_midpoint">
+<span class="sig-name descname"><span class="pre">period_midpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">date</span></span></span><a class="reference internal" href="_modules/ratingmodels/trend.html#period_midpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.period_midpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Midpoint date of a period <code class="docutils literal notranslate"><span class="pre">[start,</span> <span class="pre">end]</span></code> (inclusive endpoints).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.years_between">
+<span class="sig-name descname"><span class="pre">years_between</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/trend.html#years_between"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.years_between" title="Link to this definition">¶</a></dt>
+<dd><p>Fractional years between two dates using a 365.25-day year.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.FactorTable">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FactorTable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/relativity.html#FactorTable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FactorTable" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A named lookup of level -&gt; multiplicative relativity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Rating variable name (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;area&quot;</span></code>).</p></li>
+<li><p><strong>factors</strong> (<em>mapping</em>) – Level -&gt; relativity. The base level should map to 1.0 by convention.</p></li>
+<li><p><strong>default</strong> (<em>float</em>) – Relativity returned for unknown levels. Default 1.0.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.FactorTable.normalized">
+<span class="sig-name descname"><span class="pre">normalized</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_level</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.FactorTable" title="ratingmodels.relativity.FactorTable"><span class="pre">FactorTable</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#FactorTable.normalized"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FactorTable.normalized" title="Link to this definition">¶</a></dt>
+<dd><p>Rebase so <code class="docutils literal notranslate"><span class="pre">base_level</span></code> has relativity 1.0.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.one_way_relativities">
+<span class="sig-name descname"><span class="pre">one_way_relativities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#one_way_relativities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.one_way_relativities" title="Link to this definition">¶</a></dt>
+<dd><p>One-way relativities: each level’s (exposure-weighted) mean / overall mean.</p>
+<p>Does not adjust for correlation with other rating variables; use
+<a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.GLMRelativities"><code class="xref py py-class docutils literal notranslate"><span class="pre">GLMRelativities</span></code></a> when variables are correlated.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GLMRelativities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">family</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'poisson'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_power</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>GLM (log-link) relativity estimator fit by IRLS.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>family</strong> (<em>{&quot;poisson&quot;</em><em>, </em><em>&quot;gamma&quot;</em><em>, </em><em>&quot;tweedie&quot;}</em>) – Response distribution. <code class="docutils literal notranslate"><span class="pre">&quot;tweedie&quot;</span></code> requires <code class="docutils literal notranslate"><span class="pre">var_power</span></code> in (1, 2).</p></li>
+<li><p><strong>var_power</strong> (<em>float</em><em>, </em><em>optional</em>) – Tweedie variance power <span class="math notranslate nohighlight">\(p\)</span> in <span class="math notranslate nohighlight">\(V(\mu)=\mu^p\)</span>.</p></li>
+<li><p><strong>max_iter</strong> (<em>int</em>) – Maximum IRLS iterations.</p></li>
+<li><p><strong>tol</strong> (<em>float</em>) – Convergence tolerance on the relative change in deviance.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.coefficients_">
+<span class="sig-name descname"><span class="pre">coefficients_</span></span><a class="headerlink" href="#ratingmodels.GLMRelativities.coefficients_" title="Link to this definition">¶</a></dt>
+<dd><p>Fitted <span class="math notranslate nohighlight">\(\beta\)</span> including the intercept.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.Series</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.relativities_">
+<span class="sig-name descname"><span class="pre">relativities_</span></span><a class="headerlink" href="#ratingmodels.GLMRelativities.relativities_" title="Link to this definition">¶</a></dt>
+<dd><p>Per-variable multiplicative relativities (base level = 1.0).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>dict</em>[<em>str</em>, pandas.Series]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.base_value_">
+<span class="sig-name descname"><span class="pre">base_value_</span></span><a class="headerlink" href="#ratingmodels.GLMRelativities.base_value_" title="Link to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(\exp(\text{intercept})\)</span>, the fitted base level.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>float</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.n_iter_">
+<span class="sig-name descname"><span class="pre">n_iter_</span></span><a class="headerlink" href="#ratingmodels.GLMRelativities.n_iter_" title="Link to this definition">¶</a></dt>
+<dd><p>IRLS iterations used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>int</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.deviance_">
+<span class="sig-name descname"><span class="pre">deviance_</span></span><a class="headerlink" href="#ratingmodels.GLMRelativities.deviance_" title="Link to this definition">¶</a></dt>
+<dd><p>Final deviance. These attributes are populated by <a class="reference internal" href="#ratingmodels.GLMRelativities.fit" title="ratingmodels.GLMRelativities.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>float</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">object</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.relativity.GLMRelativities"><span class="pre">GLMRelativities</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.fit" title="Link to this definition">¶</a></dt>
+<dd><p>Fit relativities for <code class="docutils literal notranslate"><span class="pre">predictors</span></code> against <code class="docutils literal notranslate"><span class="pre">response</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">exposure</span></code> enters as a log offset (the natural choice for counts and
+pure premium). An explicit <code class="docutils literal notranslate"><span class="pre">offset</span></code> column (already on the log scale)
+and prior <code class="docutils literal notranslate"><span class="pre">weights</span></code> may also be supplied. <code class="docutils literal notranslate"><span class="pre">base_levels</span></code> maps a
+predictor to its reference level (relativity 1.0); unspecified
+predictors use their most populous level as the base.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.predict" title="Link to this definition">¶</a></dt>
+<dd><p>Predicted mean for new rows using the fitted relativities.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.ManualRate">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ManualRate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_pmpm:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factors:</span> <span class="pre">~typing.Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">float]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_loss_ratio:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.85</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retention:</span> <span class="pre">~ratingmodels.loading.RetentionLoad</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/manual_rate.html#ManualRate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ManualRate" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Build a manual rate from a base and a set of named relativities.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_pmpm</strong> (<em>float</em>) – Base claims cost PMPM at the rating-period level (see
+<a class="reference internal" href="#ratingmodels.base_rate_from_experience" title="ratingmodels.base_rate_from_experience"><code class="xref py py-func docutils literal notranslate"><span class="pre">ratingmodels.base_rate_from_experience()</span></code></a> to derive it).</p></li>
+<li><p><strong>factors</strong> (<em>mapping</em>) – Named relativities, e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;area&quot;:</span> <span class="pre">1.05,</span> <span class="pre">&quot;industry&quot;:</span> <span class="pre">0.97,</span> <span class="pre">...}</span></code>.</p></li>
+<li><p><strong>target_loss_ratio</strong> (<em>float</em>) – Claims / premium target used to gross up to a charged rate. Ignored
+when <code class="docutils literal notranslate"><span class="pre">retention</span></code> is supplied.</p></li>
+<li><p><strong>retention</strong> (<a class="reference internal" href="#ratingmodels.RetentionLoad" title="ratingmodels.RetentionLoad"><em>RetentionLoad</em></a><em>, </em><em>optional</em>) – Full expense / profit loading. When provided, the charged rate is built
+with the fundamental insurance equation instead of a single loss ratio,
+and fixed expense is applied per member (flat across cells).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.ManualRate.breakdown">
+<span class="sig-name descname"><span class="pre">breakdown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.BuildUpResult" title="ratingmodels.buildup.BuildUpResult"><span class="pre">BuildUpResult</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/manual_rate.html#ManualRate.breakdown"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ManualRate.breakdown" title="Link to this definition">¶</a></dt>
+<dd><p>Audit trail of the manual claims build-up (base x each relativity).</p>
+<p>The final running total equals <a class="reference internal" href="#ratingmodels.ManualRate.claims_pmpm" title="ratingmodels.ManualRate.claims_pmpm"><code class="xref py py-meth docutils literal notranslate"><span class="pre">claims_pmpm()</span></code></a> up to floating point.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.ManualRate.claims_pmpm">
+<span class="sig-name descname"><span class="pre">claims_pmpm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/manual_rate.html#ManualRate.claims_pmpm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ManualRate.claims_pmpm" title="Link to this definition">¶</a></dt>
+<dd><p>Expected manual claims PMPM (before expense/margin loading).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.ManualRate.rate">
+<span class="sig-name descname"><span class="pre">rate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/manual_rate.html#ManualRate.rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ManualRate.rate" title="Link to this definition">¶</a></dt>
+<dd><p>Charged manual rate PMPM.</p>
+<p>Uses <code class="docutils literal notranslate"><span class="pre">retention</span></code> (the full gross-up) when supplied, otherwise
+<code class="docutils literal notranslate"><span class="pre">claims</span> <span class="pre">PMPM</span> <span class="pre">/</span> <span class="pre">target_loss_ratio</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.ManualRate.steps">
+<span class="sig-name descname"><span class="pre">steps</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/ratingmodels/manual_rate.html#ManualRate.steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ManualRate.steps" title="Link to this definition">¶</a></dt>
+<dd><p>The manual claims build-up as an ordered list of steps.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.manual_pmpm">
+<span class="sig-name descname"><span class="pre">manual_pmpm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/manual_rate.html#manual_pmpm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.manual_pmpm" title="Link to this definition">¶</a></dt>
+<dd><p>Base PMPM scaled by the product of relativities.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.aggregate_demographic_factor">
+<span class="sig-name descname"><span class="pre">aggregate_demographic_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">census</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'members'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/manual_rate.html#aggregate_demographic_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.aggregate_demographic_factor" title="Link to this definition">¶</a></dt>
+<dd><p>Membership-weighted average of a member-level demographic factor.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.ExperienceRate">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ExperienceRate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">incurred_claims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trend_annual</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trend_years</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pooled_excess</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pooling_charge_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">benefit_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">demographic_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_loss_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.85</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retention</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ratingmodels.RetentionLoad" title="ratingmodels.loading.RetentionLoad"><span class="pre">RetentionLoad</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/experience_rate.html#ExperienceRate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ExperienceRate" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Develop an experience rate from incurred claims and exposure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>incurred_claims</strong> (<em>float</em>) – Total incurred (completed) claims over the experience period.</p></li>
+<li><p><strong>exposure</strong> (<em>float</em>) – Member-months (or other PMPM exposure base).</p></li>
+<li><p><strong>trend_annual</strong> (<em>float</em>) – Annual claims trend.</p></li>
+<li><p><strong>trend_years</strong> (<em>float</em>) – Years from experience midpoint to rating midpoint.</p></li>
+<li><p><strong>pooled_excess</strong> (<em>float</em>) – Claim dollars removed by pooling (from <a class="reference internal" href="#ratingmodels.pool_claims" title="ratingmodels.pool_claims"><code class="xref py py-func docutils literal notranslate"><span class="pre">pool_claims()</span></code></a>). Default 0.</p></li>
+<li><p><strong>pooling_charge_pmpm</strong> (<em>float</em>) – Pooling charge added back, PMPM. Default 0.</p></li>
+<li><p><strong>benefit_factor</strong> (<em>float</em>) – Multiplicative adjustments for benefit/demographic changes between the
+experience and rating periods. Default 1.0.</p></li>
+<li><p><strong>demographic_factor</strong> (<em>float</em>) – Multiplicative adjustments for benefit/demographic changes between the
+experience and rating periods. Default 1.0.</p></li>
+<li><p><strong>target_loss_ratio</strong> (<em>float</em>) – Claims / premium target used to load to a charged rate.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.ExperienceRate.claims_pmpm">
+<span class="sig-name descname"><span class="pre">claims_pmpm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/experience_rate.html#ExperienceRate.claims_pmpm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ExperienceRate.claims_pmpm" title="Link to this definition">¶</a></dt>
+<dd><p>Trended, pooled, adjusted experience claims PMPM (charge added back).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.ExperienceRate.pooled_claims_pmpm">
+<span class="sig-name descname"><span class="pre">pooled_claims_pmpm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/experience_rate.html#ExperienceRate.pooled_claims_pmpm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ExperienceRate.pooled_claims_pmpm" title="Link to this definition">¶</a></dt>
+<dd><p>Pooled (capped) claims per member-month, before trend.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.ExperienceRate.rate">
+<span class="sig-name descname"><span class="pre">rate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/experience_rate.html#ExperienceRate.rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ExperienceRate.rate" title="Link to this definition">¶</a></dt>
+<dd><p>Charged experience rate PMPM.</p>
+<p>Uses <code class="docutils literal notranslate"><span class="pre">retention</span></code> (the full gross-up) when supplied, otherwise
+<code class="docutils literal notranslate"><span class="pre">claims</span> <span class="pre">PMPM</span> <span class="pre">/</span> <span class="pre">target_loss_ratio</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.pool_claims">
+<span class="sig-name descname"><span class="pre">pool_claims</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claims</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pooling_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ratingmodels/experience_rate.html#pool_claims"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.pool_claims" title="Link to this definition">¶</a></dt>
+<dd><p>Split claims into a pooled (capped) total and the excess above <code class="docutils literal notranslate"><span class="pre">P</span></code>.</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">(capped_total,</span> <span class="pre">excess)</span></code> where
+<code class="docutils literal notranslate"><span class="pre">excess</span> <span class="pre">=</span> <span class="pre">sum(max(0,</span> <span class="pre">claim</span> <span class="pre">-</span> <span class="pre">pooling_point))</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.expected_excess_charge">
+<span class="sig-name descname"><span class="pre">expected_excess_charge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claims</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pooling_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/experience_rate.html#expected_excess_charge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.expected_excess_charge" title="Link to this definition">¶</a></dt>
+<dd><p>Naive pooling charge PMPM: observed excess spread over exposure.</p>
+<p>A filed pooling charge is normally derived from book-wide excess
+experience or an EVT tail model (see the <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> package); this
+helper gives the simple group-level estimate.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.base_rate_from_experience">
+<span class="sig-name descname"><span class="pre">base_rate_from_experience</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relativity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.BaseRateResult" title="ratingmodels.base_rate.BaseRateResult"><span class="pre">BaseRateResult</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/base_rate.html#base_rate_from_experience"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.base_rate_from_experience" title="Link to this definition">¶</a></dt>
+<dd><p>Indicated base loss cost from book experience (off-balance method).</p>
+<p>Returns <span class="math notranslate nohighlight">\(B = \sum_i L_i / \sum_i e_i r_i\)</span> together with the average
+relativity and average loss cost. Gross <code class="docutils literal notranslate"><span class="pre">base_loss_cost</span></code> to a charged base
+rate with a <a class="reference internal" href="#ratingmodels.RetentionLoad" title="ratingmodels.RetentionLoad"><code class="xref py py-class docutils literal notranslate"><span class="pre">ratingmodels.RetentionLoad</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataFrame</em>) – One row per risk or rating cell.</p></li>
+<li><p><strong>exposure</strong> (<em>str</em>) – Column names for exposure (e.g. member-months) and trended/developed
+loss.</p></li>
+<li><p><strong>loss</strong> (<em>str</em>) – Column names for exposure (e.g. member-months) and trended/developed
+loss.</p></li>
+<li><p><strong>relativity</strong> (<em>str</em><em>, </em><em>optional</em>) – Column of precomputed relativities <span class="math notranslate nohighlight">\(r_i\)</span>.</p></li>
+<li><p><strong>factor_cols</strong> (<em>sequence</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Columns of individual rating factors to multiply into <span class="math notranslate nohighlight">\(r_i\)</span>
+(used when <code class="docutils literal notranslate"><span class="pre">relativity</span></code> is not supplied).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.BaseRateResult">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BaseRateResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_loss_cost</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">average_relativity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">average_loss_cost</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/base_rate.html#BaseRateResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.BaseRateResult" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Result of <a class="reference internal" href="#ratingmodels.base_rate_from_experience" title="ratingmodels.base_rate_from_experience"><code class="xref py py-func docutils literal notranslate"><span class="pre">base_rate_from_experience()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.average_relativity">
+<span class="sig-name descname"><span class="pre">average_relativity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relativity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/base_rate.html#average_relativity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.average_relativity" title="Link to this definition">¶</a></dt>
+<dd><p>Exposure-weighted average relativity <span class="math notranslate nohighlight">\(\bar r = \sum e_i r_i / \sum e_i\)</span>.</p>
+<p>Supply relativities either as a single <code class="docutils literal notranslate"><span class="pre">relativity</span></code> column or as
+<code class="docutils literal notranslate"><span class="pre">factor_cols</span></code> (per-row factors that are multiplied together).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.off_balance_factor">
+<span class="sig-name descname"><span class="pre">off_balance_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_avg_relativity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_avg_relativity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/base_rate.html#off_balance_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.off_balance_factor" title="Link to this definition">¶</a></dt>
+<dd><p>Off-balance correction <span class="math notranslate nohighlight">\(\bar r_0 / \bar r_1\)</span> from revising relativities.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.rebalance_base_rate">
+<span class="sig-name descname"><span class="pre">rebalance_base_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_avg_relativity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_avg_relativity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overall_change</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/base_rate.html#rebalance_base_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.rebalance_base_rate" title="Link to this definition">¶</a></dt>
+<dd><p>Off-balanced new base rate <span class="math notranslate nohighlight">\(B_1 = B_0 (\bar r_0/\bar r_1)(1+\Delta)\)</span>.</p>
+<p>Holds the overall premium level neutral when relativities change, then
+applies the intended overall rate change <code class="docutils literal notranslate"><span class="pre">overall_change</span></code> (<span class="math notranslate nohighlight">\(\Delta\)</span>).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.Step">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">operand</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/buildup.html#Step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.Step" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A single build-up operation. <code class="docutils literal notranslate"><span class="pre">operand</span></code> is the factor (multiply /
+segment), amount (add), or value (start); <code class="docutils literal notranslate"><span class="pre">weight</span></code> is used by
+<code class="docutils literal notranslate"><span class="pre">segment_multiply</span></code> only.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.Step" title="ratingmodels.buildup.Step"><span class="pre">Step</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/buildup.html#start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.start" title="Link to this definition">¶</a></dt>
+<dd><p>Set the running total to <code class="docutils literal notranslate"><span class="pre">value</span></code> (normally the first step).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.multiply">
+<span class="sig-name descname"><span class="pre">multiply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.Step" title="ratingmodels.buildup.Step"><span class="pre">Step</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/buildup.html#multiply"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.multiply" title="Link to this definition">¶</a></dt>
+<dd><p>Multiply the running total by <code class="docutils literal notranslate"><span class="pre">factor</span></code> (a relativity or trend).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amount</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.Step" title="ratingmodels.buildup.Step"><span class="pre">Step</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/buildup.html#add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add <code class="docutils literal notranslate"><span class="pre">amount</span></code> to the running total (negative for a copay credit).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.segment_multiply">
+<span class="sig-name descname"><span class="pre">segment_multiply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.Step" title="ratingmodels.buildup.Step"><span class="pre">Step</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/buildup.html#segment_multiply"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.segment_multiply" title="Link to this definition">¶</a></dt>
+<dd><p>Apply <code class="docutils literal notranslate"><span class="pre">factor</span></code> to a fraction <code class="docutils literal notranslate"><span class="pre">weight</span></code> of the running total.</p>
+<p><span class="math notranslate nohighlight">\(\text{running} \leftarrow \text{running}\,(1 - w + w f)\)</span>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.checkpoint">
+<span class="sig-name descname"><span class="pre">checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.Step" title="ratingmodels.buildup.Step"><span class="pre">Step</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/buildup.html#checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.checkpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Record a labeled subtotal without changing the running total.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ratingmodels.Step" title="ratingmodels.buildup.Step"><span class="pre">Step</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.BuildUpResult" title="ratingmodels.buildup.BuildUpResult"><span class="pre">BuildUpResult</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/buildup.html#evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.evaluate" title="Link to this definition">¶</a></dt>
+<dd><p>Run an ordered sequence of <a class="reference internal" href="#ratingmodels.Step" title="ratingmodels.Step"><code class="xref py py-class docutils literal notranslate"><span class="pre">Step</span></code></a> and return a <a class="reference internal" href="#ratingmodels.BuildUpResult" title="ratingmodels.BuildUpResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">BuildUpResult</span></code></a>.</p>
+<p>The running total starts at 0; a leading <a class="reference internal" href="#ratingmodels.start" title="ratingmodels.start"><code class="xref py py-func docutils literal notranslate"><span class="pre">start()</span></code></a> sets the base.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.BuildUp">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BuildUp</span></span><a class="reference internal" href="_modules/ratingmodels/buildup.html#BuildUp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.BuildUp" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Fluent builder for a build-up; sugar over a list of <a class="reference internal" href="#ratingmodels.Step" title="ratingmodels.Step"><code class="xref py py-class docutils literal notranslate"><span class="pre">Step</span></code></a>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="n">BuildUp</span><span class="p">()</span>
+<span class="gp">... </span>     <span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="s2">&quot;Par Base&quot;</span><span class="p">,</span> <span class="mf">941.63</span><span class="p">)</span>
+<span class="gp">... </span>     <span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;$30 specialist copay&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mf">11.44</span><span class="p">)</span>
+<span class="gp">... </span>     <span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="s2">&quot;Rating Region&quot;</span><span class="p">,</span> <span class="mf">1.083</span><span class="p">)</span>
+<span class="gp">... </span>     <span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="s2">&quot;Medical Par Base Claim Cost&quot;</span><span class="p">)</span>
+<span class="gp">... </span>     <span class="o">.</span><span class="n">evaluate</span><span class="p">())</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.BuildUpResult">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BuildUpResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">breakdown:</span> <span class="pre">~pandas.DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtotals:</span> <span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps:</span> <span class="pre">list</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/buildup.html#BuildUpResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.BuildUpResult" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Result of evaluating a build-up.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ratingmodels.BuildUpResult.value">
+<span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#ratingmodels.BuildUpResult.value" title="Link to this definition">¶</a></dt>
+<dd><p>Final running total.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>float</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ratingmodels.BuildUpResult.breakdown">
+<span class="sig-name descname"><span class="pre">breakdown</span></span><a class="headerlink" href="#ratingmodels.BuildUpResult.breakdown" title="Link to this definition">¶</a></dt>
+<dd><p>One row per step: <code class="docutils literal notranslate"><span class="pre">step,</span> <span class="pre">operation,</span> <span class="pre">label,</span> <span class="pre">operand,</span> <span class="pre">running_total</span></code>.
+For <code class="docutils literal notranslate"><span class="pre">segment_multiply</span></code> the <code class="docutils literal notranslate"><span class="pre">operand</span></code> shown is the <em>effective</em>
+factor <span class="math notranslate nohighlight">\((1 - w + w f)\)</span>, so the column reconciles by multiplication.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ratingmodels.BuildUpResult.subtotals">
+<span class="sig-name descname"><span class="pre">subtotals</span></span><a class="headerlink" href="#ratingmodels.BuildUpResult.subtotals" title="Link to this definition">¶</a></dt>
+<dd><p>Ordered mapping of checkpoint label -&gt; running total at that point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>dict</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ratingmodels.BuildUpResult.steps">
+<span class="sig-name descname"><span class="pre">steps</span></span><a class="headerlink" href="#ratingmodels.BuildUpResult.steps" title="Link to this definition">¶</a></dt>
+<dd><p>The raw steps (nominal factor and weight preserved).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>list</em>[<a class="reference internal" href="#ratingmodels.Step" title="ratingmodels.Step"><em>Step</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.BuildUpResult.subtotal">
+<span class="sig-name descname"><span class="pre">subtotal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/buildup.html#BuildUpResult.subtotal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.BuildUpResult.subtotal" title="Link to this definition">¶</a></dt>
+<dd><p>Running total recorded at the named checkpoint.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.participation_blend">
+<span class="sig-name descname"><span class="pre">participation_blend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ratingmodels.BuildUpResult" title="ratingmodels.buildup.BuildUpResult"><span class="pre">BuildUpResult</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nonpar</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ratingmodels.BuildUpResult" title="ratingmodels.buildup.BuildUpResult"><span class="pre">BuildUpResult</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">participation_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'PPO</span> <span class="pre">Claim</span> <span class="pre">Cost'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.BuildUpResult" title="ratingmodels.buildup.BuildUpResult"><span class="pre">BuildUpResult</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/buildup.html#participation_blend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.participation_blend" title="Link to this definition">¶</a></dt>
+<dd><p>In-/out-of-network blend <span class="math notranslate nohighlight">\(\text{par}\,p + \text{nonpar}\,(1-p)\)</span>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">participation_rate</span></code> is the in-network (par) share <code class="docutils literal notranslate"><span class="pre">p</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.combine_streams">
+<span class="sig-name descname"><span class="pre">combine_streams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">streams</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ratingmodels.BuildUpResult" title="ratingmodels.buildup.BuildUpResult"><span class="pre">BuildUpResult</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Combined'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.BuildUpResult" title="ratingmodels.buildup.BuildUpResult"><span class="pre">BuildUpResult</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/buildup.html#combine_streams"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.combine_streams" title="Link to this definition">¶</a></dt>
+<dd><p>Additively combine named streams (e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;Medical&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;Drug&quot;:</span> <span class="pre">...}</span></code>).</p>
+<p>Implemented as a build-up (start + adds) so the result carries a running
+total and an audit trail.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.RetentionLoad">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RetentionLoad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fixed_expense_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_expense_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profit_margin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lae_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/loading.html#RetentionLoad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RetentionLoad" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Expense and profit loads used to gross claims up to a charged rate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fixed_expense_pmpm</strong> (<em>float</em>) – Flat administrative expense per member per month (a dollar amount, not
+a percentage of premium). Default 0.</p></li>
+<li><p><strong>variable_expense_ratio</strong> (<em>float</em>) – Sum of percent-of-premium loads: commission, premium tax, exchange /
+regulatory fees, and any admin expressed as a percentage of premium.
+Default 0.</p></li>
+<li><p><strong>profit_margin</strong> (<em>float</em>) – Target underwriting profit / contribution to surplus, as a percentage
+of premium. Default 0.</p></li>
+<li><p><strong>lae_ratio</strong> (<em>float</em>) – Loss adjustment expense as a percentage of claims. Default 0.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RetentionLoad.expense_and_profit_ratio">
+<span class="sig-name descname"><span class="pre">expense_and_profit_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claims_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/loading.html#RetentionLoad.expense_and_profit_ratio"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RetentionLoad.expense_and_profit_ratio" title="Link to this definition">¶</a></dt>
+<dd><p>Share of the gross rate going to expense and profit (1 - loss ratio).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RetentionLoad.from_items">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_items</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fixed_expense_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_items</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profit_margin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lae_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.RetentionLoad" title="ratingmodels.loading.RetentionLoad"><span class="pre">RetentionLoad</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/loading.html#RetentionLoad.from_items"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RetentionLoad.from_items" title="Link to this definition">¶</a></dt>
+<dd><p>Construct from an itemized mapping of percent-of-premium loads.</p>
+<p><code class="docutils literal notranslate"><span class="pre">variable_items</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;commission&quot;:</span> <span class="pre">0.04,</span> <span class="pre">&quot;premium_tax&quot;:</span> <span class="pre">0.023,</span>
+<span class="pre">&quot;aca_fees&quot;:</span> <span class="pre">0.005,</span> <span class="pre">&quot;admin_pct&quot;:</span> <span class="pre">0.06}</span></code>) is summed into the variable
+expense ratio.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RetentionLoad.gross_rate">
+<span class="sig-name descname"><span class="pre">gross_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claims_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/loading.html#RetentionLoad.gross_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RetentionLoad.gross_rate" title="Link to this definition">¶</a></dt>
+<dd><p>Gross a claims PMPM up to a charged rate via <span class="math notranslate nohighlight">\((L(1+\text{lae})+F)/(1-V-Q)\)</span>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RetentionLoad.implied_loss_ratio">
+<span class="sig-name descname"><span class="pre">implied_loss_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claims_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/loading.html#RetentionLoad.implied_loss_ratio"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RetentionLoad.implied_loss_ratio" title="Link to this definition">¶</a></dt>
+<dd><p>Loss ratio implied at a given claims level (claims / gross rate).</p>
+<p>With a non-zero fixed expense this varies with the claims level; with
+only percentage loads it equals <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">-</span> <span class="pre">variable_expense_ratio</span> <span class="pre">-</span>
+<span class="pre">profit_margin</span></code>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ratingmodels.RetentionLoad.variable_and_profit">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">variable_and_profit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#ratingmodels.RetentionLoad.variable_and_profit" title="Link to this definition">¶</a></dt>
+<dd><p>Combined percent-of-premium load <span class="math notranslate nohighlight">\(V + Q\)</span>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.gross_rate">
+<span class="sig-name descname"><span class="pre">gross_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claims_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retention</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ratingmodels.RetentionLoad" title="ratingmodels.loading.RetentionLoad"><span class="pre">RetentionLoad</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/loading.html#gross_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.gross_rate" title="Link to this definition">¶</a></dt>
+<dd><p>Functional form of <a class="reference internal" href="#ratingmodels.RetentionLoad.gross_rate" title="ratingmodels.RetentionLoad.gross_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RetentionLoad.gross_rate()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.permissible_loss_ratio">
+<span class="sig-name descname"><span class="pre">permissible_loss_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">retention</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ratingmodels.RetentionLoad" title="ratingmodels.loading.RetentionLoad"><span class="pre">RetentionLoad</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">claims_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/loading.html#permissible_loss_ratio"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.permissible_loss_ratio" title="Link to this definition">¶</a></dt>
+<dd><p>Functional form of <a class="reference internal" href="#ratingmodels.RetentionLoad.implied_loss_ratio" title="ratingmodels.RetentionLoad.implied_loss_ratio"><code class="xref py py-meth docutils literal notranslate"><span class="pre">RetentionLoad.implied_loss_ratio()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.blend">
+<span class="sig-name descname"><span class="pre">blend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experience</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">credibility</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/blend.html#blend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.blend" title="Link to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(Z \cdot \text{experience} + (1-Z)\cdot \text{manual}\)</span>.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.RateIndication">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RateIndication</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">experience_claims_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_claims_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">credibility</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_loss_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.85</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_premium</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trend_total_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">benefit_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">demographic_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retention</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ratingmodels.RetentionLoad" title="ratingmodels.loading.RetentionLoad"><span class="pre">RetentionLoad</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/indication.html#RateIndication"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RateIndication" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Develop an indicated rate from experience and manual inputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>experience_claims_pmpm</strong> (<em>float</em>) – Trended, pooled, adjusted experience claims PMPM
+(see <a class="reference internal" href="#ratingmodels.ExperienceRate" title="ratingmodels.ExperienceRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">ratingmodels.ExperienceRate</span></code></a>).</p></li>
+<li><p><strong>manual_claims_pmpm</strong> (<em>float</em>) – Manual claims PMPM at the rating-period level
+(see <a class="reference internal" href="#ratingmodels.ManualRate" title="ratingmodels.ManualRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">ratingmodels.ManualRate</span></code></a>).</p></li>
+<li><p><strong>credibility</strong> (<em>float</em>) – Credibility <code class="docutils literal notranslate"><span class="pre">Z</span></code> assigned to experience, in [0, 1].</p></li>
+<li><p><strong>current_rate</strong> (<em>float</em>) – Current charged rate PMPM.</p></li>
+<li><p><strong>target_loss_ratio</strong> (<em>float</em>) – Claims / premium target used to load claims to a charged rate.</p></li>
+<li><p><strong>current_premium</strong> (<em>float</em><em>, </em><em>optional</em>) – On-level earned premium over the experience period; required only for
+the loss-ratio method.</p></li>
+<li><p><strong>exposure</strong> (<em>float</em><em>, </em><em>optional</em>) – Member-months over the experience period; required for the loss-ratio
+method (with <code class="docutils literal notranslate"><span class="pre">current_premium</span></code>) to form an experience loss ratio.</p></li>
+<li><p><strong>trend_total_factor</strong> (<em>float</em>) – Total claims trend factor <span class="math notranslate nohighlight">\((1+t)^\Delta\)</span>; used by the loss-ratio
+method’s trend-only side and by the decomposition. Default 1.0.</p></li>
+<li><p><strong>benefit_factor</strong> (<em>float</em>) – Driver factors for the rate-change decomposition. Default 1.0.</p></li>
+<li><p><strong>demographic_factor</strong> (<em>float</em>) – Driver factors for the rate-change decomposition. Default 1.0.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RateIndication.indicated_rate">
+<span class="sig-name descname"><span class="pre">indicated_rate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/indication.html#RateIndication.indicated_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RateIndication.indicated_rate" title="Link to this definition">¶</a></dt>
+<dd><p>Indicated charged rate (build-up method).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RateIndication.indicated_rate_change">
+<span class="sig-name descname"><span class="pre">indicated_rate_change</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/indication.html#RateIndication.indicated_rate_change"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RateIndication.indicated_rate_change" title="Link to this definition">¶</a></dt>
+<dd><p>Proportional change implied by the build-up indicated rate.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RateIndication.loss_ratio_indication">
+<span class="sig-name descname"><span class="pre">loss_ratio_indication</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/indication.html#RateIndication.loss_ratio_indication"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RateIndication.loss_ratio_indication" title="Link to this definition">¶</a></dt>
+<dd><p>Credibility-weighted loss-ratio rate change.</p>
+<p>Experience side: <code class="docutils literal notranslate"><span class="pre">exp_LR</span> <span class="pre">/</span> <span class="pre">target_LR</span> <span class="pre">-</span> <span class="pre">1</span></code>.
+Trend-only side: <code class="docutils literal notranslate"><span class="pre">trend_total_factor</span> <span class="pre">-</span> <span class="pre">1</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RateIndication.rate_change_decomposition">
+<span class="sig-name descname"><span class="pre">rate_change_decomposition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.RateChangeDecomposition" title="ratingmodels.decomposition.RateChangeDecomposition"><span class="pre">RateChangeDecomposition</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/indication.html#RateIndication.rate_change_decomposition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RateIndication.rate_change_decomposition" title="Link to this definition">¶</a></dt>
+<dd><p>Decompose the build-up indicated change into named drivers.</p>
+<p>Drivers:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">trend</span></code> – the claims trend factor,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">experience</span></code> – the credibility effect, blended/manual claims
+(equals 1 when <code class="docutils literal notranslate"><span class="pre">Z</span> <span class="pre">=</span> <span class="pre">0</span></code>),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">benefit</span></code> and <code class="docutils literal notranslate"><span class="pre">demographic</span></code> – supplied adjustment factors.</p></li>
+</ul>
+<p>Any remaining movement (rate adequacy / loading) is absorbed by an
+explicit <code class="docutils literal notranslate"><span class="pre">residual</span></code> factor so the parts reconcile to the total.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.decompose_rate_change">
+<span class="sig-name descname"><span class="pre">decompose_rate_change</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">factors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.RateChangeDecomposition" title="ratingmodels.decomposition.RateChangeDecomposition"><span class="pre">RateChangeDecomposition</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/decomposition.html#decompose_rate_change"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.decompose_rate_change" title="Link to this definition">¶</a></dt>
+<dd><p>Attribute a rate change to multiplicative drivers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>factors</strong> (<em>mapping</em>) – Named driver factors (e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;trend&quot;:</span> <span class="pre">1.075,</span> <span class="pre">&quot;experience&quot;:</span> <span class="pre">0.96,</span>
+<span class="pre">&quot;benefit&quot;:</span> <span class="pre">1.02,</span> <span class="pre">&quot;demographic&quot;:</span> <span class="pre">1.01}</span></code>). Each must be positive.</p></li>
+<li><p><strong>total_factor</strong> (<em>float</em><em>, </em><em>optional</em>) – Independently computed total change factor (indicated / current). If
+given and it differs from the product of <code class="docutils literal notranslate"><span class="pre">factors</span></code>, a <code class="docutils literal notranslate"><span class="pre">residual</span></code>
+factor is appended so the decomposition reconciles exactly. If omitted,
+the total is taken to be the product of the supplied factors.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.RateChangeDecomposition">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RateChangeDecomposition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contributions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/decomposition.html#RateChangeDecomposition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RateChangeDecomposition" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Result of <a class="reference internal" href="#ratingmodels.decompose_rate_change" title="ratingmodels.decompose_rate_change"><code class="xref py py-func docutils literal notranslate"><span class="pre">decompose_rate_change()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.cap_change">
+<span class="sig-name descname"><span class="pre">cap_change</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">floor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/constraints.html#cap_change"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.cap_change" title="Link to this definition">¶</a></dt>
+<dd><p>Clip a proportional rate change to <code class="docutils literal notranslate"><span class="pre">[floor,</span> <span class="pre">cap]</span></code> (either may be None).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.apply_cap">
+<span class="sig-name descname"><span class="pre">apply_cap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indicated_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">floor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/constraints.html#apply_cap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.apply_cap" title="Link to this definition">¶</a></dt>
+<dd><p>Return the charged rate after capping the implied change.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.band">
+<span class="sig-name descname"><span class="pre">band</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deadband</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/constraints.html#band"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.band" title="Link to this definition">¶</a></dt>
+<dd><p>Snap a change to zero within <code class="docutils literal notranslate"><span class="pre">deadband</span></code>; optionally to <code class="docutils literal notranslate"><span class="pre">step</span></code> grid.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.round_rate">
+<span class="sig-name descname"><span class="pre">round_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ndigits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/constraints.html#round_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.round_rate" title="Link to this definition">¶</a></dt>
+<dd><p>Round a rate to a filed precision (default cents).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.corridor">
+<span class="sig-name descname"><span class="pre">corridor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indicated_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_up</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_down</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/constraints.html#corridor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.corridor" title="Link to this definition">¶</a></dt>
+<dd><p>Limit a single renewal move to <code class="docutils literal notranslate"><span class="pre">[-max_down,</span> <span class="pre">+max_up]</span></code> proportionally.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.renew">
+<span class="sig-name descname"><span class="pre">renew</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indicated_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">floor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.RenewalAction" title="ratingmodels.renewal.RenewalAction"><span class="pre">RenewalAction</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/renewal.html#renew"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.renew" title="Link to this definition">¶</a></dt>
+<dd><p>Apply caps/floors (and optional rounding) to an indicated rate.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.RenewalAction">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RenewalAction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indicated_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proposed_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indicated_change</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proposed_change</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">capped</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/renewal.html#RenewalAction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RenewalAction" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Result of <a class="reference internal" href="#ratingmodels.renew" title="ratingmodels.renew"><code class="xref py py-func docutils literal notranslate"><span class="pre">renew()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.member_level_renewal">
+<span class="sig-name descname"><span class="pre">member_level_renewal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">census</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">member_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'members'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/renewal.html#member_level_renewal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.member_level_renewal" title="Link to this definition">¶</a></dt>
+<dd><p>Re-rate each census row as <code class="docutils literal notranslate"><span class="pre">base_rate</span> <span class="pre">*</span> <span class="pre">product(factor_cols)</span></code>.</p>
+<p>Returns the census with <code class="docutils literal notranslate"><span class="pre">member_rate</span></code> and <code class="docutils literal notranslate"><span class="pre">premium</span></code> columns; the group
+total is the sum of <code class="docutils literal notranslate"><span class="pre">premium</span></code>.</p>
+</dd></dl>
+
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="lossmodels.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">lossmodels</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="actuarialpy.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">actuarialpy</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, OpenActuarial
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">ratingmodels</a><ul>
+<li><a class="reference internal" href="#quickstart">Quickstart</a></li>
+<li><a class="reference internal" href="#the-build-up-engine">The build-up engine</a></li>
+<li><a class="reference internal" href="#module-ratingmodels">API reference</a><ul>
+<li><a class="reference internal" href="#ratingmodels.full_credibility_standard"><code class="docutils literal notranslate"><span class="pre">full_credibility_standard()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.limited_fluctuation_credibility"><code class="docutils literal notranslate"><span class="pre">limited_fluctuation_credibility()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.buhlmann_credibility"><code class="docutils literal notranslate"><span class="pre">buhlmann_credibility()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.buhlmann_straub"><code class="docutils literal notranslate"><span class="pre">buhlmann_straub()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.BuhlmannStraubResult"><code class="docutils literal notranslate"><span class="pre">BuhlmannStraubResult</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.trend_factor"><code class="docutils literal notranslate"><span class="pre">trend_factor()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.trend_factor_between"><code class="docutils literal notranslate"><span class="pre">trend_factor_between()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.apply_trend"><code class="docutils literal notranslate"><span class="pre">apply_trend()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.combine_trend"><code class="docutils literal notranslate"><span class="pre">combine_trend()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.split_total_trend"><code class="docutils literal notranslate"><span class="pre">split_total_trend()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.period_midpoint"><code class="docutils literal notranslate"><span class="pre">period_midpoint()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.years_between"><code class="docutils literal notranslate"><span class="pre">years_between()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.FactorTable"><code class="docutils literal notranslate"><span class="pre">FactorTable</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.FactorTable.normalized"><code class="docutils literal notranslate"><span class="pre">normalized()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.one_way_relativities"><code class="docutils literal notranslate"><span class="pre">one_way_relativities()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities"><code class="docutils literal notranslate"><span class="pre">GLMRelativities</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.coefficients_"><code class="docutils literal notranslate"><span class="pre">coefficients_</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.relativities_"><code class="docutils literal notranslate"><span class="pre">relativities_</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.base_value_"><code class="docutils literal notranslate"><span class="pre">base_value_</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.n_iter_"><code class="docutils literal notranslate"><span class="pre">n_iter_</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.deviance_"><code class="docutils literal notranslate"><span class="pre">deviance_</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.fit"><code class="docutils literal notranslate"><span class="pre">fit()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.predict"><code class="docutils literal notranslate"><span class="pre">predict()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.ManualRate"><code class="docutils literal notranslate"><span class="pre">ManualRate</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.ManualRate.breakdown"><code class="docutils literal notranslate"><span class="pre">breakdown()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.ManualRate.claims_pmpm"><code class="docutils literal notranslate"><span class="pre">claims_pmpm()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.ManualRate.rate"><code class="docutils literal notranslate"><span class="pre">rate()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.ManualRate.steps"><code class="docutils literal notranslate"><span class="pre">steps()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.manual_pmpm"><code class="docutils literal notranslate"><span class="pre">manual_pmpm()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.aggregate_demographic_factor"><code class="docutils literal notranslate"><span class="pre">aggregate_demographic_factor()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.ExperienceRate"><code class="docutils literal notranslate"><span class="pre">ExperienceRate</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.ExperienceRate.claims_pmpm"><code class="docutils literal notranslate"><span class="pre">claims_pmpm()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.ExperienceRate.pooled_claims_pmpm"><code class="docutils literal notranslate"><span class="pre">pooled_claims_pmpm()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.ExperienceRate.rate"><code class="docutils literal notranslate"><span class="pre">rate()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.pool_claims"><code class="docutils literal notranslate"><span class="pre">pool_claims()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.expected_excess_charge"><code class="docutils literal notranslate"><span class="pre">expected_excess_charge()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.base_rate_from_experience"><code class="docutils literal notranslate"><span class="pre">base_rate_from_experience()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.BaseRateResult"><code class="docutils literal notranslate"><span class="pre">BaseRateResult</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.average_relativity"><code class="docutils literal notranslate"><span class="pre">average_relativity()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.off_balance_factor"><code class="docutils literal notranslate"><span class="pre">off_balance_factor()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.rebalance_base_rate"><code class="docutils literal notranslate"><span class="pre">rebalance_base_rate()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.Step"><code class="docutils literal notranslate"><span class="pre">Step</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.start"><code class="docutils literal notranslate"><span class="pre">start()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.multiply"><code class="docutils literal notranslate"><span class="pre">multiply()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.add"><code class="docutils literal notranslate"><span class="pre">add()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.segment_multiply"><code class="docutils literal notranslate"><span class="pre">segment_multiply()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.checkpoint"><code class="docutils literal notranslate"><span class="pre">checkpoint()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.evaluate"><code class="docutils literal notranslate"><span class="pre">evaluate()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.BuildUp"><code class="docutils literal notranslate"><span class="pre">BuildUp</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.BuildUpResult"><code class="docutils literal notranslate"><span class="pre">BuildUpResult</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.BuildUpResult.value"><code class="docutils literal notranslate"><span class="pre">value</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.BuildUpResult.breakdown"><code class="docutils literal notranslate"><span class="pre">breakdown</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.BuildUpResult.subtotals"><code class="docutils literal notranslate"><span class="pre">subtotals</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.BuildUpResult.steps"><code class="docutils literal notranslate"><span class="pre">steps</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.BuildUpResult.subtotal"><code class="docutils literal notranslate"><span class="pre">subtotal()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.participation_blend"><code class="docutils literal notranslate"><span class="pre">participation_blend()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.combine_streams"><code class="docutils literal notranslate"><span class="pre">combine_streams()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RetentionLoad"><code class="docutils literal notranslate"><span class="pre">RetentionLoad</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.RetentionLoad.expense_and_profit_ratio"><code class="docutils literal notranslate"><span class="pre">expense_and_profit_ratio()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RetentionLoad.from_items"><code class="docutils literal notranslate"><span class="pre">from_items()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RetentionLoad.gross_rate"><code class="docutils literal notranslate"><span class="pre">gross_rate()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RetentionLoad.implied_loss_ratio"><code class="docutils literal notranslate"><span class="pre">implied_loss_ratio()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RetentionLoad.variable_and_profit"><code class="docutils literal notranslate"><span class="pre">variable_and_profit</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.gross_rate"><code class="docutils literal notranslate"><span class="pre">gross_rate()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.permissible_loss_ratio"><code class="docutils literal notranslate"><span class="pre">permissible_loss_ratio()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.blend"><code class="docutils literal notranslate"><span class="pre">blend()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RateIndication"><code class="docutils literal notranslate"><span class="pre">RateIndication</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.RateIndication.indicated_rate"><code class="docutils literal notranslate"><span class="pre">indicated_rate()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RateIndication.indicated_rate_change"><code class="docutils literal notranslate"><span class="pre">indicated_rate_change()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RateIndication.loss_ratio_indication"><code class="docutils literal notranslate"><span class="pre">loss_ratio_indication()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RateIndication.rate_change_decomposition"><code class="docutils literal notranslate"><span class="pre">rate_change_decomposition()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.decompose_rate_change"><code class="docutils literal notranslate"><span class="pre">decompose_rate_change()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RateChangeDecomposition"><code class="docutils literal notranslate"><span class="pre">RateChangeDecomposition</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.cap_change"><code class="docutils literal notranslate"><span class="pre">cap_change()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.apply_cap"><code class="docutils literal notranslate"><span class="pre">apply_cap()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.band"><code class="docutils literal notranslate"><span class="pre">band()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.round_rate"><code class="docutils literal notranslate"><span class="pre">round_rate()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.corridor"><code class="docutils literal notranslate"><span class="pre">corridor()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.renew"><code class="docutils literal notranslate"><span class="pre">renew()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RenewalAction"><code class="docutils literal notranslate"><span class="pre">RenewalAction</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.member_level_renewal"><code class="docutils literal notranslate"><span class="pre">member_level_renewal()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=30ae2a11"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    </body>
+</html>

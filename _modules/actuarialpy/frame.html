@@ -1,0 +1,1624 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
+        <title>actuarialpy.frame - OpenActuarial</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=1ce1b86a" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --color-brand-primary: #0b6bcb;
+  --color-brand-content: #0b6bcb;
+  --font-stack--monospace: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #4098e6;
+  --color-brand-content: #4098e6;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #4098e6;
+  --color-brand-content: #4098e6;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">OpenActuarial</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  <span class="sidebar-brand-text">OpenActuarial</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../actuarialpy.html">actuarialpy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ratingmodels.html">ratingmodels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../lossmodels.html">lossmodels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../extremeloss.html">extremeloss</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../risksim.html">risksim</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for actuarialpy.frame</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Stateful facade for experience-analysis workflows.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">replace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pandas.api.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_numeric_dtype</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.banding</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize_by_band</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.claimants</span><span class="w"> </span><span class="kn">import</span> <span class="n">claim_concentration</span><span class="p">,</span> <span class="n">summarize_claimants</span><span class="p">,</span> <span class="n">top_claimants</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.cohorts</span><span class="w"> </span><span class="kn">import</span> <span class="n">cohort_summary</span><span class="p">,</span> <span class="n">duration_summary</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.columns</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">sum_columns</span><span class="p">,</span> <span class="n">validate_columns</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.components</span><span class="w"> </span><span class="kn">import</span> <span class="n">component_driver_analysis</span><span class="p">,</span> <span class="n">summarize_components</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.credibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">credibility_weighted_estimate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.decomposition</span><span class="w"> </span><span class="kn">import</span> <span class="n">decompose_pmpm_trend</span><span class="p">,</span> <span class="n">frequency_severity_summary</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.expected</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize_actual_vs_expected</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.experience</span><span class="w"> </span><span class="kn">import</span> <span class="n">status_summary</span><span class="p">,</span> <span class="n">summarize_experience</span><span class="p">,</span> <span class="n">summarize_views</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.lifecycle</span><span class="w"> </span><span class="kn">import</span> <span class="n">derive_status</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">per_exposure</span><span class="p">,</span> <span class="n">safe_divide</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.pooling</span><span class="w"> </span><span class="kn">import</span> <span class="n">pool_losses</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.adjustments</span><span class="w"> </span><span class="kn">import</span> <span class="n">adjust</span> <span class="k">as</span> <span class="n">_adjust</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.reserving</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_completion</span> <span class="k">as</span> <span class="n">_apply_completion</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.rolling</span><span class="w"> </span><span class="kn">import</span> <span class="n">rolling_summary</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.seasonality</span><span class="w"> </span><span class="kn">import</span> <span class="n">deseasonalize</span> <span class="k">as</span> <span class="n">_deseasonalize</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.trend</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrendFit</span><span class="p">,</span> <span class="n">_comparison_masks</span><span class="p">,</span> <span class="n">fit_trend</span> <span class="k">as</span> <span class="n">_fit_trend</span><span class="p">,</span> <span class="n">trend_summary</span>
+
+<span class="n">_ID_LIKE_EXPOSURE_NAMES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;member_id&quot;</span><span class="p">,</span> <span class="s2">&quot;subscriber_id&quot;</span><span class="p">,</span> <span class="s2">&quot;group_id&quot;</span><span class="p">,</span> <span class="s2">&quot;employee_id&quot;</span><span class="p">,</span> <span class="s2">&quot;policy_id&quot;</span><span class="p">,</span> <span class="s2">&quot;claim_id&quot;</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_exposure_names</span><span class="p">(</span><span class="n">exposures</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">bad</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">exposures</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">_ID_LIKE_EXPOSURE_NAMES</span> <span class="ow">or</span> <span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_id&quot;</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">bad</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Exposure columns must be numeric exposure measures, not identifiers. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Invalid exposure column(s): </span><span class="si">{</span><span class="n">bad</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_numeric_columns</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">cols</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">bad</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">])]</span>
+    <span class="k">if</span> <span class="n">bad</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">role</span><span class="si">}</span><span class="s2"> columns must be numeric. Non-numeric column(s): </span><span class="si">{</span><span class="n">bad</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Experience">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Experience</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bind an experience dataset to its actuarial column roles.</span>
+
+<span class="sd">    ``Experience`` is the recommended entry point for repeated experience-analysis</span>
+<span class="sd">    workflows. It stores common column roles once and delegates calculations to</span>
+<span class="sd">    the package&#39;s free functions. The object is immutable: methods return</span>
+<span class="sd">    DataFrames or new ``Experience`` objects rather than changing stored data in</span>
+<span class="sd">    place.</span>
+
+<span class="sd">    Bind ``count`` (a claim or service count) to unlock the frequency-severity views:</span>
+<span class="sd">    :meth:`frequency_severity` and :meth:`decompose_trend` (utilization x unit cost,</span>
+<span class="sd">    optionally x mix). :meth:`fit_trend` regresses a developed trend on the bound history.</span>
+
+<span class="sd">    **Grain matters.** ``Experience`` aggregates by *summing* the bound columns, so it</span>
+<span class="sd">    expects rows at the grain of the exposure unit -- one row per member-month, with</span>
+<span class="sd">    ``member_months`` = 1 (or the eligible fraction). If your data is *long* (one row per</span>
+<span class="sd">    service line, so the same member-month repeats across several rows), summing the</span>
+<span class="sd">    exposure column overcounts it, and every per-exposure figure -- PMPM, frequency, the</span>
+<span class="sd">    loss-ratio denominator -- is wrong by the number of rows per member-month. ``Experience``</span>
+<span class="sd">    does not detect this: it has no member key, so it cannot tell a long frame from a wide</span>
+<span class="sd">    one. For long or multi-table warehouse data, either aggregate to member-month grain</span>
+<span class="sd">    first, or use :meth:`bind`, which sources exposure from a correctly-grained table (e.g.</span>
+<span class="sd">    eligibility) via :class:`~actuarialpy.Count` and never sums a repeated column.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+    <span class="n">expense</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">revenue</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">exposure</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">date</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">count</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;expense&quot;</span><span class="p">,</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;revenue&quot;</span><span class="p">,</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">:</span>
+            <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+        <span class="n">required</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)</span> <span class="o">+</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">)</span> <span class="o">+</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">required</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">date</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">required</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+        <span class="n">validate_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">required</span><span class="p">)</span>
+        <span class="n">_validate_exposure_names</span><span class="p">(</span><span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">))</span>
+        <span class="n">_validate_numeric_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">),</span> <span class="n">role</span><span class="o">=</span><span class="s2">&quot;Expense&quot;</span><span class="p">)</span>
+        <span class="n">_validate_numeric_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">),</span> <span class="n">role</span><span class="o">=</span><span class="s2">&quot;Revenue&quot;</span><span class="p">)</span>
+        <span class="n">_validate_numeric_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">),</span> <span class="n">role</span><span class="o">=</span><span class="s2">&quot;Exposure&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_validate_numeric_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">],</span> <span class="n">role</span><span class="o">=</span><span class="s2">&quot;Count&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Experience.with_roles">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.with_roles">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">with_roles</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">expense</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">revenue</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exposure</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">count</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Experience&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new ``Experience`` object with updated data or roles.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">replace</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">data</span><span class="p">,</span>
+            <span class="n">expense</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span> <span class="k">if</span> <span class="n">expense</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">expense</span><span class="p">,</span>
+            <span class="n">revenue</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">revenue</span> <span class="k">if</span> <span class="n">revenue</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">revenue</span><span class="p">,</span>
+            <span class="n">exposure</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">exposure</span><span class="p">,</span>
+            <span class="n">date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">date</span> <span class="k">if</span> <span class="n">date</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">date</span><span class="p">,</span>
+            <span class="n">profile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span> <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">profile</span><span class="p">,</span>
+            <span class="n">count</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="k">if</span> <span class="n">count</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">count</span><span class="p">,</span>
+            <span class="n">copy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">copy</span> <span class="k">if</span> <span class="n">copy</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">copy</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.filter">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.filter">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filter</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">mask</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Experience&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new ``Experience`` object over a filtered dataset.</span>
+
+<span class="sd">        Use either a boolean mask or a pandas query string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">query</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Pass exactly one of mask or query.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">query</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;pd.DataFrame&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">with_roles</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.deseasonalize">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.deseasonalize">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deseasonalize</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">factors</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;M&quot;</span><span class="p">,</span>
+        <span class="n">by</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Experience&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new ``Experience`` with the seasonal pattern divided out.</span>
+
+<span class="sd">        Each selected column is divided by its row&#39;s seasonal factor (as produced by</span>
+<span class="sd">        :func:`seasonality_factors`), in place under the same name, so every</span>
+<span class="sd">        downstream view -- :meth:`trend`, :meth:`rolling`, :meth:`by`, and the rest --</span>
+<span class="sd">        then operates on the deseasonalized series. By default the expense</span>
+<span class="sd">        (loss / claims) columns are adjusted; pass ``columns`` to choose others. Only</span>
+<span class="sd">        the numerator is touched: exposure is left alone, so a deseasonalized PMPM is</span>
+<span class="sd">        simply deseasonalized claims over unchanged member months.</span>
+
+<span class="sd">        ``factors`` may be a flat Series (one pattern) or a tidy per-segment table from</span>
+<span class="sd">        :func:`seasonality_factors_by`; with the latter, pass ``by`` naming the grouping</span>
+<span class="sd">        column(s) to join on group plus season. Estimate factors on the broader pool,</span>
+<span class="sd">        not on this object&#39;s own (often thin) data. To put the pattern back, apply</span>
+<span class="sd">        :func:`apply_seasonality` to ``.data``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">resolved_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_date_col</span><span class="p">(</span><span class="n">date_col</span><span class="p">)</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No columns to deseasonalize; pass columns=... or bind an expense role.&quot;</span><span class="p">)</span>
+        <span class="n">validate_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">cols</span> <span class="o">+</span> <span class="p">[</span><span class="n">resolved_date</span><span class="p">]</span> <span class="o">+</span> <span class="n">as_list</span><span class="p">(</span><span class="n">by</span><span class="p">))</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">_deseasonalize</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">,</span> <span class="n">factors</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="n">resolved_date</span><span class="p">,</span> <span class="n">value_col</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="n">by</span><span class="p">,</span> <span class="n">out_col</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">with_roles</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.complete">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.complete">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">factors</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">valuation_date</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">development_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">by</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Experience&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new ``Experience`` with paid amounts developed to ultimate.</span>
+
+<span class="sd">        Grosses the expense (loss / claims) columns up to estimated ultimate in place</span>
+<span class="sd">        under the same names -- ``completed = paid / completion_factor`` -- so downstream</span>
+<span class="sd">        views (:meth:`trend`, :meth:`rolling`, :meth:`by`, ...) then run on the completed</span>
+<span class="sd">        series. Each row&#39;s development period is</span>
+<span class="sd">        ``development_months(date, valuation_date)`` (the convention</span>
+<span class="sd">        :func:`make_completion_triangle` uses), or an explicit ``development_col``. The</span>
+<span class="sd">        join is by value, so the frame&#39;s index is irrelevant; rows past the triangle&#39;s</span>
+<span class="sd">        last development period are taken as fully complete, and only recent, immature</span>
+<span class="sd">        months actually move.</span>
+
+<span class="sd">        ``factors`` may be a flat Series (one pattern, from :func:`completion_factors`)</span>
+<span class="sd">        or a tidy per-segment table from :func:`completion_factors_by`; with the latter,</span>
+<span class="sd">        pass ``by`` naming the grouping column(s) to join on group plus development</span>
+<span class="sd">        period. Only the numerator is developed -- exposure is left untouched. This</span>
+<span class="sd">        applies to the latest-diagonal shape (one row per incurred month, ``claims``</span>
+<span class="sd">        paid-to-date as of ``valuation_date``); a frame already on an ultimate basis must</span>
+<span class="sd">        not be completed again.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No columns to complete; pass columns=... or bind an expense role.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">development_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">resolved_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_date_col</span><span class="p">(</span><span class="n">date_col</span><span class="p">)</span>
+            <span class="n">validate_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">cols</span> <span class="o">+</span> <span class="p">[</span><span class="n">resolved_date</span><span class="p">]</span> <span class="o">+</span> <span class="n">as_list</span><span class="p">(</span><span class="n">by</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">resolved_date</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">validate_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">cols</span> <span class="o">+</span> <span class="p">[</span><span class="n">development_col</span><span class="p">]</span> <span class="o">+</span> <span class="n">as_list</span><span class="p">(</span><span class="n">by</span><span class="p">))</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">_apply_completion</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">,</span>
+                <span class="n">factors</span><span class="p">,</span>
+                <span class="n">value_col</span><span class="o">=</span><span class="n">col</span><span class="p">,</span>
+                <span class="n">date_col</span><span class="o">=</span><span class="n">resolved_date</span><span class="p">,</span>
+                <span class="n">valuation_date</span><span class="o">=</span><span class="n">valuation_date</span><span class="p">,</span>
+                <span class="n">development_col</span><span class="o">=</span><span class="n">development_col</span><span class="p">,</span>
+                <span class="n">by</span><span class="o">=</span><span class="n">by</span><span class="p">,</span>
+                <span class="n">out_col</span><span class="o">=</span><span class="n">col</span><span class="p">,</span>
+                <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">with_roles</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.adjust">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.adjust">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">adjust</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">factors</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">on</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">columns</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">by</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">how</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;multiply&quot;</span><span class="p">,</span>
+        <span class="n">factor_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;factor&quot;</span><span class="p">,</span>
+        <span class="n">audit_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">default</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Experience&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new ``Experience`` with an expense column restated by a factor.</span>
+
+<span class="sd">        The general counterpart to :meth:`complete` and :meth:`deseasonalize`: joins a</span>
+<span class="sd">        factor by the key ``on`` (a column already in the frame, optionally within ``by``</span>
+<span class="sd">        segments) and multiplies -- or, with ``how=&quot;divide&quot;``, divides -- the selected</span>
+<span class="sd">        column(s) in place under the same name, so every downstream view composes on the</span>
+<span class="sd">        restated series. ``factors`` is a scalar (one factor for all rows), a Series</span>
+<span class="sd">        indexed by ``on``, or a tidy DataFrame keyed by ``by + on``.</span>
+
+<span class="sd">        This is the spine of experience-period restatement -- trend, benefit / area /</span>
+<span class="sd">        demographic relativities, network discounts -- where the methodology is supplied</span>
+<span class="sd">        as the factors rather than encoded here. Chain freely</span>
+<span class="sd">        (``exp.complete(...).adjust(trend).adjust(area, on=&quot;region&quot;)``); with ``audit_col``</span>
+<span class="sd">        the cumulative restatement multiplier is carried across the chain, one value per</span>
+<span class="sd">        row, for a reviewable audit trail. An absent key surfaces as ``NaN`` unless</span>
+<span class="sd">        ``default`` is given (``default=1.0`` to mean &quot;no adjustment for this key&quot;).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No columns to adjust; pass columns=... or bind an expense role.&quot;</span><span class="p">)</span>
+        <span class="n">validate_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">cols</span> <span class="o">+</span> <span class="n">as_list</span><span class="p">(</span><span class="n">on</span><span class="p">)</span> <span class="o">+</span> <span class="n">as_list</span><span class="p">(</span><span class="n">by</span><span class="p">))</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">_adjust</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">,</span>
+                <span class="n">factors</span><span class="p">,</span>
+                <span class="n">value_col</span><span class="o">=</span><span class="n">col</span><span class="p">,</span>
+                <span class="n">on</span><span class="o">=</span><span class="n">on</span><span class="p">,</span>
+                <span class="n">by</span><span class="o">=</span><span class="n">by</span><span class="p">,</span>
+                <span class="n">how</span><span class="o">=</span><span class="n">how</span><span class="p">,</span>
+                <span class="n">factor_col</span><span class="o">=</span><span class="n">factor_col</span><span class="p">,</span>
+                <span class="n">out_col</span><span class="o">=</span><span class="n">col</span><span class="p">,</span>
+                <span class="n">audit_col</span><span class="o">=</span><span class="n">audit_col</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span>
+                <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">with_roles</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.by">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.by">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">by</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Summarize experience by optional grouping columns.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">summarize_experience</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">expense_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)),</span>
+            <span class="n">revenue_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">)),</span>
+            <span class="n">exposure_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)),</span>
+            <span class="n">profile</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.views">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.views">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">views</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">views</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create several named grouped experience views.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">summarize_views</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">views</span><span class="o">=</span><span class="n">views</span><span class="p">,</span>
+            <span class="n">expense_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)),</span>
+            <span class="n">revenue_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">)),</span>
+            <span class="n">exposure_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)),</span>
+            <span class="n">profile</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.rolling">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.rolling">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rolling</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a rolling-period experience summary.&quot;&quot;&quot;</span>
+        <span class="n">resolved_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_date_col</span><span class="p">(</span><span class="n">date_col</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rolling_summary</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">date_col</span><span class="o">=</span><span class="n">resolved_date</span><span class="p">,</span>
+            <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">expense_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)),</span>
+            <span class="n">revenue_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">)),</span>
+            <span class="n">exposure_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)),</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.trend">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.trend">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trend</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">amount_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exposure_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compare amount or per-exposure experience between two periods.&quot;&quot;&quot;</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">resolved_amount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_with_amount</span><span class="p">(</span><span class="n">amount_col</span><span class="p">)</span>
+        <span class="c1"># Use the bound date column only for date-range comparisons. If the</span>
+        <span class="c1"># caller supplies period_col/prior_period/current_period, passing the</span>
+        <span class="c1"># bound date column would create two comparison modes and incorrectly</span>
+        <span class="c1"># raise an error.</span>
+        <span class="n">resolved_date</span> <span class="o">=</span> <span class="n">date_col</span> <span class="k">if</span> <span class="n">date_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">date</span>
+        <span class="k">if</span> <span class="s2">&quot;period_col&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="n">date_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">resolved_date</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">trend_summary</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span>
+            <span class="n">amount_col</span><span class="o">=</span><span class="n">resolved_amount</span><span class="p">,</span>
+            <span class="n">exposure_col</span><span class="o">=</span><span class="n">exposure_col</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_exposure_or_none</span><span class="p">(),</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">date_col</span><span class="o">=</span><span class="n">resolved_date</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.frequency_severity">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.frequency_severity">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">frequency_severity</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">count_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">loss_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exposure_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">annualization</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Per-group claim frequency, severity, and PMPM (see ``frequency_severity_summary``).</span>
+
+<span class="sd">        Uses the bound ``count``, ``expense`` (as the loss), and ``exposure`` roles, so the</span>
+<span class="sd">        columns are specified once on the object. The identity ``pmpm == frequency *</span>
+<span class="sd">        severity`` holds for every row.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">resolved_loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_with_amount</span><span class="p">(</span><span class="n">loss_col</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">frequency_severity_summary</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span>
+            <span class="n">count_col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolve_count</span><span class="p">(</span><span class="n">count_col</span><span class="p">),</span>
+            <span class="n">loss_col</span><span class="o">=</span><span class="n">resolved_loss</span><span class="p">,</span>
+            <span class="n">exposure_col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolve_exposure</span><span class="p">(</span><span class="n">exposure_col</span><span class="p">),</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">annualization</span><span class="o">=</span><span class="n">annualization</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.decompose_trend">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.decompose_trend">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decompose_trend</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">count_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">loss_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exposure_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mix_by</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">period_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">prior_period</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">current_period</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">prior_start</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">prior_end</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">current_start</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">current_end</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">prior_filter</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">current_filter</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">annualization</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Decompose the PMPM trend between two periods of the bound data.</span>
+
+<span class="sd">        Splits the bound frame into prior and current with the same comparison modes as</span>
+<span class="sd">        :meth:`trend` -- ``period_col`` with ``prior_period`` / ``current_period``, a</span>
+<span class="sd">        ``date_col`` with prior/current ranges (the bound ``date`` is used when no</span>
+<span class="sd">        ``date_col`` is passed), or explicit ``prior_filter`` / ``current_filter`` masks --</span>
+<span class="sd">        then decomposes the change via :func:`decompose_pmpm_trend`, using the bound</span>
+<span class="sd">        ``count``, ``expense`` (as the loss), and ``exposure`` roles. Pass ``mix_by`` to add</span>
+<span class="sd">        the third LMDI mix term; ``groupby`` reports one decomposition per group.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">resolved_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_count</span><span class="p">(</span><span class="n">count_col</span><span class="p">)</span>
+        <span class="n">resolved_exposure</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_exposure</span><span class="p">(</span><span class="n">exposure_col</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">resolved_loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_with_amount</span><span class="p">(</span><span class="n">loss_col</span><span class="p">)</span>
+        <span class="n">date_mode</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">date_col</span><span class="p">,</span> <span class="n">prior_start</span><span class="p">,</span> <span class="n">prior_end</span><span class="p">,</span> <span class="n">current_start</span><span class="p">,</span> <span class="n">current_end</span><span class="p">))</span>
+        <span class="n">resolved_date</span> <span class="o">=</span> <span class="p">(</span><span class="n">date_col</span> <span class="k">if</span> <span class="n">date_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">date</span><span class="p">)</span> <span class="k">if</span> <span class="n">date_mode</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">prior_mask</span><span class="p">,</span> <span class="n">current_mask</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_comparison_masks</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span>
+            <span class="n">period_col</span><span class="o">=</span><span class="n">period_col</span><span class="p">,</span>
+            <span class="n">prior_period</span><span class="o">=</span><span class="n">prior_period</span><span class="p">,</span>
+            <span class="n">current_period</span><span class="o">=</span><span class="n">current_period</span><span class="p">,</span>
+            <span class="n">date_col</span><span class="o">=</span><span class="n">resolved_date</span><span class="p">,</span>
+            <span class="n">prior_start</span><span class="o">=</span><span class="n">prior_start</span><span class="p">,</span>
+            <span class="n">prior_end</span><span class="o">=</span><span class="n">prior_end</span><span class="p">,</span>
+            <span class="n">current_start</span><span class="o">=</span><span class="n">current_start</span><span class="p">,</span>
+            <span class="n">current_end</span><span class="o">=</span><span class="n">current_end</span><span class="p">,</span>
+            <span class="n">prior_filter</span><span class="o">=</span><span class="n">prior_filter</span><span class="p">,</span>
+            <span class="n">current_filter</span><span class="o">=</span><span class="n">current_filter</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">decompose_pmpm_trend</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">prior_mask</span><span class="p">],</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_mask</span><span class="p">],</span>
+            <span class="n">count_col</span><span class="o">=</span><span class="n">resolved_count</span><span class="p">,</span>
+            <span class="n">loss_col</span><span class="o">=</span><span class="n">resolved_loss</span><span class="p">,</span>
+            <span class="n">exposure_col</span><span class="o">=</span><span class="n">resolved_exposure</span><span class="p">,</span>
+            <span class="n">on</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">mix_by</span><span class="o">=</span><span class="n">mix_by</span><span class="p">,</span>
+            <span class="n">annualization</span><span class="o">=</span><span class="n">annualization</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.fit_trend">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.fit_trend">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit_trend</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">value_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exposure_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;M&quot;</span><span class="p">,</span>
+        <span class="n">min_periods</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrendFit</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit an exponential trend to the bound experience by log-linear regression.</span>
+
+<span class="sd">        Defaults to the bound ``expense`` (claims) over the bound ``exposure`` -- the PMPM</span>
+<span class="sd">        trend -- across the bound ``date``; pass ``value_col`` / ``exposure_col`` to</span>
+<span class="sd">        override, or leave the exposure unbound to trend the raw amount. Returns a</span>
+<span class="sd">        ``TrendFit`` (see :func:`fit_trend`). Run on completed, deseasonalized history.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">resolved_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_with_amount</span><span class="p">(</span><span class="n">value_col</span><span class="p">)</span>
+        <span class="n">resolved_exposure</span> <span class="o">=</span> <span class="n">exposure_col</span> <span class="k">if</span> <span class="n">exposure_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_exposure_or_none</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">_fit_trend</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span>
+            <span class="n">value_col</span><span class="o">=</span><span class="n">resolved_value</span><span class="p">,</span>
+            <span class="n">date_col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolve_date_col</span><span class="p">(</span><span class="n">date_col</span><span class="p">),</span>
+            <span class="n">exposure_col</span><span class="o">=</span><span class="n">resolved_exposure</span><span class="p">,</span>
+            <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span>
+            <span class="n">min_periods</span><span class="o">=</span><span class="n">min_periods</span><span class="p">,</span>
+            <span class="n">confidence</span><span class="o">=</span><span class="n">confidence</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.components">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.components">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">components</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">component_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">exposure_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Explain component drivers between two periods.&quot;&quot;&quot;</span>
+        <span class="c1"># Use the bound date column only for date-range comparisons. If the</span>
+        <span class="c1"># caller supplies period_col/prior_period/current_period, passing the</span>
+        <span class="c1"># bound date column would create two comparison modes and incorrectly</span>
+        <span class="c1"># raise an error.</span>
+        <span class="n">resolved_date</span> <span class="o">=</span> <span class="n">date_col</span> <span class="k">if</span> <span class="n">date_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">date</span>
+        <span class="k">if</span> <span class="s2">&quot;period_col&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="n">date_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">resolved_date</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">component_driver_analysis</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">component_cols</span><span class="o">=</span><span class="n">component_cols</span><span class="p">,</span>
+            <span class="n">exposure_col</span><span class="o">=</span><span class="n">exposure_col</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_exposure_or_none</span><span class="p">(),</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">date_col</span><span class="o">=</span><span class="n">resolved_date</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.component_summary">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.component_summary">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">component_summary</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">component_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exposure_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Summarize component amounts, per-exposure values, and shares.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">summarize_components</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">component_cols</span><span class="o">=</span><span class="n">component_cols</span><span class="p">,</span>
+            <span class="n">exposure_col</span><span class="o">=</span><span class="n">exposure_col</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_exposure_or_none</span><span class="p">(),</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.actual_vs_expected">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.actual_vs_expected">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">actual_vs_expected</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">expected</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">actual</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exposure</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Summarize actual-versus-expected experience.</span>
+
+<span class="sd">        If ``actual`` is omitted, the object&#39;s bound expense columns are used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">summarize_actual_vs_expected</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">actual_cols</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span> <span class="k">if</span> <span class="n">actual</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">actual</span><span class="p">,</span>
+            <span class="n">expected_cols</span><span class="o">=</span><span class="n">expected</span><span class="p">,</span>
+            <span class="n">exposure_cols</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">exposure</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.claimants">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.claimants">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">claimants</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">claimant_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">amount_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exposure_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregate the experience to claimant/member/risk level.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">summarize_claimants</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">claimant_col</span><span class="o">=</span><span class="n">claimant_col</span><span class="p">,</span>
+            <span class="n">amount_cols</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span> <span class="k">if</span> <span class="n">amount_cols</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">amount_cols</span><span class="p">,</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">exposure_col</span><span class="o">=</span><span class="n">exposure_col</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.top_claimants">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.top_claimants">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">top_claimants</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">claimant_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">amount_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">amount_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">25</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return top claimants by amount.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">top_claimants</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">claimant_col</span><span class="o">=</span><span class="n">claimant_col</span><span class="p">,</span>
+            <span class="n">amount_cols</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span> <span class="k">if</span> <span class="n">amount_cols</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">amount_col</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">amount_cols</span><span class="p">,</span>
+            <span class="n">amount_col</span><span class="o">=</span><span class="n">amount_col</span><span class="p">,</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.claimant_concentration">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.claimant_concentration">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">claimant_concentration</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">claimant_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">amount_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Summarize how concentrated experience is among top claimants.&quot;&quot;&quot;</span>
+        <span class="n">claimant_summary</span> <span class="o">=</span> <span class="n">summarize_claimants</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">claimant_col</span><span class="o">=</span><span class="n">claimant_col</span><span class="p">,</span>
+            <span class="n">amount_cols</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span> <span class="k">if</span> <span class="n">amount_cols</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">amount_cols</span><span class="p">,</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">claim_concentration</span><span class="p">(</span><span class="n">claimant_summary</span><span class="p">,</span> <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.cohort">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.cohort">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cohort</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">entity_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">start_date_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">duration_months</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Summarize each entity&#39;s first N months or cohort-duration window.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cohort_summary</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">entity_col</span><span class="o">=</span><span class="n">entity_col</span><span class="p">,</span>
+            <span class="n">date_col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolve_date_col</span><span class="p">(</span><span class="n">date_col</span><span class="p">),</span>
+            <span class="n">start_date_col</span><span class="o">=</span><span class="n">start_date_col</span><span class="p">,</span>
+            <span class="n">duration_months</span><span class="o">=</span><span class="n">duration_months</span><span class="p">,</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">expense_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)),</span>
+            <span class="n">revenue_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">)),</span>
+            <span class="n">exposure_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)),</span>
+            <span class="n">profile</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.duration">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.duration">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">duration</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">entity_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">start_date_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">max_duration_month</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Summarize experience by duration month since entity start.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">duration_summary</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">entity_col</span><span class="o">=</span><span class="n">entity_col</span><span class="p">,</span>
+            <span class="n">date_col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolve_date_col</span><span class="p">(</span><span class="n">date_col</span><span class="p">),</span>
+            <span class="n">start_date_col</span><span class="o">=</span><span class="n">start_date_col</span><span class="p">,</span>
+            <span class="n">expense_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)),</span>
+            <span class="n">revenue_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">)),</span>
+            <span class="n">exposure_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)),</span>
+            <span class="n">max_duration_month</span><span class="o">=</span><span class="n">max_duration_month</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.by_status">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.by_status">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">by_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">entity_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Summarize experience by a status column.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">status_summary</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">status_col</span><span class="o">=</span><span class="n">status_col</span><span class="p">,</span>
+            <span class="n">entity_col</span><span class="o">=</span><span class="n">entity_col</span><span class="p">,</span>
+            <span class="n">expense_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)),</span>
+            <span class="n">revenue_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">)),</span>
+            <span class="n">exposure_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)),</span>
+            <span class="n">profile</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.with_status">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.with_status">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">with_status</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">effective_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">as_of</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">termination_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">first_year_months</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+        <span class="n">status_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;status&quot;</span><span class="p">,</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Experience&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a new ``Experience`` with a derived lifecycle status column.</span>
+
+<span class="sd">        Derives active / first-year / termed from effective and termination dates</span>
+<span class="sd">        as of a reference date (see :func:`actuarialpy.derive_status`). Summarize</span>
+<span class="sd">        the result with :meth:`by_status`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">derive_status</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">effective_col</span><span class="o">=</span><span class="n">effective_col</span><span class="p">,</span>
+            <span class="n">as_of</span><span class="o">=</span><span class="n">as_of</span><span class="p">,</span>
+            <span class="n">termination_col</span><span class="o">=</span><span class="n">termination_col</span><span class="p">,</span>
+            <span class="n">first_year_months</span><span class="o">=</span><span class="n">first_year_months</span><span class="p">,</span>
+            <span class="n">status_col</span><span class="o">=</span><span class="n">status_col</span><span class="p">,</span>
+            <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">with_roles</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.by_band">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.by_band">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">by_band</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">value_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">bands</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Summarize experience by a size band on ``value_col`` (see ``summarize_by_band``).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">summarize_by_band</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">value_col</span><span class="p">,</span>
+            <span class="n">bands</span><span class="p">,</span>
+            <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+            <span class="n">expense_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;expense&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)),</span>
+            <span class="n">revenue_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;revenue&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">)),</span>
+            <span class="n">exposure_cols</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure_cols&quot;</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)),</span>
+            <span class="n">profile</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Experience.margin">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.margin">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">margin</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">margin_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;margin&quot;</span><span class="p">,</span>
+        <span class="n">ratio_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;margin_ratio&quot;</span><span class="p">,</span>
+        <span class="n">per_exposure_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Underwriting margin (revenue net of expense) by optional grouping.</span>
+
+<span class="sd">        Aggregates the bound expense and revenue roles with :meth:`by`, then adds</span>
+<span class="sd">        the margin (``total_revenue - total_expense``), the margin ratio, and an</span>
+<span class="sd">        optional per-exposure margin.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">by</span><span class="p">(</span><span class="n">groupby</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">summary</span><span class="p">[</span><span class="n">margin_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_revenue&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_expense&quot;</span><span class="p">]</span>
+        <span class="n">summary</span><span class="p">[</span><span class="n">ratio_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">safe_divide</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="n">margin_col</span><span class="p">],</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_revenue&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">per_exposure_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">exposure</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_exposure_or_none</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;A single bound exposure is required for per_exposure_col.&quot;</span><span class="p">)</span>
+            <span class="n">summary</span><span class="p">[</span><span class="n">per_exposure_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">per_exposure</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="n">margin_col</span><span class="p">],</span> <span class="n">summary</span><span class="p">[</span><span class="n">exposure</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">summary</span></div>
+
+
+<div class="viewcode-block" id="Experience.credibility_weighted">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.credibility_weighted">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">credibility_weighted</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">z</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;loss_ratio&quot;</span><span class="p">,</span>
+        <span class="n">complement</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">out_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Blend each group&#39;s ``metric`` with a complement at credibility ``z``.</span>
+
+<span class="sd">        Computes the grouped summary (:meth:`by`), then blends ``metric`` toward</span>
+<span class="sd">        ``complement`` using ``z`` (see</span>
+<span class="sd">        :func:`actuarialpy.credibility_weighted_estimate`). ``z`` may be a scalar</span>
+<span class="sd">        or values aligned to the grouped rows. When ``complement`` is omitted the</span>
+<span class="sd">        book-level value of ``metric`` is used as the complement of credibility.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">by</span><span class="p">(</span><span class="n">groupby</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">metric</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">summary</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;metric &#39;</span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">&#39; is not in the summary columns: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">summary</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">complement</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">complement</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">by</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)[</span><span class="n">metric</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">out_col</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;credibility_weighted_</span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">summary</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">credibility_weighted_estimate</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="n">metric</span><span class="p">],</span> <span class="n">complement</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">summary</span></div>
+
+
+<div class="viewcode-block" id="Experience.pool_claimants">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.Experience.pool_claimants">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pool_claimants</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">claimant_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">pooling_point</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">amount_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">amount_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;total_expense&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregate to claimant level and split each claimant into pooled/excess.</span>
+
+<span class="sd">        Summarizes the experience to claimant grain (:meth:`claimants`) and caps</span>
+<span class="sd">        each claimant&#39;s total at ``pooling_point`` (see</span>
+<span class="sd">        :func:`actuarialpy.pool_losses`), returning pooled and excess columns for</span>
+<span class="sd">        capped experience and the excess hand-off to tail modeling.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">claimant_totals</span> <span class="o">=</span> <span class="n">summarize_claimants</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">claimant_col</span><span class="o">=</span><span class="n">claimant_col</span><span class="p">,</span>
+            <span class="n">amount_cols</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span> <span class="k">if</span> <span class="n">amount_cols</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">amount_cols</span><span class="p">,</span>
+            <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
+            <span class="n">amount_name</span><span class="o">=</span><span class="n">amount_name</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">pool_losses</span><span class="p">(</span><span class="n">claimant_totals</span><span class="p">,</span> <span class="n">amount_name</span><span class="p">,</span> <span class="n">pooling_point</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_date_col</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">resolved</span> <span class="o">=</span> <span class="n">date_col</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">date</span>
+        <span class="k">if</span> <span class="n">resolved</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;A date column is required. Pass date=... to Experience or date_col=... to this method.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">resolved</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">resolved</span> <span class="o">=</span> <span class="n">count_col</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span>
+        <span class="k">if</span> <span class="n">resolved</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;A count column is required. Pass count=... to Experience or count_col=... to this method.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">validate_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="n">resolved</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">resolved</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exposure_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">exposure_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">validate_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="n">exposure_col</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">exposure_col</span>
+        <span class="n">resolved</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_exposure_or_none</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">resolved</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;An exposure column is required for this method. Pass exposure=... to Experience &quot;</span>
+                <span class="s2">&quot;or exposure_col=... to this method.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">resolved</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_single_exposure_or_none</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">exposures</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">exposures</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exposures</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Multiple exposures are bound. Pass exposure_col explicitly for this method.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">exposures</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_data_with_amount</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">amount_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">validate_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="n">amount_col</span><span class="p">])</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">amount_col</span>
+        <span class="n">expenses</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expense</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">expenses</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">expenses</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">amount_name</span> <span class="o">=</span> <span class="s2">&quot;_actuarialpy_total_expense&quot;</span>
+        <span class="n">temp</span><span class="p">[</span><span class="n">amount_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum_columns</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">expenses</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">temp</span><span class="p">,</span> <span class="n">amount_name</span></div>
+
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, OpenActuarial
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=30ae2a11"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
+    </body>
+</html>
