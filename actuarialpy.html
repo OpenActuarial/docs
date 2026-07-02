@@ -426,7 +426,7 @@ the package’s free functions. The object is immutable: methods return
 DataFrames or new <code class="docutils literal notranslate"><span class="pre">Experience</span></code> objects rather than changing stored data in
 place.</p>
 <p>Bind <code class="docutils literal notranslate"><span class="pre">count</span></code> (a claim or service count) to unlock the frequency-severity views:
-<a class="reference internal" href="#actuarialpy.Experience.frequency_severity" title="actuarialpy.Experience.frequency_severity"><code class="xref py py-meth docutils literal notranslate"><span class="pre">frequency_severity()</span></code></a> and <a class="reference internal" href="#actuarialpy.Experience.decompose_trend" title="actuarialpy.Experience.decompose_trend"><code class="xref py py-meth docutils literal notranslate"><span class="pre">decompose_trend()</span></code></a> (utilization x unit cost,
+<a class="reference internal" href="#actuarialpy.Experience.frequency_severity" title="actuarialpy.Experience.frequency_severity"><code class="xref py py-meth docutils literal notranslate"><span class="pre">frequency_severity()</span></code></a> and <a class="reference internal" href="#actuarialpy.Experience.decompose_trend" title="actuarialpy.Experience.decompose_trend"><code class="xref py py-meth docutils literal notranslate"><span class="pre">decompose_trend()</span></code></a> (frequency x severity,
 optionally x mix). <a class="reference internal" href="#actuarialpy.fit_trend" title="actuarialpy.fit_trend"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit_trend()</span></code></a> regresses a developed trend on the bound history.</p>
 <p><strong>Grain matters.</strong> <code class="docutils literal notranslate"><span class="pre">Experience</span></code> aggregates by <em>summing</em> the bound columns, so it
 expects rows at the grain of the exposure unit – one row per member-month, with
@@ -1101,20 +1101,21 @@ is loss per exposure unit (the pure premium).</p>
 <a class="reference internal" href="#actuarialpy.frequency_severity_summary" title="actuarialpy.frequency_severity_summary"><code class="xref py py-func docutils literal notranslate"><span class="pre">frequency_severity_summary()</span></code></a> (optionally by the <code class="docutils literal notranslate"><span class="pre">on</span></code> keys), aligned, and the
 change reported two exact ways:</p>
 <ul class="simple">
-<li><p><strong>Multiplicative trend</strong>: <code class="docutils literal notranslate"><span class="pre">loss_per_exposure_trend</span> <span class="pre">==</span> <span class="pre">util_trend</span> <span class="pre">*</span> <span class="pre">cost_trend</span></code>, where
-<code class="docutils literal notranslate"><span class="pre">util_trend</span></code> is the frequency ratio and <code class="docutils literal notranslate"><span class="pre">cost_trend</span></code> the severity ratio.</p></li>
-<li><p><strong>Additive dollars</strong>: <code class="docutils literal notranslate"><span class="pre">loss_per_exposure_change</span> <span class="pre">==</span> <span class="pre">util_effect</span> <span class="pre">+</span> <span class="pre">cost_effect</span></code> via a symmetric
+<li><p><strong>Multiplicative trend</strong>: <code class="docutils literal notranslate"><span class="pre">loss_per_exposure_trend</span> <span class="pre">==</span> <span class="pre">frequency_trend</span> <span class="pre">*</span> <span class="pre">severity_trend</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">frequency_trend</span></code> and <code class="docutils literal notranslate"><span class="pre">severity_trend</span></code> are the period-over-period ratios of
+frequency and severity.</p></li>
+<li><p><strong>Additive dollars</strong>: <code class="docutils literal notranslate"><span class="pre">loss_per_exposure_change</span> <span class="pre">==</span> <span class="pre">frequency_effect</span> <span class="pre">+</span> <span class="pre">severity_effect</span></code> via a symmetric
 (midpoint) split, so the contributions sum exactly to the per-exposure change.</p></li>
 </ul>
 <p>Pass <code class="docutils literal notranslate"><span class="pre">mix_by</span></code> (a column or list of columns) to add a third <strong>mix</strong> component. The per-exposure loss
-is then decomposed into utilization, unit cost, and the effect of the exposure
-composition shifting across the <code class="docutils literal notranslate"><span class="pre">mix_by</span></code> cells. Utilization and unit cost are
+is then decomposed into frequency, severity, and the effect of the exposure
+composition shifting across the <code class="docutils literal notranslate"><span class="pre">mix_by</span></code> cells. Frequency and severity are
 measured <em>within</em> each cell (free of composition), and mix captures the aggregate
 movement that comes purely from the cell weights changing – the piece the two-way
-otherwise misattributes to utilization and unit cost. The split uses the LMDI
+otherwise misattributes to frequency and severity. The split uses the LMDI
 (logarithmic mean Divisia index) convention, which is order-free and reconciles
-exactly: <code class="docutils literal notranslate"><span class="pre">loss_per_exposure_trend</span> <span class="pre">==</span> <span class="pre">util_trend</span> <span class="pre">*</span> <span class="pre">cost_trend</span> <span class="pre">*</span> <span class="pre">mix_trend</span></code> and
-<code class="docutils literal notranslate"><span class="pre">loss_per_exposure_change</span> <span class="pre">==</span> <span class="pre">util_effect</span> <span class="pre">+</span> <span class="pre">cost_effect</span> <span class="pre">+</span> <span class="pre">mix_effect</span></code>.</p>
+exactly: <code class="docutils literal notranslate"><span class="pre">loss_per_exposure_trend</span> <span class="pre">==</span> <span class="pre">frequency_trend</span> <span class="pre">*</span> <span class="pre">severity_trend</span> <span class="pre">*</span> <span class="pre">mix_trend</span></code> and
+<code class="docutils literal notranslate"><span class="pre">loss_per_exposure_change</span> <span class="pre">==</span> <span class="pre">frequency_effect</span> <span class="pre">+</span> <span class="pre">severity_effect</span> <span class="pre">+</span> <span class="pre">mix_effect</span></code>.</p>
 <p>A list of columns in <code class="docutils literal notranslate"><span class="pre">mix_by</span></code> defines the cells as their cross – one blended mix
 term, not a per-column attribution; to attribute mix to each dimension separately,
 run the decomposition once per dimension. <code class="docutils literal notranslate"><span class="pre">on</span></code> and <code class="docutils literal notranslate"><span class="pre">mix_by</span></code> are orthogonal:
@@ -2437,7 +2438,7 @@ Returns 0 when the record and study window do not overlap.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=78e06d40"></script>
+</div><script src="_static/documentation_options.js?v=0d62d47f"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
