@@ -201,6 +201,7 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">lossmodels</a></li>
@@ -250,14 +251,124 @@
         <article role="main" id="furo-main-content">
           <section class="tex2jax_ignore mathjax_ignore" id="lossmodels">
 <h1>lossmodels<a class="headerlink" href="#lossmodels" title="Link to this heading">¶</a></h1>
-<p>Loss-distribution modeling: fit severity and frequency distributions and combine
-them into an aggregate loss distribution. numpy and pandas only.</p>
-<p>The package is organized into severity, frequency, and aggregate modules, with
-supporting estimation, empirical, and coverage utilities. Fitted models expose a
-consistent interface, and the aggregate layer convolves a frequency and a
+<p>Loss-distribution modeling: fit severity and frequency distributions —
+including to claims data net of deductibles and limits — and combine them into
+an aggregate loss distribution. numpy and scipy only.</p>
+<p>The package is organized into severity, frequency, aggregate, estimation,
+empirical, and coverage modules. Fitted models expose a consistent
+<code class="docutils literal notranslate"><span class="pre">pdf</span></code>/<code class="docutils literal notranslate"><span class="pre">cdf</span></code>/<code class="docutils literal notranslate"><span class="pre">sf</span></code>/<code class="docutils literal notranslate"><span class="pre">quantile</span></code>/<code class="docutils literal notranslate"><span class="pre">mean</span></code>/<code class="docutils literal notranslate"><span class="pre">sample</span></code> interface; the estimation layer
+fits and compares them; the aggregate layer convolves a frequency and a
 severity model into the aggregate loss for a block.</p>
-<p>See the API reference below for the full surface; each object’s docstring carries
-its own usage.</p>
+<section id="distributions">
+<h2>Distributions<a class="headerlink" href="#distributions" title="Link to this heading">¶</a></h2>
+<p>The continuous severity inventory follows the <em>Loss Models</em> (FAM/ASTAM
+Appendix A) parameterizations — exponential, gamma, lognormal, Weibull, the
+transformed-beta family (Burr, inverse Burr, Pareto II/Lomax, loglogistic,
+paralogistic, …), inverse distributions, and generalized Pareto — plus
+<code class="docutils literal notranslate"><span class="pre">SplicedSeverity</span></code> for body–tail constructions. Frequencies cover Poisson,
+negative binomial, binomial, geometric, and logarithmic, with <code class="docutils literal notranslate"><span class="pre">ZeroTruncated</span></code>
+and <code class="docutils literal notranslate"><span class="pre">ZeroModified</span></code> wrappers for the (a, b, 1) class. Mind the Pareto naming:
+<code class="docutils literal notranslate"><span class="pre">Pareto</span></code> is Type I and <code class="docutils literal notranslate"><span class="pre">ParetoII</span></code> is the Lomax that <em>Loss Models</em> calls
+“Pareto” — see <a class="reference internal" href="conventions.html#distribution-naming-and-parameterizations"><span class="std std-ref">Conventions</span></a>.</p>
+</section>
+<section id="fitting">
+<h2>Fitting<a class="headerlink" href="#fitting" title="Link to this heading">¶</a></h2>
+<p>Complete-data fitting is one call per family, or one call across families:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">lossmodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Lognormal</span><span class="p">(</span><span class="n">mu</span><span class="o">=</span><span class="mf">8.6</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.4</span><span class="p">)</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="mi">20_000</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">fit</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">fit_lognormal</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>                  <span class="c1"># closed-form MLE</span>
+<span class="n">best</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">fit_best_severity</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>             <span class="c1"># nine families, ranked by AIC</span>
+<span class="n">best</span><span class="p">[</span><span class="s2">&quot;best_name&quot;</span><span class="p">]</span>                          <span class="c1"># &#39;lognormal&#39;</span>
+<span class="n">lm</span><span class="o">.</span><span class="n">goodness_of_fit</span><span class="p">(</span><span class="n">best</span><span class="p">[</span><span class="s2">&quot;best_model&quot;</span><span class="p">],</span> <span class="n">x</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>   <span class="c1"># loglik, AIC/BIC, KS, AD, CvM</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">fit_best_severity</span></code> fits every registered family (exponential, gamma,
+lognormal, Weibull, Pareto I, Pareto II, loglogistic, inverse gamma, Burr) by
+MLE and ranks by AIC or BIC; candidates that fail to fit are skipped.
+Method-of-moments alternatives (<code class="docutils literal notranslate"><span class="pre">method=&quot;moments&quot;</span></code>) and frequency selection
+(<code class="docutils literal notranslate"><span class="pre">fit_best_frequency</span></code>) follow the same pattern.</p>
+</section>
+<section id="fitting-under-deductibles-and-limits">
+<h2>Fitting under deductibles and limits<a class="headerlink" href="#fitting-under-deductibles-and-limits" title="Link to this heading">¶</a></h2>
+<p>Real claim data is rarely ground-up and complete: a deductible left-truncates
+(losses below it never enter the data) and a policy limit right-censors (a
+capped payment says only that the loss was <em>at least</em> the cap). Fitting a
+complete-data likelihood to such values is biased — often badly. Every
+severity fitter therefore accepts the individual-data likelihood of
+<em>Loss Models</em>: with truncation points <span class="math notranslate nohighlight">\(t_i\)</span> and censoring indicators
+<span class="math notranslate nohighlight">\(\delta_i\)</span>,</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+\ell(\theta) \;=\; \sum_i \Big[\, \delta_i \log f(x_i)
+  + (1-\delta_i) \log S(x_i) - \log S(t_i) \,\Big].
+\]</div>
+</div>
+<p>The practical entry point converts per-payment data into the
+<code class="docutils literal notranslate"><span class="pre">(values,</span> <span class="pre">truncation,</span> <span class="pre">censored)</span></code> triple:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">lossmodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
+
+<span class="c1"># payments net of an 800 deductible, capped at a 20,000 maximum payment</span>
+<span class="n">values</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">payments_to_ground_up</span><span class="p">(</span>
+    <span class="n">payments</span><span class="p">,</span> <span class="n">deductible</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">max_payment</span><span class="o">=</span><span class="mi">20_000</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">fit</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">fit_lognormal</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">)</span>
+
+<span class="n">best</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">fit_best_severity</span><span class="p">(</span>               <span class="c1"># selection under the same likelihood</span>
+    <span class="n">values</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>With both keywords omitted, every fitter runs its original complete-data path
+unchanged. The exponential and Pareto Type I keep closed forms in the
+censored/truncated case; gamma, lognormal, Weibull, and the transformed-beta
+fitters use the generic machinery (<code class="docutils literal notranslate"><span class="pre">fit_mle_censored</span></code>,
+<code class="docutils literal notranslate"><span class="pre">censored_log_likelihood</span></code>), which works for any model exposing <code class="docutils literal notranslate"><span class="pre">pdf</span></code> and
+<code class="docutils literal notranslate"><span class="pre">cdf</span></code>.</p>
+<p>Diagnostics follow the data: <code class="docutils literal notranslate"><span class="pre">aic</span></code>/<code class="docutils literal notranslate"><span class="pre">bic</span></code>/<code class="docutils literal notranslate"><span class="pre">goodness_of_fit</span></code> accept the same
+keywords and score with the individual-data likelihood; <code class="docutils literal notranslate"><span class="pre">pit_values</span></code> returns
+the probability-integral transform <span class="math notranslate nohighlight">\((F(x_i)-F(t_i))/(1-F(t_i))\)</span>, exactly
+Uniform(0, 1) under the true model for uncensored data with arbitrary
+truncation points; <code class="docutils literal notranslate"><span class="pre">ks_statistic</span></code> uses the PIT under truncation and compares
+against the <strong>Kaplan–Meier</strong> estimate (<code class="docutils literal notranslate"><span class="pre">kaplan_meier</span></code>, product-limit under
+left truncation and right censoring) when censoring is present.</p>
+</section>
+<section id="aggregate-losses">
+<h2>Aggregate losses<a class="headerlink" href="#aggregate-losses" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">CollectiveRiskModel</span></code> composes a frequency and a severity into the aggregate
+loss <span class="math notranslate nohighlight">\(S = \sum_{j=1}^{N} X_j\)</span>, by simulation or by discretized recursion:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">lossmodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
+
+<span class="n">crm</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">CollectiveRiskModel</span><span class="p">(</span>
+    <span class="n">frequency</span><span class="o">=</span><span class="n">lm</span><span class="o">.</span><span class="n">Poisson</span><span class="p">(</span><span class="n">lam</span><span class="o">=</span><span class="mi">120</span><span class="p">),</span>
+    <span class="n">severity</span><span class="o">=</span><span class="n">lm</span><span class="o">.</span><span class="n">Lognormal</span><span class="p">(</span><span class="n">mu</span><span class="o">=</span><span class="mf">8.6</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.4</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">s</span> <span class="o">=</span> <span class="n">crm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="mi">100_000</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>     <span class="c1"># one generator threads through both draws</span>
+<span class="n">crm</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">crm</span><span class="o">.</span><span class="n">variance</span><span class="p">()</span>         <span class="c1"># exact compound moments</span>
+</pre></div>
+</div>
+<p>Simulation-based measures (<code class="docutils literal notranslate"><span class="pre">var</span></code>, <code class="docutils literal notranslate"><span class="pre">tvar</span></code>, <code class="docutils literal notranslate"><span class="pre">stop_loss</span></code>,
+<code class="docutils literal notranslate"><span class="pre">limited_expected_value</span></code> on the aggregate side) accept the same <code class="docutils literal notranslate"><span class="pre">rng</span></code>
+argument, and the empirical estimators follow the ecosystem VaR/TVaR
+convention — see <a class="reference internal" href="conventions.html#risk-measures-var-and-tvar"><span class="std std-ref">Conventions</span></a>.
+<code class="docutils literal notranslate"><span class="pre">discretize_severity</span></code> (midpoint by default) prepares severity PMFs for
+Panjer/FFT-style recursion.</p>
+</section>
+<section id="coverage-modifications">
+<h2>Coverage modifications<a class="headerlink" href="#coverage-modifications" title="Link to this heading">¶</a></h2>
+<p>The coverage module applies policy terms to a ground-up severity:
+<code class="docutils literal notranslate"><span class="pre">OrdinaryDeductible</span></code>, <code class="docutils literal notranslate"><span class="pre">PolicyLimit</span></code>, and <code class="docutils literal notranslate"><span class="pre">Layer(d,</span> <span class="pre">u)</span></code> with per-loss payment
+<span class="math notranslate nohighlight">\(\min((X-d)_+, u)\)</span> — note <code class="docutils literal notranslate"><span class="pre">u</span></code> is the <strong>maximum payment</strong> (layer width), not
+the upper attachment; a 5M xs 1M layer is <code class="docutils literal notranslate"><span class="pre">Layer(1_000_000,</span> <span class="pre">5_000_000)</span></code>.
+Layer moments are computed deterministically from
+<span class="math notranslate nohighlight">\(E[Y^2] = \int 2\,y\,S(y)\,dy\)</span>.</p>
+<p>See the API reference below for the full surface; each object’s docstring
+carries its own usage.</p>
+</section>
 <section id="module-lossmodels">
 <span id="api-reference"></span><h2>API reference<a class="headerlink" href="#module-lossmodels" title="Link to this heading">¶</a></h2>
 <p>lossmodels: actuarial loss distributions, aggregate modeling, and fit diagnostics.</p>
@@ -2184,6 +2295,11 @@ on the estimated-parameter caveat for the distance statistics.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">lossmodels</a><ul>
+<li><a class="reference internal" href="#distributions">Distributions</a></li>
+<li><a class="reference internal" href="#fitting">Fitting</a></li>
+<li><a class="reference internal" href="#fitting-under-deductibles-and-limits">Fitting under deductibles and limits</a></li>
+<li><a class="reference internal" href="#aggregate-losses">Aggregate losses</a></li>
+<li><a class="reference internal" href="#coverage-modifications">Coverage modifications</a></li>
 <li><a class="reference internal" href="#module-lossmodels">API reference</a><ul>
 <li><a class="reference internal" href="#lossmodels.SeverityModel"><code class="docutils literal notranslate"><span class="pre">SeverityModel</span></code></a><ul>
 <li><a class="reference internal" href="#lossmodels.SeverityModel.excess_loss"><code class="docutils literal notranslate"><span class="pre">excess_loss()</span></code></a></li>
@@ -2460,10 +2576,12 @@ on the estimated-parameter caveat for the distance statistics.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=99ee5e77"></script>
+</div><script src="_static/documentation_options.js?v=d5b01d8c"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
     <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </body>
 </html>

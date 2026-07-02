@@ -201,6 +201,7 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
@@ -252,9 +253,9 @@
 <h1>ratingmodels<a class="headerlink" href="#ratingmodels" title="Link to this heading">¶</a></h1>
 <p>The pricing layer of the ecosystem: manual and experience rate construction,
 credibility blending, rate indication and rate-change decomposition, GLM
-relativity estimation, and renewal constraints — an auditable build-up from base
-rate to filed rate. Depends on <code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> for its credibility and trend
-primitives.</p>
+relativity estimation, model evaluation (Gini and lift), and renewal
+constraints — an auditable build-up from base rate to filed rate. Depends on
+<code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> for its credibility and trend primitives.</p>
 <section id="quickstart">
 <h2>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading">¶</a></h2>
 <p>Blend an experience rate with a manual rate and read the indicated change:</p>
@@ -296,6 +297,54 @@ checkpoint — evaluated into a result that carries the full audit trail:</p>
 </div>
 <p>Because each step is explicit, the build-up is reproducible and reviewable: the
 same object renders the number and the audit trail behind it.</p>
+</section>
+<section id="glm-relativities">
+<h2>GLM relativities<a class="headerlink" href="#glm-relativities" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">GLMRelativities</span></code> estimates rating factors jointly — correcting for the
+correlation between rating variables that one-way analysis cannot — with a
+log-link GLM fit by iteratively reweighted least squares. Poisson, gamma, and
+Tweedie variance functions; exposure as a log offset; prior weights;
+categorical predictors (base level = most populous, or set explicitly) and
+continuous covariates in the same linear predictor:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ratingmodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rm</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">GLMRelativities</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;poisson&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">,</span>
+    <span class="n">response</span><span class="o">=</span><span class="s2">&quot;claims&quot;</span><span class="p">,</span>
+    <span class="n">predictors</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">],</span>     <span class="c1"># categorical -&gt; relativities</span>
+    <span class="n">continuous</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;age&quot;</span><span class="p">],</span>                  <span class="c1"># numeric, enters the predictor directly</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;member_months&quot;</span><span class="p">,</span>            <span class="c1"># log offset</span>
+    <span class="n">base_levels</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="s2">&quot;A&quot;</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">relativities_</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">]</span>     <span class="c1"># multiplicative factors, base level = 1.0</span>
+<span class="n">model</span><span class="o">.</span><span class="n">base_value_</span>               <span class="c1"># exp(intercept): the base rate</span>
+<span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>                 <span class="c1"># coef, SE, z, relativity per term</span>
+<span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_df</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;member_months&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Standard errors use the Pearson-estimated dispersion (quasi-likelihood — the
+robust default for pricing data, where overdispersion is the norm);
+<code class="docutils literal notranslate"><span class="pre">dispersion_</span></code>, <code class="docutils literal notranslate"><span class="pre">null_deviance_</span></code>, and a <code class="docutils literal notranslate"><span class="pre">converged_</span></code> flag are exposed
+alongside. Unseen levels at prediction time fall back to the base level.</p>
+</section>
+<section id="model-evaluation">
+<h2>Model evaluation<a class="headerlink" href="#model-evaluation" title="Link to this heading">¶</a></h2>
+<p>A rating plan is judged on segmentation — how well predictions <em>order</em> risks.
+<code class="docutils literal notranslate"><span class="pre">gini_coefficient</span></code> is the exposure-weighted ordered-Lorenz Gini of pricing
+practice (normalized by the perfect model, so 1.0 means perfect segmentation
+and 0.0 none), and <code class="docutils literal notranslate"><span class="pre">lift_table</span></code> bands the book into equal-exposure groups by
+predicted risk:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;member_months&quot;</span><span class="p">)</span>
+
+<span class="n">rm</span><span class="o">.</span><span class="n">gini_coefficient</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;claims&quot;</span><span class="p">],</span> <span class="n">pred</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;member_months&quot;</span><span class="p">])</span>
+
+<span class="n">rm</span><span class="o">.</span><span class="n">lift_table</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;claims&quot;</span><span class="p">],</span> <span class="n">pred</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;member_months&quot;</span><span class="p">],</span> <span class="n">n_bands</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="c1"># band | n | exposure | predicted_mean | actual_mean | lift</span>
+</pre></div>
+</div>
+<p>A model that segments shows lift rising monotonically across bands; the
+Gini summarizes the same ordering in one number, comparable across books.</p>
 </section>
 <section id="module-ratingmodels">
 <span id="api-reference"></span><h2>API reference<a class="headerlink" href="#module-ratingmodels" title="Link to this heading">¶</a></h2>
@@ -529,7 +578,7 @@ member-month); <code class="docutils literal notranslate"><span class="pre">expo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ratingmodels.GLMRelativities.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">object</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.relativity.GLMRelativities"><span class="pre">GLMRelativities</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.fit" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">object</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuous</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.relativity.GLMRelativities"><span class="pre">GLMRelativities</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.fit" title="Link to this definition">¶</a></dt>
 <dd><p>Fit relativities for <code class="docutils literal notranslate"><span class="pre">predictors</span></code> against <code class="docutils literal notranslate"><span class="pre">response</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">exposure</span></code> enters as a log offset (the natural choice for counts and
 pure premium). An explicit <code class="docutils literal notranslate"><span class="pre">offset</span></code> column (already on the log scale)
@@ -540,10 +589,60 @@ predictors use their most populous level as the base.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ratingmodels.GLMRelativities.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.predict" title="Link to this definition">¶</a></dt>
-<dd><p>Predicted mean for new rows using the fitted relativities.</p>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.predict" title="Link to this definition">¶</a></dt>
+<dd><p>Predicted mean for new rows.</p>
+<p>Categorical levels unseen in fitting fall back to the base level
+(relativity 1.0). <code class="docutils literal notranslate"><span class="pre">exposure</span></code> multiplies the mean; <code class="docutils literal notranslate"><span class="pre">offset</span></code> is a
+column already on the log scale.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.summary" title="Link to this definition">¶</a></dt>
+<dd><p>Coefficient table: estimate, quasi-likelihood SE, z, relativity.</p>
+<p>Standard errors use the Pearson-estimated dispersion (quasi-likelihood
+/ quasi-Poisson style), which is the robust default for pricing data
+where overdispersion is the norm.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.gini_coefficient">
+<span class="sig-name descname"><span class="pre">gini_coefficient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predicted</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/evaluation.html#gini_coefficient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.gini_coefficient" title="Link to this definition">¶</a></dt>
+<dd><p>Ordered-Lorenz Gini of <code class="docutils literal notranslate"><span class="pre">predicted</span></code> as a risk ranker for <code class="docutils literal notranslate"><span class="pre">actual</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual</strong> (<em>array-like</em>) – Observed outcome per record (losses, claim counts, pure premium).</p></li>
+<li><p><strong>predicted</strong> (<em>array-like</em>) – Model prediction used to order records from lowest to highest risk.</p></li>
+<li><p><strong>exposure</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Weights (earned exposure). Equal weights if omitted.</p></li>
+<li><p><strong>normalize</strong> (<em>bool</em>) – If True (default), divide by the Gini of the perfect model that sorts
+by <code class="docutils literal notranslate"><span class="pre">actual</span></code> itself, so 1.0 means perfect segmentation and 0.0 means
+no segmentation. If False, return the raw ordered-Lorenz Gini.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.lift_table">
+<span class="sig-name descname"><span class="pre">lift_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predicted</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_bands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/evaluation.html#lift_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.lift_table" title="Link to this definition">¶</a></dt>
+<dd><p>Exposure-weighted lift table: records banded by predicted risk.</p>
+<p>Records are sorted by <code class="docutils literal notranslate"><span class="pre">predicted</span></code> and split into <code class="docutils literal notranslate"><span class="pre">n_bands</span></code> bands of
+(approximately) equal total exposure. Within each band the table reports
+exposure, the exposure-weighted actual and predicted means, and <code class="docutils literal notranslate"><span class="pre">lift</span></code> –
+the band’s actual mean relative to the overall actual mean. A model that
+segments well shows lift rising monotonically across bands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Indexed 1..n_bands with columns <code class="docutils literal notranslate"><span class="pre">n</span></code>, <code class="docutils literal notranslate"><span class="pre">exposure</span></code>,
+<code class="docutils literal notranslate"><span class="pre">predicted_mean</span></code>, <code class="docutils literal notranslate"><span class="pre">actual_mean</span></code>, <code class="docutils literal notranslate"><span class="pre">lift</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pandas.DataFrame</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py class">
@@ -1130,6 +1229,8 @@ total is the sum of <code class="docutils literal notranslate"><span class="pre"
 <li><a class="reference internal" href="#">ratingmodels</a><ul>
 <li><a class="reference internal" href="#quickstart">Quickstart</a></li>
 <li><a class="reference internal" href="#the-build-up-engine">The build-up engine</a></li>
+<li><a class="reference internal" href="#glm-relativities">GLM relativities</a></li>
+<li><a class="reference internal" href="#model-evaluation">Model evaluation</a></li>
 <li><a class="reference internal" href="#module-ratingmodels">API reference</a><ul>
 <li><a class="reference internal" href="#ratingmodels.full_credibility_standard"><code class="docutils literal notranslate"><span class="pre">full_credibility_standard()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.limited_fluctuation_credibility"><code class="docutils literal notranslate"><span class="pre">limited_fluctuation_credibility()</span></code></a></li>
@@ -1156,8 +1257,11 @@ total is the sum of <code class="docutils literal notranslate"><span class="pre"
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.deviance_"><code class="docutils literal notranslate"><span class="pre">deviance_</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.fit"><code class="docutils literal notranslate"><span class="pre">fit()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.predict"><code class="docutils literal notranslate"><span class="pre">predict()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.summary"><code class="docutils literal notranslate"><span class="pre">summary()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#ratingmodels.gini_coefficient"><code class="docutils literal notranslate"><span class="pre">gini_coefficient()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.lift_table"><code class="docutils literal notranslate"><span class="pre">lift_table()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.ManualRate"><code class="docutils literal notranslate"><span class="pre">ManualRate</span></code></a><ul>
 <li><a class="reference internal" href="#ratingmodels.ManualRate.breakdown"><code class="docutils literal notranslate"><span class="pre">breakdown()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.ManualRate.claims_pmpm"><code class="docutils literal notranslate"><span class="pre">claims_pmpm()</span></code></a></li>
@@ -1239,7 +1343,7 @@ total is the sum of <code class="docutils literal notranslate"><span class="pre"
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=99ee5e77"></script>
+</div><script src="_static/documentation_options.js?v=d5b01d8c"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

@@ -201,6 +201,7 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
@@ -274,7 +275,8 @@ mathematics, and exposure — that <code class="docutils literal notranslate"><s
 <div class="sd-card-title sd-font-weight-bold docutils">
 ratingmodels</div>
 <p class="sd-card-text"><strong>Pricing.</strong> Manual and experience rate build-up, credibility blending,
-rate indication and decomposition, GLM relativities, and renewal constraints.</p>
+rate indication and decomposition, GLM relativities and model evaluation, and
+renewal constraints.</p>
 </div>
 <a class="sd-stretched-link sd-hide-link-text reference internal" href="ratingmodels.html"><span class="doc">ratingmodels</span></a></div>
 </div>
@@ -283,8 +285,8 @@ rate indication and decomposition, GLM relativities, and renewal constraints.</p
 <div class="sd-card-body docutils">
 <div class="sd-card-title sd-font-weight-bold docutils">
 lossmodels</div>
-<p class="sd-card-text"><strong>Loss modeling.</strong> Severity and frequency fitting, and aggregate loss
-distributions.</p>
+<p class="sd-card-text"><strong>Loss modeling.</strong> Severity and frequency fitting — including under
+deductibles and limits — and aggregate loss distributions.</p>
 </div>
 <a class="sd-stretched-link sd-hide-link-text reference internal" href="lossmodels.html"><span class="doc">lossmodels</span></a></div>
 </div>
@@ -327,8 +329,8 @@ and capital:</p>
 is the shared core — credibility, trend, financial math, and exposure live there
 once — and <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code> builds directly on it. <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code>, <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code>, and
 <code class="docutils literal notranslate"><span class="pre">risksim</span></code> install independently (<code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> can optionally integrate
-<code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> for severity splicing). Dependencies stay light: numpy and pandas,
-with scipy where the loss and tail work needs it.</p>
+<code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> for severity splicing). Dependencies stay light: numpy everywhere, pandas
+in the core and <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code>, scipy where the loss and tail work needs it.</p>
 </section>
 <section id="a-cross-package-example">
 <h2>A cross-package example<a class="headerlink" href="#a-cross-package-example" title="Link to this heading">¶</a></h2>
@@ -426,7 +428,7 @@ dependency.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=99ee5e77"></script>
+</div><script src="_static/documentation_options.js?v=d5b01d8c"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

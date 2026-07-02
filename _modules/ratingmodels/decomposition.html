@@ -200,6 +200,7 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conventions.html">Conventions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../lossmodels.html">lossmodels</a></li>
@@ -316,7 +317,7 @@
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">vals</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;all factors must be positive&quot;</span><span class="p">)</span>
 
-    <span class="n">fac</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">vals</span><span class="p">))</span>
+    <span class="n">fac</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
     <span class="n">prod</span> <span class="o">=</span> <span class="n">product</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">total_factor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">total</span> <span class="o">=</span> <span class="n">prod</span>
@@ -378,7 +379,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=99ee5e77"></script>
+</div><script src="../../_static/documentation_options.js?v=d5b01d8c"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

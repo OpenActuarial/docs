@@ -201,6 +201,7 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
@@ -252,11 +253,16 @@
 <h1>risksim<a class="headerlink" href="#risksim" title="Link to this heading">¶</a></h1>
 <p>Portfolio Monte Carlo simulation and risk measures: simulate aggregate outcomes
 across a portfolio of contracts and summarize the distribution with standard risk
-measures. numpy and pandas only.</p>
+measures. numpy only.</p>
 <p>The package builds a portfolio from contract definitions, simulates aggregate
 outcomes, and reports risk measures (such as value-at-risk and tail value-at-risk)
 over the simulated distribution — the capital view that sits at the end of the
 experience → pricing → loss → tail → capital pipeline.</p>
+<p><code class="docutils literal notranslate"><span class="pre">var</span></code> and <code class="docutils literal notranslate"><span class="pre">tvar</span></code> follow the ecosystem-wide empirical estimators (inverted-CDF
+order statistic; Acerbi–Tasche), so a portfolio’s risk measures here match the
+same quantities computed in <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> or <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> byte for byte, and
+every simulation accepts the shared <code class="docutils literal notranslate"><span class="pre">rng</span></code> argument (<code class="docutils literal notranslate"><span class="pre">None</span></code>, seed, or
+<code class="docutils literal notranslate"><span class="pre">Generator</span></code>) for bit-reproducible runs — see <a class="reference internal" href="conventions.html"><span class="std std-doc">Conventions</span></a>.</p>
 <p>See the API reference below for the full surface; each object’s docstring carries
 its own usage.</p>
 <section id="module-risksim">
@@ -404,7 +410,7 @@ Otherwise, the primary <cite>losses</cite> view is gross loss.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=99ee5e77"></script>
+</div><script src="_static/documentation_options.js?v=d5b01d8c"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

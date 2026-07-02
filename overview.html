@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="actuarialpy" href="actuarialpy.html"><link rel="prev" title="OpenActuarial" href="index.html">
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Conventions" href="conventions.html"><link rel="prev" title="OpenActuarial" href="index.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
         <title>Overview - OpenActuarial</title>
@@ -201,6 +201,7 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
@@ -263,9 +264,10 @@ credibility, financial mathematics (time value of money), and exposure /
 age bases. <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code> builds directly on these.</p></li>
 <li><p><strong>ratingmodels</strong> — the pricing layer: manual and experience rate build-up,
 credibility blending, rate indication and rate-change decomposition, GLM
-relativities, and renewal constraints.</p></li>
-<li><p><strong>lossmodels</strong> — loss-distribution modeling: severity and frequency fitting,
-and aggregate loss.</p></li>
+relativities with model evaluation, and renewal constraints.</p></li>
+<li><p><strong>lossmodels</strong> — loss-distribution modeling: severity and frequency fitting
+(complete data or under deductibles and limits), model selection and
+diagnostics, and aggregate loss.</p></li>
 <li><p><strong>extremeloss</strong> — the tail: peaks-over-threshold / GPD estimation and
 large-claim loading.</p></li>
 <li><p><strong>risksim</strong> — portfolio Monte Carlo and risk measures.</p></li>
@@ -305,8 +307,8 @@ internal dependencies.</p>
     RM --&gt;|requires| AP
     EL -.-&gt;|optional, via splice| LM
     classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
-    </pre><p>Dependencies stay light — numpy and pandas in the core and <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code>, with
-scipy where the loss and tail work needs it. <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> pulls in matplotlib
+    </pre><p>Dependencies stay light — numpy and pandas in the core and <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code>;
+<code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> and <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> are numpy + scipy; <code class="docutils literal notranslate"><span class="pre">risksim</span></code> is numpy only. <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> pulls in matplotlib
 only through its optional <code class="docutils literal notranslate"><span class="pre">plot</span></code> extra (<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;extremeloss[plot]&quot;</span></code>), for
 the diagnostic plots; the base install does not require it.</p>
 </section>
@@ -315,7 +317,10 @@ the diagnostic plots; the base install does not require it.</p>
 <p>Every package works on plain numpy arrays and pandas Series/DataFrames. There is
 no framework to buy into: functions take and return the data structures you
 already have, and the classes (<code class="docutils literal notranslate"><span class="pre">Experience</span></code>, <code class="docutils literal notranslate"><span class="pre">ManualRate</span></code>, <code class="docutils literal notranslate"><span class="pre">RateIndication</span></code>, …)
-are thin, inspectable wrappers over those functions.</p>
+are thin, inspectable wrappers over those functions. Cross-package numerical
+conventions — the empirical VaR/TVaR estimators, the <code class="docutils literal notranslate"><span class="pre">rng</span></code> reproducibility
+contract, distribution naming, coverage semantics, and the truncation/censoring
+data layout — are collected on the <a class="reference internal" href="conventions.html"><span class="std std-doc">Conventions</span></a> page.</p>
 </section>
 </section>
 
@@ -324,12 +329,12 @@ are thin, inspectable wrappers over those functions.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="actuarialpy.html">
+          <a class="next-page" href="conventions.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">actuarialpy</div>
+                <div class="title">Conventions</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -390,7 +395,7 @@ are thin, inspectable wrappers over those functions.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=99ee5e77"></script>
+</div><script src="_static/documentation_options.js?v=d5b01d8c"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

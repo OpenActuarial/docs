@@ -201,6 +201,7 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
@@ -252,11 +253,15 @@
 <h1>extremeloss<a class="headerlink" href="#extremeloss" title="Link to this heading">¶</a></h1>
 <p>Extreme-value tail estimation for large claims: peaks-over-threshold with the
 generalized Pareto distribution (GPD), tail analytics, and large-claim loading.
-numpy and pandas only.</p>
+numpy and scipy only; matplotlib is optional via the <code class="docutils literal notranslate"><span class="pre">plot</span></code> extra, and
+<code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> integration via the <code class="docutils literal notranslate"><span class="pre">splice</span></code> extra.</p>
 <p>The package covers threshold selection, GPD estimation, and the analytics built
 on a fitted tail — return levels, exceedance probabilities, and excess-layer
 charges — plus integration helpers for splicing an empirical body to a fitted
 tail. It composes with <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> and the pooling primitives in <code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code>.</p>
+<p>Empirical tail measures follow the ecosystem VaR/TVaR estimators, and
+simulation-backed quantities accept the shared <code class="docutils literal notranslate"><span class="pre">rng</span></code> argument — see
+<a class="reference internal" href="conventions.html"><span class="std std-doc">Conventions</span></a>.</p>
 <p>See the API reference below for the full surface; each object’s docstring carries
 its own usage.</p>
 <section id="module-extremeloss">
@@ -477,7 +482,7 @@ threshold. The mixing weight defaults to the body mass implied by the fit,
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=99ee5e77"></script>
+</div><script src="_static/documentation_options.js?v=d5b01d8c"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
