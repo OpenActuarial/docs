@@ -365,6 +365,44 @@ retention at which retained CV hits a target. The basis for a size-graded
 pooling schedule.</p></li>
 </ul>
 </section>
+<section id="underwriting-margin-and-weighted-rollups">
+<h2>Underwriting margin and weighted rollups<a class="headerlink" href="#underwriting-margin-and-weighted-rollups" title="Link to this heading">¶</a></h2>
+<p>The two-tier underwriting income statement — <strong>gross margin</strong> (revenue less
+benefit expense, admin excluded) and <strong>gain/(loss)</strong> (gross margin less
+admin). Ratio denominators are explicit parameters because real exhibits mix
+them (MCR over net revenue, AER over gross premium), and <code class="docutils literal notranslate"><span class="pre">reconciliation()</span></code>
+reports the resulting gap in <code class="docutils literal notranslate"><span class="pre">gain%</span> <span class="pre">=</span> <span class="pre">1</span> <span class="pre">−</span> <span class="pre">MCR</span> <span class="pre">−</span> <span class="pre">AER</span></code>; the full convention is
+on the <a class="reference internal" href="conventions.html"><span class="std std-doc">conventions</span></a> page.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">actuarialpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ap</span>
+
+<span class="n">uw</span> <span class="o">=</span> <span class="n">ap</span><span class="o">.</span><span class="n">UnderwritingSummary</span><span class="o">.</span><span class="n">from_pmpm</span><span class="p">(</span>
+    <span class="n">revenue_pmpm</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;premium&quot;</span><span class="p">:</span> <span class="mf">400.0</span><span class="p">,</span> <span class="s2">&quot;refund&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.4</span><span class="p">},</span>
+    <span class="n">benefit_pmpm</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;medical&quot;</span><span class="p">:</span> <span class="mf">340.0</span><span class="p">,</span> <span class="s2">&quot;pharmacy_net&quot;</span><span class="p">:</span> <span class="mf">16.4</span><span class="p">},</span>
+    <span class="n">admin_pmpm</span><span class="o">=</span><span class="mf">37.4</span><span class="p">,</span>
+    <span class="n">member_months</span><span class="o">=</span><span class="mi">300_000</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">uw</span><span class="o">.</span><span class="n">mcr</span><span class="p">,</span> <span class="n">uw</span><span class="o">.</span><span class="n">aer</span>                       <span class="c1"># explicit denominators</span>
+<span class="n">uw</span><span class="o">.</span><span class="n">gross_margin_pmpm</span><span class="p">,</span> <span class="n">uw</span><span class="o">.</span><span class="n">gain_pmpm</span>   <span class="c1"># the two tiers</span>
+<span class="n">uw</span><span class="o">.</span><span class="n">statement</span><span class="p">()</span>                       <span class="c1"># exhibit-shaped Series</span>
+
+<span class="c1"># grouped, from a tidy table: components summed first,</span>
+<span class="c1"># every ratio a ratio of sums</span>
+<span class="n">ap</span><span class="o">.</span><span class="n">underwriting_summary</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">,</span> <span class="n">groupby</span><span class="o">=</span><span class="s2">&quot;cohort&quot;</span><span class="p">,</span>
+    <span class="n">revenue_cols</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;premium&quot;</span><span class="p">,</span> <span class="s2">&quot;refund&quot;</span><span class="p">],</span> <span class="n">benefit_cols</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;medical&quot;</span><span class="p">,</span> <span class="s2">&quot;pharmacy&quot;</span><span class="p">],</span>
+    <span class="n">admin_cols</span><span class="o">=</span><span class="s2">&quot;admin&quot;</span><span class="p">,</span> <span class="n">exposure_col</span><span class="o">=</span><span class="s2">&quot;member_months&quot;</span><span class="p">,</span> <span class="n">premium_col</span><span class="o">=</span><span class="s2">&quot;premium&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Quantities that are already rates at the row level — rate actions,
+persistency — cannot be summed. <code class="docutils literal notranslate"><span class="pre">weighted_mean</span></code> and <code class="docutils literal notranslate"><span class="pre">weighted_summary</span></code>
+average them with a <strong>required, named weight</strong> and report the weight total
+beside every average:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ap</span><span class="o">.</span><span class="n">weighted_summary</span><span class="p">(</span><span class="n">book</span><span class="p">,</span> <span class="n">value_cols</span><span class="o">=</span><span class="s2">&quot;rate_action&quot;</span><span class="p">,</span>
+                    <span class="n">weight_col</span><span class="o">=</span><span class="s2">&quot;premium&quot;</span><span class="p">,</span> <span class="n">groupby</span><span class="o">=</span><span class="s2">&quot;cohort&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
 <section id="module-actuarialpy">
 <span id="api-reference"></span><h2>API reference<a class="headerlink" href="#module-actuarialpy" title="Link to this heading">¶</a></h2>
 <p>ActuarialPy: tools for actuarial experience analysis.</p>
@@ -1562,6 +1600,197 @@ add the margin ratio (<code class="docutils literal notranslate"><span class="pr
 <dd><p>Margin as a fraction of premium = margin / premium.</p>
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="actuarialpy.UnderwritingSummary">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">UnderwritingSummary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">revenue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">benefit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">admin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">member_months</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">premium_label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'premium'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mcr_denominator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total_revenue'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aer_denominator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'premium'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_denominator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total_revenue'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/actuarialpy/underwriting.html#UnderwritingSummary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#actuarialpy.UnderwritingSummary" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Two-tier underwriting income statement for a single entity or period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>revenue</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>float</em><em>]</em>) – Labeled revenue components in dollars (e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;premium&quot;:</span> <span class="pre">...,</span>
+<span class="pre">&quot;refund&quot;:</span> <span class="pre">...}</span></code>). Offsets such as refunds should be signed
+(negative). The library never interprets the labels; it only sums
+them – component vocabulary stays with the caller.</p></li>
+<li><p><strong>benefit</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>float</em><em>]</em>) – Labeled benefit (medical / claims) expense components in dollars.</p></li>
+<li><p><strong>admin</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>float</em><em>] </em><em>| </em><em>float</em>) – Administrative expense, itemized or as a single amount. Default 0.</p></li>
+<li><p><strong>member_months</strong> (<em>float</em><em>, </em><em>optional</em>) – Exposure used for per-member-per-month figures. Required only when a
+<code class="docutils literal notranslate"><span class="pre">*_pmpm</span></code> property is accessed.</p></li>
+<li><p><strong>premium_label</strong> (<em>str</em>) – Which revenue component is the gross premium, used when a
+denominator is <code class="docutils literal notranslate"><span class="pre">&quot;premium&quot;</span></code>. Default <code class="docutils literal notranslate"><span class="pre">&quot;premium&quot;</span></code>.</p></li>
+<li><p><strong>mcr_denominator</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;total_revenue&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;premium&quot;</span></code>. Defaults follow the common
+exhibit convention: MCR and gain ratio over total revenue, AER over
+gross premium.</p></li>
+<li><p><strong>aer_denominator</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;total_revenue&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;premium&quot;</span></code>. Defaults follow the common
+exhibit convention: MCR and gain ratio over total revenue, AER over
+gross premium.</p></li>
+<li><p><strong>gain_denominator</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;total_revenue&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;premium&quot;</span></code>. Defaults follow the common
+exhibit convention: MCR and gain ratio over total revenue, AER over
+gross premium.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">uw</span> <span class="o">=</span> <span class="n">UnderwritingSummary</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">revenue</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;premium&quot;</span><span class="p">:</span> <span class="mf">1_200_000.0</span><span class="p">,</span> <span class="s2">&quot;refund&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">4_000.0</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="n">benefit</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;inpatient&quot;</span><span class="p">:</span> <span class="mf">500_000.0</span><span class="p">,</span> <span class="s2">&quot;outpatient&quot;</span><span class="p">:</span> <span class="mf">590_000.0</span><span class="p">},</span>
+<span class="gp">... </span>    <span class="n">admin</span><span class="o">=</span><span class="mf">110_000.0</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">member_months</span><span class="o">=</span><span class="mf">3_000.0</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">round</span><span class="p">(</span><span class="n">uw</span><span class="o">.</span><span class="n">gross_margin</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="go">106000.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">round</span><span class="p">(</span><span class="n">uw</span><span class="o">.</span><span class="n">gain</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="go">-4000.0</span>
+</pre></div>
+</div>
+<dl class="py property">
+<dt class="sig sig-object py" id="actuarialpy.UnderwritingSummary.aer">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">aer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#actuarialpy.UnderwritingSummary.aer" title="Link to this definition">¶</a></dt>
+<dd><p>Administrative expense over the <code class="docutils literal notranslate"><span class="pre">aer_denominator</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="actuarialpy.UnderwritingSummary.from_pmpm">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_pmpm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">revenue_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">benefit_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">admin_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">member_months</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#actuarialpy.UnderwritingSummary" title="actuarialpy.underwriting.UnderwritingSummary"><span class="pre">UnderwritingSummary</span></a></span></span><a class="reference internal" href="_modules/actuarialpy/underwriting.html#UnderwritingSummary.from_pmpm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#actuarialpy.UnderwritingSummary.from_pmpm" title="Link to this definition">¶</a></dt>
+<dd><p>Build a summary from PMPM components and member months.</p>
+<p>Forecast exhibits are usually stated PMPM; this dollarizes each
+component by <code class="docutils literal notranslate"><span class="pre">member_months</span></code> so totals, PMPMs, and ratios all come
+from one set of inputs.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="actuarialpy.UnderwritingSummary.gain">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gain</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#actuarialpy.UnderwritingSummary.gain" title="Link to this definition">¶</a></dt>
+<dd><p>gross margin less administrative expense.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tier two</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="actuarialpy.UnderwritingSummary.gain_ratio">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gain_ratio</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#actuarialpy.UnderwritingSummary.gain_ratio" title="Link to this definition">¶</a></dt>
+<dd><p>Gain / (loss) over the <code class="docutils literal notranslate"><span class="pre">gain_denominator</span></code>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="actuarialpy.UnderwritingSummary.gross_margin">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gross_margin</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#actuarialpy.UnderwritingSummary.gross_margin" title="Link to this definition">¶</a></dt>
+<dd><p>total revenue less benefit expense (admin excluded).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tier one</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="actuarialpy.UnderwritingSummary.gross_margin_ratio">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gross_margin_ratio</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#actuarialpy.UnderwritingSummary.gross_margin_ratio" title="Link to this definition">¶</a></dt>
+<dd><p>Gross margin over the <code class="docutils literal notranslate"><span class="pre">mcr_denominator</span></code> (its complement).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="actuarialpy.UnderwritingSummary.mcr">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mcr</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#actuarialpy.UnderwritingSummary.mcr" title="Link to this definition">¶</a></dt>
+<dd><p>Benefit expense over the <code class="docutils literal notranslate"><span class="pre">mcr_denominator</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="actuarialpy.UnderwritingSummary.reconciliation">
+<span class="sig-name descname"><span class="pre">reconciliation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/actuarialpy/underwriting.html#UnderwritingSummary.reconciliation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#actuarialpy.UnderwritingSummary.reconciliation" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">gain_ratio</span> <span class="pre">-</span> <span class="pre">(1</span> <span class="pre">-</span> <span class="pre">mcr</span> <span class="pre">-</span> <span class="pre">aer)</span></code>: the mixed-denominator gap.</p>
+<p>Zero when every denominator is the same series; otherwise the size
+of the drift introduced by quoting MCR, AER, and gain over different
+bases. Useful as an exhibit footnote or a data-quality check.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="actuarialpy.UnderwritingSummary.statement">
+<span class="sig-name descname"><span class="pre">statement</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="reference internal" href="_modules/actuarialpy/underwriting.html#UnderwritingSummary.statement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#actuarialpy.UnderwritingSummary.statement" title="Link to this definition">¶</a></dt>
+<dd><p>Exhibit-shaped Series: components, subtotals, tiers, then ratios.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="actuarialpy.UnderwritingSummary.to_frame">
+<span class="sig-name descname"><span class="pre">to_frame</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/actuarialpy/underwriting.html#UnderwritingSummary.to_frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#actuarialpy.UnderwritingSummary.to_frame" title="Link to this definition">¶</a></dt>
+<dd><p>One tidy row of every total and ratio (PMPMs when exposure given).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="actuarialpy.underwriting_summary">
+<span class="sig-name descname"><span class="pre">underwriting_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupby</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">revenue_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">benefit_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">admin_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">premium_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mcr_denominator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total_revenue'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aer_denominator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'premium'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_denominator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total_revenue'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/actuarialpy/underwriting.html#underwriting_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#actuarialpy.underwriting_summary" title="Link to this definition">¶</a></dt>
+<dd><p>Grouped two-tier underwriting summary from a tidy table.</p>
+<p>Component columns are <strong>summed first</strong> and every ratio is computed on the
+aggregated totals (ratio of sums, never an average of row-level ratios) –
+the same contract as <a class="reference internal" href="#actuarialpy.summarize_experience" title="actuarialpy.summarize_experience"><code class="xref py py-func docutils literal notranslate"><span class="pre">actuarialpy.summarize_experience()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – One row per entity / period at whatever grain is being rolled up.</p></li>
+<li><p><strong>groupby</strong> (<em>str</em><em> | </em><em>Iterable</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – Grouping columns; omit for a single all-rows summary.</p></li>
+<li><p><strong>revenue_cols</strong> (<em>str</em><em> | </em><em>Iterable</em><em>[</em><em>str</em><em>]</em>) – Component columns for each tier. Revenue offsets (refunds) should be
+signed.</p></li>
+<li><p><strong>benefit_cols</strong> (<em>str</em><em> | </em><em>Iterable</em><em>[</em><em>str</em><em>]</em>) – Component columns for each tier. Revenue offsets (refunds) should be
+signed.</p></li>
+<li><p><strong>admin_cols</strong> (<em>str</em><em> | </em><em>Iterable</em><em>[</em><em>str</em><em>]</em>) – Component columns for each tier. Revenue offsets (refunds) should be
+signed.</p></li>
+<li><p><strong>exposure_col</strong> (<em>str</em><em>, </em><em>optional</em>) – Member-months column; adds <code class="docutils literal notranslate"><span class="pre">*_pmpm</span></code> output columns.</p></li>
+<li><p><strong>premium_col</strong> (<em>str</em><em>, </em><em>optional</em>) – Gross premium column, required when any denominator is
+<code class="docutils literal notranslate"><span class="pre">&quot;premium&quot;</span></code>.</p></li>
+<li><p><strong>mcr_denominator</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;total_revenue&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;premium&quot;</span></code>; see the module docstring for
+the convention discussion.</p></li>
+<li><p><strong>aer_denominator</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;total_revenue&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;premium&quot;</span></code>; see the module docstring for
+the convention discussion.</p></li>
+<li><p><strong>gain_denominator</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;total_revenue&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;premium&quot;</span></code>; see the module docstring for
+the convention discussion.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Group keys, component sums, <code class="docutils literal notranslate"><span class="pre">total_revenue</span></code>, <code class="docutils literal notranslate"><span class="pre">total_benefit</span></code>,
+<code class="docutils literal notranslate"><span class="pre">total_admin</span></code>, <code class="docutils literal notranslate"><span class="pre">gross_margin</span></code>, <code class="docutils literal notranslate"><span class="pre">gain</span></code>, <code class="docutils literal notranslate"><span class="pre">mcr</span></code>, <code class="docutils literal notranslate"><span class="pre">aer</span></code>,
+<code class="docutils literal notranslate"><span class="pre">gross_margin_ratio</span></code>, <code class="docutils literal notranslate"><span class="pre">gain_ratio</span></code>, and PMPM columns when
+<code class="docutils literal notranslate"><span class="pre">exposure_col</span></code> is given.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="actuarialpy.weighted_mean">
+<span class="sig-name descname"><span class="pre">weighted_mean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">skipna</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/actuarialpy/weighted.html#weighted_mean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#actuarialpy.weighted_mean" title="Link to this definition">¶</a></dt>
+<dd><p>Weighted mean with validated, explicit weights.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>values</strong> (<em>array-like</em>) – Row-level rates or ratios to average.</p></li>
+<li><p><strong>weights</strong> (<em>array-like</em>) – Non-negative, finite weights, same length as <code class="docutils literal notranslate"><span class="pre">values</span></code>, with a
+positive total.</p></li>
+<li><p><strong>skipna</strong> (<em>bool</em>) – When True, pairs where the value is NaN are dropped before
+averaging. Default False: a NaN value propagates to the result, so
+missing data surfaces instead of silently shrinking the base.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="actuarialpy.weighted_summary">
+<span class="sig-name descname"><span class="pre">weighted_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groupby</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skipna</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/actuarialpy/weighted.html#weighted_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#actuarialpy.weighted_summary" title="Link to this definition">¶</a></dt>
+<dd><p>Grouped weighted means of one or more value columns.</p>
+<p>Each value column <code class="docutils literal notranslate"><span class="pre">x</span></code> produces <code class="docutils literal notranslate"><span class="pre">x_weighted</span></code> =
+<span class="math notranslate nohighlight">\(\sum wx / \sum w\)</span> per group; the weight total is reported as
+<code class="docutils literal notranslate"><span class="pre">{weight_col}_total</span></code> so the base of every average is visible.</p>
+<p>Typical use: premium-weighted rate actions by cohort, member-weighted
+persistency by segment.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="actuarialpy.excess_over_threshold">
 <span class="sig-name descname"><span class="pre">excess_over_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">excess_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'excess'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/actuarialpy/pooling.html#excess_over_threshold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#actuarialpy.excess_over_threshold" title="Link to this definition">¶</a></dt>
@@ -2024,6 +2253,7 @@ Returns 0 when the record and study window do not overlap.</p>
 <li><a class="reference internal" href="#financial-mathematics">Financial mathematics</a></li>
 <li><a class="reference internal" href="#exposure-and-age-bases">Exposure and age bases</a></li>
 <li><a class="reference internal" href="#retention-primitives">Retention primitives</a></li>
+<li><a class="reference internal" href="#underwriting-margin-and-weighted-rollups">Underwriting margin and weighted rollups</a></li>
 <li><a class="reference internal" href="#module-actuarialpy">API reference</a><ul>
 <li><a class="reference internal" href="#actuarialpy.Experience"><code class="docutils literal notranslate"><span class="pre">Experience</span></code></a><ul>
 <li><a class="reference internal" href="#actuarialpy.Experience.actual_vs_expected"><code class="docutils literal notranslate"><span class="pre">actual_vs_expected()</span></code></a></li>
@@ -2147,6 +2377,22 @@ Returns 0 when the record and study window do not overlap.</p>
 <li><a class="reference internal" href="#actuarialpy.add_margin"><code class="docutils literal notranslate"><span class="pre">add_margin()</span></code></a></li>
 <li><a class="reference internal" href="#actuarialpy.margin"><code class="docutils literal notranslate"><span class="pre">margin()</span></code></a></li>
 <li><a class="reference internal" href="#actuarialpy.margin_ratio"><code class="docutils literal notranslate"><span class="pre">margin_ratio()</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.UnderwritingSummary"><code class="docutils literal notranslate"><span class="pre">UnderwritingSummary</span></code></a><ul>
+<li><a class="reference internal" href="#actuarialpy.UnderwritingSummary.aer"><code class="docutils literal notranslate"><span class="pre">aer</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.UnderwritingSummary.from_pmpm"><code class="docutils literal notranslate"><span class="pre">from_pmpm()</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.UnderwritingSummary.gain"><code class="docutils literal notranslate"><span class="pre">gain</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.UnderwritingSummary.gain_ratio"><code class="docutils literal notranslate"><span class="pre">gain_ratio</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.UnderwritingSummary.gross_margin"><code class="docutils literal notranslate"><span class="pre">gross_margin</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.UnderwritingSummary.gross_margin_ratio"><code class="docutils literal notranslate"><span class="pre">gross_margin_ratio</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.UnderwritingSummary.mcr"><code class="docutils literal notranslate"><span class="pre">mcr</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.UnderwritingSummary.reconciliation"><code class="docutils literal notranslate"><span class="pre">reconciliation()</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.UnderwritingSummary.statement"><code class="docutils literal notranslate"><span class="pre">statement()</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.UnderwritingSummary.to_frame"><code class="docutils literal notranslate"><span class="pre">to_frame()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#actuarialpy.underwriting_summary"><code class="docutils literal notranslate"><span class="pre">underwriting_summary()</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.weighted_mean"><code class="docutils literal notranslate"><span class="pre">weighted_mean()</span></code></a></li>
+<li><a class="reference internal" href="#actuarialpy.weighted_summary"><code class="docutils literal notranslate"><span class="pre">weighted_summary()</span></code></a></li>
 <li><a class="reference internal" href="#actuarialpy.excess_over_threshold"><code class="docutils literal notranslate"><span class="pre">excess_over_threshold()</span></code></a></li>
 <li><a class="reference internal" href="#actuarialpy.pool_losses"><code class="docutils literal notranslate"><span class="pre">pool_losses()</span></code></a></li>
 <li><a class="reference internal" href="#actuarialpy.retained_cv"><code class="docutils literal notranslate"><span class="pre">retained_cv()</span></code></a></li>
@@ -2204,7 +2450,7 @@ Returns 0 when the record and study window do not overlap.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=d5b01d8c"></script>
+</div><script src="_static/documentation_options.js?v=b17fcdc8"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

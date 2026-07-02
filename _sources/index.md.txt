@@ -13,7 +13,8 @@ OpenActuarial is a dependency-light Python ecosystem for general actuarial workf
 
 **The core.** Experience analysis on a tidy table, plus the shared
 primitives — credibility, trend, completion, seasonality, financial
-mathematics, and exposure — that `ratingmodels` builds on directly.
+mathematics, exposure, and underwriting margin — that `ratingmodels`
+builds on directly.
 :::
 
 :::{grid-item-card} ratingmodels
@@ -21,8 +22,8 @@ mathematics, and exposure — that `ratingmodels` builds on directly.
 :link-type: doc
 
 **Pricing.** Manual and experience rate build-up, credibility blending,
-rate indication and decomposition, GLM relativities and model evaluation, and
-renewal constraints.
+rate indication and decomposition, GLM relativities and model evaluation,
+renewal constraints, and pricing scenarios with margin targets.
 :::
 
 :::{grid-item-card} lossmodels

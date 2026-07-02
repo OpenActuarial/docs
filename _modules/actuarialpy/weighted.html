@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
-        <title>ratingmodels.credibility - OpenActuarial</title>
+        <title>actuarialpy.weighted - OpenActuarial</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
@@ -238,150 +238,138 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <h1>Source code for ratingmodels.credibility</h1><div class="highlight"><pre>
-<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Credibility — thin adapters over :mod:`actuarialpy`.</span>
+          <h1>Source code for actuarialpy.weighted</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Explicit-weight aggregation for quantities that cannot be summed.</span>
 
-<span class="sd">Credibility is a shared ecosystem primitive, and its home is ``actuarialpy``,</span>
-<span class="sd">&quot;where credibility sits next to the experience and ratemaking workflows that</span>
-<span class="sd">consume it.&quot; To avoid a second copy of the math drifting out of sync, this</span>
-<span class="sd">module does **not** reimplement the estimators: it delegates to ``actuarialpy``</span>
-<span class="sd">and adapts the results to the names and shapes the rest of ``ratingmodels``</span>
-<span class="sd">expects.</span>
+<span class="sd">Additive amounts (claims, premium, exposure) roll up by summation, and</span>
+<span class="sd">ratios of them roll up as ratios of sums -- that is</span>
+<span class="sd">:func:`actuarialpy.summarize_experience`&#39;s contract. Quantities that are</span>
+<span class="sd">*already* rates or ratios at the row level (rate actions, trend</span>
+<span class="sd">assumptions, persistency) cannot be summed and must be averaged with an</span>
+<span class="sd">explicit weight:</span>
 
-<span class="sd">In particular :func:`buhlmann_straub` calls</span>
-<span class="sd">:meth:`actuarialpy.BuhlmannStraub.from_frame`, which uses the general unbiased</span>
-<span class="sd">estimators (handling unequal period counts), and repackages the fit as a</span>
-<span class="sd">:class:`BuhlmannStraubResult` keyed by group.</span>
+<span class="sd">.. math::</span>
+
+<span class="sd">    \bar{x}_w = \frac{\sum_i w_i x_i}{\sum_i w_i}.</span>
+
+<span class="sd">The weight is a **required** argument everywhere in this module. An</span>
+<span class="sd">unweighted mean of rate actions silently equal-weights a 50-life group with</span>
+<span class="sd">a 5,000-life group; forcing the caller to name the weight (premium, member</span>
+<span class="sd">months, ...) makes that choice visible and reviewable.</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">actuarialpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ap</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_positive</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.columns</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">validate_columns</span>
 
 
-<div class="viewcode-block" id="full_credibility_standard">
-<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.full_credibility_standard">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">full_credibility_standard</span><span class="p">(</span>
-    <span class="n">p</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.90</span><span class="p">,</span>
-    <span class="n">k</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
-    <span class="n">cv_severity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Expected claim count required for full credibility.</span>
-
-<span class="sd">    Delegates to :func:`actuarialpy.full_credibility_claims`. Returns</span>
-<span class="sd">    :math:`(z_{(1+p)/2}/k)^2`, inflated by :math:`1 + \mathrm{cv}^2` when</span>
-<span class="sd">    ``cv_severity`` is supplied (aggregate losses rather than pure frequency).</span>
-
-<span class="sd">    &gt;&gt;&gt; round(full_credibility_standard(0.90, 0.05))</span>
-<span class="sd">    1082</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span>
-        <span class="n">ap</span><span class="o">.</span><span class="n">full_credibility_claims</span><span class="p">(</span><span class="n">confidence</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">severity_cv</span><span class="o">=</span><span class="n">cv_severity</span><span class="p">)</span>
-    <span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="limited_fluctuation_credibility">
-<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.limited_fluctuation_credibility">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">limited_fluctuation_credibility</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n_full</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Partial credibility by the square-root rule, ``min(1, sqrt(n / n_full))``.</span>
-
-<span class="sd">    Delegates to :func:`actuarialpy.limited_fluctuation_z`. ``n`` and ``n_full``</span>
-<span class="sd">    are in consistent units (claims, members, member-months, ...).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">ap</span><span class="o">.</span><span class="n">limited_fluctuation_z</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n_full</span><span class="p">))</span></div>
-
-
-
-<div class="viewcode-block" id="buhlmann_credibility">
-<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.buhlmann_credibility">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">buhlmann_credibility</span><span class="p">(</span><span class="n">exposure</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">epv</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vhm</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Bühlmann credibility factor :math:`Z = n / (n + k)`, ``k = EPV/VHM``.</span>
-
-<span class="sd">    This is the credibility *factor* given structural parameters; the</span>
-<span class="sd">    greatest-accuracy *estimators* (fitting EPV/VHM from data) live in</span>
-<span class="sd">    :class:`actuarialpy.Buhlmann` / :class:`actuarialpy.BuhlmannStraub`.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">exposure</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exposure must be non-negative&quot;</span><span class="p">)</span>
-    <span class="n">require_positive</span><span class="p">(</span><span class="n">epv</span><span class="p">,</span> <span class="s2">&quot;epv&quot;</span><span class="p">)</span>
-    <span class="n">require_positive</span><span class="p">(</span><span class="n">vhm</span><span class="p">,</span> <span class="s2">&quot;vhm&quot;</span><span class="p">)</span>
-    <span class="n">k</span> <span class="o">=</span> <span class="n">epv</span> <span class="o">/</span> <span class="n">vhm</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">exposure</span> <span class="o">/</span> <span class="p">(</span><span class="n">exposure</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span></div>
-
-
-
-<div class="viewcode-block" id="BuhlmannStraubResult">
-<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.BuhlmannStraubResult">[docs]</a>
-<span class="nd">@dataclass</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">BuhlmannStraubResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Result of an empirical Bühlmann-Straub fit, keyed by group.&quot;&quot;&quot;</span>
-
-    <span class="n">k</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">epv</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">vhm</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">overall_mean</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">group_means</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span>
-    <span class="n">credibility</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span>
-    <span class="n">credibility_weighted</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>  <span class="c1"># pragma: no cover - cosmetic</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;BuhlmannStraubResult(k=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2">, epv=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">epv</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2">, &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;vhm=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">vhm</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2">, n_groups=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_means</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
-        <span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="buhlmann_straub">
-<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.buhlmann_straub">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">buhlmann_straub</span><span class="p">(</span>
-    <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
-    <span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">period</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">exposure</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BuhlmannStraubResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Empirical Bühlmann-Straub credibility from grouped exposure data.</span>
-
-<span class="sd">    Thin wrapper over :meth:`actuarialpy.BuhlmannStraub.from_frame` (the general</span>
-<span class="sd">    unbiased estimators) that returns a :class:`BuhlmannStraubResult` with</span>
-<span class="sd">    per-group credibility and credibility-weighted means.</span>
+<div class="viewcode-block" id="weighted_mean">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.weighted_mean">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">weighted_mean</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">weights</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">skipna</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Weighted mean with validated, explicit weights.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    data : DataFrame</span>
-<span class="sd">        Long-format data: one row per (group, period).</span>
-<span class="sd">    group, period, value, exposure : str</span>
-<span class="sd">        Column names. ``value`` is the per-unit observation (e.g. loss per</span>
-<span class="sd">        member-month); ``exposure`` is the weight :math:`m_{ij}`.</span>
+<span class="sd">    values : array-like</span>
+<span class="sd">        Row-level rates or ratios to average.</span>
+<span class="sd">    weights : array-like</span>
+<span class="sd">        Non-negative, finite weights, same length as ``values``, with a</span>
+<span class="sd">        positive total.</span>
+<span class="sd">    skipna : bool</span>
+<span class="sd">        When True, pairs where the value is NaN are dropped before</span>
+<span class="sd">        averaging. Default False: a NaN value propagates to the result, so</span>
+<span class="sd">        missing data surfaces instead of silently shrinking the base.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">ap</span><span class="o">.</span><span class="n">BuhlmannStraub</span><span class="o">.</span><span class="n">from_frame</span><span class="p">(</span>
-        <span class="n">data</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span> <span class="n">period</span><span class="o">=</span><span class="n">period</span>
-    <span class="p">)</span>
-    <span class="n">groups</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">groups_</span>
-    <span class="n">group_means</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">risk_means_</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">groups</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;group_mean&quot;</span><span class="p">)</span>
-    <span class="n">z</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">z</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">weights</span><span class="p">)),</span> <span class="n">index</span><span class="o">=</span><span class="n">groups</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;credibility&quot;</span>
-    <span class="p">)</span>
-    <span class="n">cred_weighted</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span> <span class="o">*</span> <span class="n">group_means</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">z</span><span class="p">)</span> <span class="o">*</span> <span class="n">model</span><span class="o">.</span><span class="n">overall_mean</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
-        <span class="s2">&quot;credibility_weighted&quot;</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">BuhlmannStraubResult</span><span class="p">(</span>
-        <span class="n">k</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">k</span><span class="p">),</span>
-        <span class="n">epv</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">epv</span><span class="p">),</span>
-        <span class="n">vhm</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">vhm</span><span class="p">),</span>
-        <span class="n">overall_mean</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">overall_mean</span><span class="p">),</span>
-        <span class="n">group_means</span><span class="o">=</span><span class="n">group_means</span><span class="p">,</span>
-        <span class="n">credibility</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
-        <span class="n">credibility_weighted</span><span class="o">=</span><span class="n">cred_weighted</span><span class="p">,</span>
-    <span class="p">)</span></div>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">w</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;values and weights must have the same shape, got </span><span class="si">{</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">w</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">w</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">w</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;weights must be finite&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">w</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;weights must be non-negative&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">skipna</span><span class="p">:</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">v</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span> <span class="n">w</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="n">w</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;weights must sum to a positive total&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="n">v</span> <span class="o">*</span> <span class="n">w</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">total</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="weighted_summary">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.weighted_summary">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">weighted_summary</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">value_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">weight_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">skipna</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Grouped weighted means of one or more value columns.</span>
+
+<span class="sd">    Each value column ``x`` produces ``x_weighted`` =</span>
+<span class="sd">    :math:`\\sum wx / \\sum w` per group; the weight total is reported as</span>
+<span class="sd">    ``{weight_col}_total`` so the base of every average is visible.</span>
+
+<span class="sd">    Typical use: premium-weighted rate actions by cohort, member-weighted</span>
+<span class="sd">    persistency by segment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">value_cols</span><span class="p">)</span>
+    <span class="n">groups</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">groupby</span><span class="p">)</span>
+    <span class="n">validate_columns</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">groups</span> <span class="o">+</span> <span class="n">values</span> <span class="o">+</span> <span class="p">[</span><span class="n">weight_col</span><span class="p">])</span>
+
+    <span class="n">work</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">groups</span> <span class="o">+</span> <span class="n">values</span> <span class="o">+</span> <span class="p">[</span><span class="n">weight_col</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">work</span><span class="p">[</span><span class="n">weight_col</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">w</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">weight_col</span><span class="si">!r}</span><span class="s2"> must be finite&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">w</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">weight_col</span><span class="si">!r}</span><span class="s2"> must be non-negative&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">work</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span> <span class="k">if</span> <span class="n">skipna</span> <span class="k">else</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">work</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="n">work</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;_wx_</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">work</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">work</span><span class="p">[</span><span class="n">weight_col</span><span class="p">]</span>
+        <span class="n">work</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;_w_</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">work</span><span class="p">[</span><span class="n">weight_col</span><span class="p">]</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="o">~</span><span class="n">mask</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">groups</span><span class="p">:</span>
+        <span class="n">agg</span> <span class="o">=</span> <span class="n">work</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">groups</span><span class="p">,</span> <span class="n">dropna</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">as_index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numeric_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">num_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">work</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">]</span>
+        <span class="n">agg</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="n">col</span><span class="p">:</span> <span class="p">[</span><span class="n">work</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">num_cols</span><span class="p">})</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="n">agg</span><span class="p">[</span><span class="n">groups</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">groups</span> <span class="k">else</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+        <span class="n">weight_sum</span> <span class="o">=</span> <span class="n">agg</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;_w_</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">weight_sum</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;weights sum to zero for at least one group when averaging </span><span class="si">{</span><span class="n">col</span><span class="si">!r}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_weighted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">agg</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;_wx_</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">weight_sum</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">skipna</span><span class="p">:</span>
+            <span class="n">nan_groups</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">work</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">_isna</span><span class="o">=</span><span class="n">work</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">())</span>
+                <span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">groups</span><span class="p">,</span> <span class="n">dropna</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="s2">&quot;_isna&quot;</span><span class="p">]</span>
+                <span class="o">.</span><span class="n">any</span><span class="p">()</span>
+                <span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">groups</span>
+                <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">work</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">()])</span>
+            <span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">nan_groups</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_weighted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">out</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">weight_col</span><span class="si">}</span><span class="s2">_total&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">agg</span><span class="p">[</span><span class="n">weight_col</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 </pre></div>
         </article>

@@ -346,6 +346,42 @@ predicted risk:</p>
 <p>A model that segments shows lift rising monotonically across bands; the
 Gini summarizes the same ordering in one number, comparable across books.</p>
 </section>
+<section id="pricing-scenarios-and-margin">
+<h2>Pricing scenarios and margin<a class="headerlink" href="#pricing-scenarios-and-margin" title="Link to this heading">¶</a></h2>
+<p>The indication answers <em>what does the formula say</em>; management pricing asks
+what margin falls out at the action actually <strong>issued</strong>, after
+<strong>concessions</strong>, at <strong>plan</strong> — and what action produces zero or a target
+margin. <code class="docutils literal notranslate"><span class="pre">PricingEvaluation</span></code> evaluates a case at any rate action with the
+same expense algebra as the gross-up, so at the indicated rate the margin
+ratio equals the retention’s <code class="docutils literal notranslate"><span class="pre">profit_margin</span></code> exactly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ratingmodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rm</span>
+
+<span class="n">ret</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RetentionLoad</span><span class="p">(</span><span class="n">fixed_expense_pmpm</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">variable_expense_ratio</span><span class="o">=</span><span class="mf">0.10</span><span class="p">,</span>
+                       <span class="n">profit_margin</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">lae_ratio</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+<span class="n">case</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">PricingEvaluation</span><span class="p">(</span><span class="n">claims_pmpm</span><span class="o">=</span><span class="mi">410</span><span class="p">,</span> <span class="n">current_rate</span><span class="o">=</span><span class="mi">470</span><span class="p">,</span> <span class="n">retention</span><span class="o">=</span><span class="n">ret</span><span class="p">,</span>
+                            <span class="n">member_months</span><span class="o">=</span><span class="mi">14_400</span><span class="p">,</span> <span class="n">persistency</span><span class="o">=</span><span class="mf">0.85</span><span class="p">)</span>
+
+<span class="k">case</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="mf">0.062</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;issued&quot;</span><span class="p">)</span>        <span class="c1"># premium, gross margin, margin, ratio</span>
+<span class="k">case</span><span class="o">.</span><span class="n">rate_change_for_margin</span><span class="p">(</span><span class="mf">0.03</span><span class="p">)</span>    <span class="c1"># closed form: P(m) = (L(1+lae)+F)/(1-V-m)</span>
+<span class="k">case</span><span class="o">.</span><span class="n">zero_margin_rate_change</span><span class="p">()</span>       <span class="c1"># the m = 0 special case</span>
+</pre></div>
+</div>
+<p>Evaluate named actions across a book into one tidy long table — cohort
+rollups and key-case exhibits are then pivots of library output — and solve
+the exhibit input <em>“actions must be X% higher to hold the target margin”</em>
+in closed form:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tidy</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">scenario_frame</span><span class="p">(</span><span class="n">book</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;formula&quot;</span><span class="p">:</span> <span class="n">formula_actions</span><span class="p">,</span>
+                                <span class="s2">&quot;issued&quot;</span><span class="p">:</span> <span class="n">issued_actions</span><span class="p">,</span> <span class="s2">&quot;plan&quot;</span><span class="p">:</span> <span class="mf">0.118</span><span class="p">})</span>
+<span class="n">tidy</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;case&quot;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s2">&quot;scenario&quot;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s2">&quot;margin_ratio&quot;</span><span class="p">)</span>
+
+<span class="n">rm</span><span class="o">.</span><span class="n">uplift_for_target_margin</span><span class="p">(</span><span class="n">book</span><span class="p">,</span> <span class="n">issued_actions</span><span class="p">,</span> <span class="n">target_margin</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Scenario names are your vocabulary — the library evaluates actions and
+reports margin; what “issued” or a concession budget means stays with the
+caller. Margin definitions are shared ecosystem-wide; see
+<a class="reference internal" href="conventions.html"><span class="std std-doc">conventions</span></a>.</p>
+</section>
 <section id="module-ratingmodels">
 <span id="api-reference"></span><h2>API reference<a class="headerlink" href="#module-ratingmodels" title="Link to this heading">¶</a></h2>
 <p>ratingmodels – actuarial pricing and rate-indication tools.</p>
@@ -1168,6 +1204,151 @@ the total is taken to be the product of the supplied factors.</p></li>
 total is the sum of <code class="docutils literal notranslate"><span class="pre">premium</span></code>.</p>
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.PricingEvaluation">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PricingEvaluation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">claims_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retention</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ratingmodels.RetentionLoad" title="ratingmodels.loading.RetentionLoad"><span class="pre">RetentionLoad</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">member_months</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/scenarios.html#PricingEvaluation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.PricingEvaluation" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A case’s pricing state, evaluable at arbitrary rate actions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>claims_pmpm</strong> (<em>float</em>) – Expected claims PMPM over the rating period (trended, pooled,
+credibility-blended – e.g. <code class="docutils literal notranslate"><span class="pre">RateIndication.blended_claims_pmpm()</span></code>).</p></li>
+<li><p><strong>current_rate</strong> (<em>float</em>) – Current charged rate PMPM that rate changes apply to.</p></li>
+<li><p><strong>retention</strong> (<a class="reference internal" href="#ratingmodels.RetentionLoad" title="ratingmodels.RetentionLoad"><em>RetentionLoad</em></a><em>, </em><em>optional</em>) – Expense structure. When omitted, no expenses are modeled: <code class="docutils literal notranslate"><span class="pre">margin</span></code>
+equals <code class="docutils literal notranslate"><span class="pre">gross</span> <span class="pre">margin</span></code> (premium less claims) and the inverse solve
+reduces to <span class="math notranslate nohighlight">\(P = L / (1 - m)\)</span>.</p></li>
+<li><p><strong>member_months</strong> (<em>float</em><em>, </em><em>optional</em>) – Rating-period exposure; enables dollar outputs.</p></li>
+<li><p><strong>persistency</strong> (<em>float in</em><em> [</em><em>0</em><em>, </em><em>1</em><em>]</em><em>, </em><em>optional</em>) – Renewal probability; enables <code class="docutils literal notranslate"><span class="pre">expected_*</span></code> outputs (premium and
+margin scaled by the probability the case is still on the books).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.PricingEvaluation.at">
+<span class="sig-name descname"><span class="pre">at</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rate_change</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.ScenarioOutcome" title="ratingmodels.scenarios.ScenarioOutcome"><span class="pre">ScenarioOutcome</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/scenarios.html#PricingEvaluation.at"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.PricingEvaluation.at" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate the case at a given proportional rate change.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.PricingEvaluation.from_indication">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_indication</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indication</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ratingmodels.RateIndication" title="ratingmodels.indication.RateIndication"><span class="pre">RateIndication</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">member_months</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.PricingEvaluation" title="ratingmodels.scenarios.PricingEvaluation"><span class="pre">PricingEvaluation</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/scenarios.html#PricingEvaluation.from_indication"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.PricingEvaluation.from_indication" title="Link to this definition">¶</a></dt>
+<dd><p>Adopt a <a class="reference internal" href="#ratingmodels.RateIndication" title="ratingmodels.RateIndication"><code class="xref py py-class docutils literal notranslate"><span class="pre">RateIndication</span></code></a>’s blended claims, rate, and retention.</p>
+<p>With a retention on the indication, evaluating at
+<code class="docutils literal notranslate"><span class="pre">indicated_rate_change()</span></code> returns a margin ratio equal to the
+retention’s <code class="docutils literal notranslate"><span class="pre">profit_margin</span></code>. Without one the indication grosses by
+target loss ratio, expenses are unmodeled here, and margin equals
+gross margin.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.PricingEvaluation.premium_for_margin">
+<span class="sig-name descname"><span class="pre">premium_for_margin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_margin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/scenarios.html#PricingEvaluation.premium_for_margin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.PricingEvaluation.premium_for_margin" title="Link to this definition">¶</a></dt>
+<dd><p>Charged rate PMPM at which the margin ratio equals the target.</p>
+<p>Closed form: <span class="math notranslate nohighlight">\(P = (L(1+\text{lae}) + F) / (1 - V - m)\)</span>. The
+target may be negative (a planned loss) but must satisfy
+<span class="math notranslate nohighlight">\(m &lt; 1 - V\)</span> for a positive, finite rate.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.PricingEvaluation.rate_change_for_margin">
+<span class="sig-name descname"><span class="pre">rate_change_for_margin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_margin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/scenarios.html#PricingEvaluation.rate_change_for_margin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.PricingEvaluation.rate_change_for_margin" title="Link to this definition">¶</a></dt>
+<dd><p>Proportional rate change that yields the target margin ratio.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.PricingEvaluation.zero_margin_rate_change">
+<span class="sig-name descname"><span class="pre">zero_margin_rate_change</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/scenarios.html#PricingEvaluation.zero_margin_rate_change"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.PricingEvaluation.zero_margin_rate_change" title="Link to this definition">¶</a></dt>
+<dd><p>Rate change at which the underwriting margin is exactly zero.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.ScenarioOutcome">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ScenarioOutcome</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate_change</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">premium_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">claims_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">benefit_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">admin_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gross_margin_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">margin_pmpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">margin_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">member_months</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">premium</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gross_margin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">margin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_premium</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_margin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/scenarios.html#ScenarioOutcome"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ScenarioOutcome" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Result of evaluating one case at one rate action.</p>
+<p>PMPM fields are always present. Dollar fields require <code class="docutils literal notranslate"><span class="pre">member_months</span></code>
+on the evaluation and are <code class="docutils literal notranslate"><span class="pre">None</span></code> otherwise; <code class="docutils literal notranslate"><span class="pre">expected_*</span></code> fields
+additionally require <code class="docutils literal notranslate"><span class="pre">persistency</span></code> and are the renewal-probability-
+weighted expectations (the deterministic counterpart of a retention
+Bernoulli).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.ScenarioOutcome.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ratingmodels/scenarios.html#ScenarioOutcome.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ScenarioOutcome.as_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Plain-dict view, one tidy row.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.scenario_frame">
+<span class="sig-name descname"><span class="pre">scenario_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ratingmodels.PricingEvaluation" title="ratingmodels.scenarios.PricingEvaluation"><span class="pre">PricingEvaluation</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scenarios</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/scenarios.html#scenario_frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.scenario_frame" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate named rate actions across cases into one tidy long table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cases</strong> (<em>Mapping</em><em>[</em><em>case_id</em><em>, </em><a class="reference internal" href="#ratingmodels.PricingEvaluation" title="ratingmodels.PricingEvaluation"><em>PricingEvaluation</em></a><em>]</em>) – The book, keyed however the caller identifies cases.</p></li>
+<li><p><strong>scenarios</strong> (<em>Mapping</em><em>[</em><em>str</em><em>, </em><em>float</em><em> | </em><em>Mapping</em><em>[</em><em>case_id</em><em>, </em><em>float</em><em>]</em><em>]</em>) – Each scenario is a rate change: a single float applied to every
+case, or a per-case mapping. A per-case mapping must cover every
+case – a missing action is an error, not a silent skip.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>One row per <code class="docutils literal notranslate"><span class="pre">(case,</span> <span class="pre">scenario)</span></code>: <code class="docutils literal notranslate"><span class="pre">case</span></code>, <code class="docutils literal notranslate"><span class="pre">scenario</span></code>,
+<code class="docutils literal notranslate"><span class="pre">rate_change</span></code>, PMPM economics, and dollar / persistency-weighted
+columns where the evaluation carries exposure and persistency. Any
+summary view – a cohort rollup, a key-case exhibit – is a pivot or
+groupby of this table.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.uplift_for_target_margin">
+<span class="sig-name descname"><span class="pre">uplift_for_target_margin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ratingmodels.PricingEvaluation" title="ratingmodels.scenarios.PricingEvaluation"><span class="pre">PricingEvaluation</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_changes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_margin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'multiplicative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_by_persistency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/ratingmodels/scenarios.html#uplift_for_target_margin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.uplift_for_target_margin" title="Link to this definition">¶</a></dt>
+<dd><p>Uniform uplift to a book’s rate actions that holds an aggregate margin.</p>
+<p>Answers the exhibit input “to achieve the same target margin, rate
+actions must be X% higher”: when achieved actions slip below formula
+(concessions, caps), this is the across-the-board adjustment that
+restores the book’s aggregate margin ratio to the target.</p>
+<p>Let case <span class="math notranslate nohighlight">\(g\)</span> have base premium <span class="math notranslate nohighlight">\(P_g\)</span> (at its base change),
+per-PMPM cost <span class="math notranslate nohighlight">\(K_g = L_g(1+\text{lae}_g) + F_g\)</span>, variable load
+<span class="math notranslate nohighlight">\(V_g\)</span>, and weight <span class="math notranslate nohighlight">\(w_g\)</span> = member months (times persistency
+when <code class="docutils literal notranslate"><span class="pre">weight_by_persistency</span></code>). The aggregate margin ratio is</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[m(P) = \frac{\sum_g w_g \left(P_g (1 - V_g) - K_g\right)}
+            {\sum_g w_g P_g},\]</div>
+</div>
+<p>which is a ratio of functions <strong>affine in the uplift</strong>, so the solve is
+closed-form – no iteration:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">multiplicative</span></code> – new change <span class="math notranslate nohighlight">\(a_g' = (1 + a_g)(1 + u) - 1\)</span>,
+so <span class="math notranslate nohighlight">\(P_g(u) = P_g (1+u)\)</span> and with <span class="math notranslate nohighlight">\(A = \sum w P (1-V)\)</span>,
+<span class="math notranslate nohighlight">\(B = \sum w K\)</span>, <span class="math notranslate nohighlight">\(C = \sum w P\)</span>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[1 + u = \frac{B}{A - m^\* C}.\]</div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">additive</span></code> – new change <span class="math notranslate nohighlight">\(a_g' = a_g + u\)</span>, so
+<span class="math notranslate nohighlight">\(P_g(u) = P_g + r_g u\)</span> with current rate <span class="math notranslate nohighlight">\(r_g\)</span>, and with
+<span class="math notranslate nohighlight">\(A' = \sum w r (1-V)\)</span>, <span class="math notranslate nohighlight">\(C' = \sum w r\)</span>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[u = \frac{B + m^\* C - A}{A' - m^\* C'}.\]</div>
+</div>
+</li>
+</ul>
+<p>Returns the uplift <code class="docutils literal notranslate"><span class="pre">u</span></code>. Feasibility (a positive solution exists and
+every resulting premium is positive) is validated with explicit errors.</p>
+</dd></dl>
+
 </section>
 </section>
 
@@ -1231,6 +1412,7 @@ total is the sum of <code class="docutils literal notranslate"><span class="pre"
 <li><a class="reference internal" href="#the-build-up-engine">The build-up engine</a></li>
 <li><a class="reference internal" href="#glm-relativities">GLM relativities</a></li>
 <li><a class="reference internal" href="#model-evaluation">Model evaluation</a></li>
+<li><a class="reference internal" href="#pricing-scenarios-and-margin">Pricing scenarios and margin</a></li>
 <li><a class="reference internal" href="#module-ratingmodels">API reference</a><ul>
 <li><a class="reference internal" href="#ratingmodels.full_credibility_standard"><code class="docutils literal notranslate"><span class="pre">full_credibility_standard()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.limited_fluctuation_credibility"><code class="docutils literal notranslate"><span class="pre">limited_fluctuation_credibility()</span></code></a></li>
@@ -1330,6 +1512,20 @@ total is the sum of <code class="docutils literal notranslate"><span class="pre"
 <li><a class="reference internal" href="#ratingmodels.renew"><code class="docutils literal notranslate"><span class="pre">renew()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.RenewalAction"><code class="docutils literal notranslate"><span class="pre">RenewalAction</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.member_level_renewal"><code class="docutils literal notranslate"><span class="pre">member_level_renewal()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.PricingEvaluation"><code class="docutils literal notranslate"><span class="pre">PricingEvaluation</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.PricingEvaluation.at"><code class="docutils literal notranslate"><span class="pre">at()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.PricingEvaluation.from_indication"><code class="docutils literal notranslate"><span class="pre">from_indication()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.PricingEvaluation.premium_for_margin"><code class="docutils literal notranslate"><span class="pre">premium_for_margin()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.PricingEvaluation.rate_change_for_margin"><code class="docutils literal notranslate"><span class="pre">rate_change_for_margin()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.PricingEvaluation.zero_margin_rate_change"><code class="docutils literal notranslate"><span class="pre">zero_margin_rate_change()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.ScenarioOutcome"><code class="docutils literal notranslate"><span class="pre">ScenarioOutcome</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.ScenarioOutcome.as_dict"><code class="docutils literal notranslate"><span class="pre">as_dict()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.scenario_frame"><code class="docutils literal notranslate"><span class="pre">scenario_frame()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.uplift_for_target_margin"><code class="docutils literal notranslate"><span class="pre">uplift_for_target_margin()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -1343,7 +1539,7 @@ total is the sum of <code class="docutils literal notranslate"><span class="pre"
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=d5b01d8c"></script>
+</div><script src="_static/documentation_options.js?v=b17fcdc8"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

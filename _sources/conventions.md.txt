@@ -126,3 +126,61 @@ the common per-payment layout — payments net of a deductible, capped at a
 maximum payment — into this triple, flagging capped payments as censored. See
 the [lossmodels](lossmodels.md) page for the likelihood these conventions
 feed.
+
+## Margin and denominators
+
+Underwriting margin is **two-tier** everywhere in the ecosystem:
+
+$$
+\text{gross margin} = \text{total revenue} - \text{total benefit}, \qquad
+\text{gain/(loss)} = \text{gross margin} - \text{total admin}.
+$$
+
+Gross margin is the benefit-tier result — administrative expense is excluded,
+which is also why admin never enters a medical loss ratio. Gain/(loss) is the
+underwriting result after admin. Both packages use these identical
+definitions: the reporting side in [actuarialpy](actuarialpy.md)
+(`UnderwritingSummary`, `underwriting_summary`) and the pricing side in
+[ratingmodels](ratingmodels.md) (`PricingEvaluation`), where at charged rate
+$P$ with claims $L$, LAE ratio, fixed expense $F$ PMPM, and variable load $V$:
+
+$$
+\text{gross margin} = P - L(1+\text{lae}), \qquad
+\text{margin} = P(1 - V) - L(1+\text{lae}) - F.
+$$
+
+At the indicated rate the margin ratio equals the retention's profit
+provision $Q$ exactly, and the rate for **any** margin target $m$ has the same
+form as the gross-up itself:
+
+$$
+P(m) \;=\; \frac{L(1+\text{lae}) + F}{1 - V - m},
+$$
+
+with the standard indication as the special case $m = Q$ and the zero-margin
+rate at $m = 0$.
+
+**Denominators are parameters, never assumptions.** Real exhibits mix bases
+on one page — a medical cost ratio over total (net) revenue beside an admin
+expense ratio over gross premium — so every ratio in the underwriting
+summary names its denominator (`"total_revenue"` or `"premium"`). The
+identity
+
+$$
+\text{gain ratio} \;=\; 1 - \text{MCR} - \text{AER}
+$$
+
+holds exactly only when all three ratios share one denominator;
+`UnderwritingSummary.reconciliation()` reports the gap (for the default
+mixed convention, exactly $\text{admin} \cdot (1/\text{gross} -
+1/\text{net})$) so the drift is visible instead of silent.
+
+**Weighted rollups.** Additive amounts roll up by summation and their ratios
+as ratios of sums — never averages of row-level ratios. Quantities that are
+already rates at the row level (rate actions, persistency) are averaged with
+an **explicit, required weight** (`weighted_mean`, `weighted_summary`), and
+the weight total is reported beside every average.
+
+These are management / pricing metrics. The ACA rebate MLR is a separate
+regulated calculation with its own numerator and denominator adjustments and
+is deliberately out of scope.

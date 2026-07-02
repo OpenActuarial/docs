@@ -103,6 +103,46 @@ rm.lift_table(df["claims"], pred, exposure=df["member_months"], n_bands=10)
 A model that segments shows lift rising monotonically across bands; the
 Gini summarizes the same ordering in one number, comparable across books.
 
+## Pricing scenarios and margin
+
+The indication answers *what does the formula say*; management pricing asks
+what margin falls out at the action actually **issued**, after
+**concessions**, at **plan** — and what action produces zero or a target
+margin. `PricingEvaluation` evaluates a case at any rate action with the
+same expense algebra as the gross-up, so at the indicated rate the margin
+ratio equals the retention's `profit_margin` exactly:
+
+```python
+import ratingmodels as rm
+
+ret = rm.RetentionLoad(fixed_expense_pmpm=8, variable_expense_ratio=0.10,
+                       profit_margin=0.03, lae_ratio=0.02)
+case = rm.PricingEvaluation(claims_pmpm=410, current_rate=470, retention=ret,
+                            member_months=14_400, persistency=0.85)
+
+case.at(0.062, name="issued")        # premium, gross margin, margin, ratio
+case.rate_change_for_margin(0.03)    # closed form: P(m) = (L(1+lae)+F)/(1-V-m)
+case.zero_margin_rate_change()       # the m = 0 special case
+```
+
+Evaluate named actions across a book into one tidy long table — cohort
+rollups and key-case exhibits are then pivots of library output — and solve
+the exhibit input *"actions must be X% higher to hold the target margin"*
+in closed form:
+
+```python
+tidy = rm.scenario_frame(book, {"formula": formula_actions,
+                                "issued": issued_actions, "plan": 0.118})
+tidy.pivot(index="case", columns="scenario", values="margin_ratio")
+
+rm.uplift_for_target_margin(book, issued_actions, target_margin=0.03)
+```
+
+Scenario names are your vocabulary — the library evaluates actions and
+reports margin; what "issued" or a concession budget means stays with the
+caller. Margin definitions are shared ecosystem-wide; see
+[conventions](conventions.md).
+
 ## API reference
 
 ```{eval-rst}
