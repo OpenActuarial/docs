@@ -286,7 +286,7 @@ coherent definition</p>
 the VaR correctly, reduces to the mean of the largest <span class="math notranslate nohighlight">\(n(1-q)\)</span> observations
 when <span class="math notranslate nohighlight">\(nq\)</span> is an integer, and guarantees <span class="math notranslate nohighlight">\(\mathrm{TVaR}_q \ge \mathrm{VaR}_q\)</span>
 at every <span class="math notranslate nohighlight">\(q\)</span>.</p>
-<p>Where they live: <code class="docutils literal notranslate"><span class="pre">risksim.var</span></code> / <code class="docutils literal notranslate"><span class="pre">risksim.tvar</span></code> for simulated portfolios, the
+<p>Where they live: <code class="docutils literal notranslate"><span class="pre">risksim.metrics.var</span></code> / <code class="docutils literal notranslate"><span class="pre">risksim.metrics.tvar</span></code> for simulated portfolios, the
 empirical module in <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> (including the PMF-based <code class="docutils literal notranslate"><span class="pre">var_from_pmf</span></code> /
 <code class="docutils literal notranslate"><span class="pre">tvar_from_pmf</span></code> for discretized aggregates), and the tail metrics in
 <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code>. Same formulas, same edge-case behavior, everywhere.</p>
@@ -320,8 +320,15 @@ share a seed by accident.</p>
 <section id="distribution-naming-and-parameterizations">
 <h2>Distribution naming and parameterizations<a class="headerlink" href="#distribution-naming-and-parameterizations" title="Link to this heading">¶</a></h2>
 <p>Continuous severities follow the <em>Loss Models</em> (FAM/ASTAM Appendix A)
-parameterizations exactly — the forms on the SOA tables — and moments raise
-outside their region of existence rather than returning garbage.</p>
+parameterizations — the forms on the SOA tables — and moments raise outside
+their region of existence rather than returning garbage. Frequencies follow
+the SciPy conventions instead: <code class="docutils literal notranslate"><span class="pre">NegativeBinomial(r,</span> <span class="pre">p)</span></code> is
+<code class="docutils literal notranslate"><span class="pre">scipy.stats.nbinom</span></code>, not the tables’ <span class="math notranslate nohighlight">\((r, \beta)\)</span>, with <span class="math notranslate nohighlight">\(\beta = (1-p)/p\)</span>.
+Every constructor’s exact form and its numerically verified <code class="docutils literal notranslate"><span class="pre">scipy.stats</span></code>
+equivalent are tabulated on the
+<a class="reference internal" href="lossmodels.html#distributions"><span class="std std-ref">lossmodels page</span></a>, including the two places the
+code deviates from Appendix A as of 0.6.0 (<code class="docutils literal notranslate"><span class="pre">Exponential(rate)</span></code>; Weibull’s
+<code class="docutils literal notranslate"><span class="pre">(k,</span> <span class="pre">lam)</span></code> parameter names).</p>
 <p>One naming trap is worth stating plainly, because the literature itself is
 inconsistent:</p>
 <div class="table-wrapper colwidths-auto docutils container">
@@ -347,6 +354,12 @@ inconsistent:</p>
 <p>For ground-up claim severities you almost always want <code class="docutils literal notranslate"><span class="pre">ParetoII</span></code>; <code class="docutils literal notranslate"><span class="pre">Pareto</span></code>
 (Type I) is the tail-only law with a hard lower support bound. The fitters
 mirror the naming: <code class="docutils literal notranslate"><span class="pre">fit_pareto</span></code> fits Type I, <code class="docutils literal notranslate"><span class="pre">fit_paretoII</span></code> fits the Lomax.</p>
+<p>The same trap exists one shelf over. <code class="docutils literal notranslate"><span class="pre">lossmodels.GeneralizedPareto</span></code> is
+Klugman’s three-parameter transformed-beta severity — what <em>Loss Models</em>
+calls the generalized Pareto — and <strong>not</strong> the extreme-value GPD. The
+peaks-over-threshold law is deliberately not a <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> severity class:
+it lives in <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code>, anchored at its threshold (see <em>Tail fitting and
+splicing</em> below).</p>
 </section>
 <section id="coverage-semantics">
 <h2>Coverage semantics<a class="headerlink" href="#coverage-semantics" title="Link to this heading">¶</a></h2>
@@ -385,6 +398,72 @@ the common per-payment layout — payments net of a deductible, capped at a
 maximum payment — into this triple, flagging capped payments as censored. See
 the <a class="reference internal" href="lossmodels.html"><span class="std std-doc">lossmodels</span></a> page for the likelihood these conventions
 feed.</p>
+</section>
+<section id="tail-fitting-and-splicing">
+<h2>Tail fitting and splicing<a class="headerlink" href="#tail-fitting-and-splicing" title="Link to this heading">¶</a></h2>
+<p>The extreme-value GPD is parameterized <span class="math notranslate nohighlight">\((\xi, \beta)\)</span> — <strong>shape</strong> <span class="math notranslate nohighlight">\(\xi\)</span>
+(<span class="math notranslate nohighlight">\(\xi &gt; 0\)</span> heavy-tailed) and <strong>scale</strong> <span class="math notranslate nohighlight">\(\beta\)</span> — anchored at a threshold
+<span class="math notranslate nohighlight">\(u\)</span>. <code class="docutils literal notranslate"><span class="pre">fit_pot(data,</span> <span class="pre">threshold)</span></code> selects the exceedances of <code class="docutils literal notranslate"><span class="pre">data</span></code> above <span class="math notranslate nohighlight">\(u\)</span>
+and fits their <em>excesses</em> <span class="math notranslate nohighlight">\(x - u\)</span>; <code class="docutils literal notranslate"><span class="pre">fit_gpd(excesses)</span></code> is the same fit when
+the excesses are already in hand. Both return a <code class="docutils literal notranslate"><span class="pre">GPDFit</span></code>, which carries the
+exceedance fraction and therefore quotes <strong>unconditional</strong>, ground-up tail
+metrics (<code class="docutils literal notranslate"><span class="pre">gpd_var</span></code>, <code class="docutils literal notranslate"><span class="pre">gpd_tvar</span></code>); <code class="docutils literal notranslate"><span class="pre">GPDTail</span></code> is the <em>conditional</em> excess law
+on <span class="math notranslate nohighlight">\([u, \infty)\)</span> (so <span class="math notranslate nohighlight">\(F_{\text{tail}}(u) = 0\)</span>), the form a splice consumes.</p>
+<p>Splicing is <strong>mass-matching, never density-continuity</strong>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\begin{split}
+f(x) = \begin{cases}
+w \, \dfrac{f_{\text{body}}(x)}{F_{\text{body}}(u)}, &amp; 0 &lt; x \le u \\[1ex]
+(1 - w) \, f_{\text{tail}}(x), &amp; x &gt; u
+\end{cases}
+\end{split}\]</div>
+</div>
+<p>with body mass <span class="math notranslate nohighlight">\(w = P(X \le u)\)</span> and the body renormalized onto <span class="math notranslate nohighlight">\((0, u]\)</span>.
+The weight defaults to the empirical body mass <span class="math notranslate nohighlight">\(1 - {}\)</span>exceedance fraction
+(from the data in <code class="docutils literal notranslate"><span class="pre">fit_spliced_gpd</span></code>, from the fit in <code class="docutils literal notranslate"><span class="pre">splice_gpd_tail</span></code>);
+pass <code class="docutils literal notranslate"><span class="pre">weight=</span></code> to override. A density jump at the threshold is allowed and
+stays visible — it is a diagnostic, not a defect to smooth away.</p>
+<p>The handoff runs one direction: <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> fits the tail and returns a
+<code class="docutils literal notranslate"><span class="pre">lossmodels.SplicedSeverity</span></code>, so every downstream consumer — collective
+risk models, discretization, a <code class="docutils literal notranslate"><span class="pre">risksim</span></code> portfolio — holds the same
+severity class whether or not it carries an EVT tail.</p>
+</section>
+<section id="rates-exposure-and-decomposition">
+<h2>Rates, exposure, and decomposition<a class="headerlink" href="#rates-exposure-and-decomposition" title="Link to this heading">¶</a></h2>
+<p>The per-exposure vocabulary is fixed across the reporting stack:
+<strong>frequency</strong> <span class="math notranslate nohighlight">\(=\)</span> count / exposure, <strong>severity</strong> <span class="math notranslate nohighlight">\(=\)</span> loss / count, and
+<strong>loss per exposure</strong> <span class="math notranslate nohighlight">\(=\)</span> loss / exposure (the pure premium), with the
+identity</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+\text{loss\_per\_exposure} \;=\; \text{frequency} \times \text{severity}
+\]</div>
+</div>
+<p>holding row-by-row in every summary and pinned by tests. Rates are derived
+<em>after</em> aggregation — counts, losses, and exposure are summed first — the
+same ratio-of-sums rule as the weighted rollups below.</p>
+<p>Trend decomposition reconciles exactly, with zero residual: the two-way
+split uses symmetric midpoint weights, the three-way <code class="docutils literal notranslate"><span class="pre">mix_by</span></code> split uses
+LMDI (order-free), and in both</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{aligned}
+\text{loss\_per\_exposure\_trend} &amp;= \text{frequency\_trend} \times \text{severity\_trend} \;(\times\; \text{mix\_trend}) \\
+\text{loss\_per\_exposure\_change} &amp;= \text{frequency\_effect} + \text{severity\_effect} \;(+\; \text{mix\_effect}).
+\end{aligned}
+\end{split}\]</div>
+</div>
+<p><strong>Natural units in the core, display constants at the edge.</strong> No function
+assumes what an exposure unit measures: nothing annualizes, nothing scales
+per thousand, nothing knows a member-month from a car-year. Display
+conventions are one visible line in the exhibit — utilization per 1,000 per
+year for member-month data is <code class="docutils literal notranslate"><span class="pre">frequency</span> <span class="pre">*</span> <span class="pre">12_000</span></code> — so both buried
+constants, the period and the prefix, are stated where they are used.
+Per-exposure output columns are the mechanical <code class="docutils literal notranslate"><span class="pre">{name}_per_{exposure_col}</span></code>;
+the domain-naming rule below governs how a dialect gets its labels back.</p>
 </section>
 <section id="margin-and-denominators">
 <h2>Margin and denominators<a class="headerlink" href="#margin-and-denominators" title="Link to this heading">¶</a></h2>
@@ -516,6 +595,8 @@ and denominator adjustments and are deliberately out of scope.</p>
 <li><a class="reference internal" href="#distribution-naming-and-parameterizations">Distribution naming and parameterizations</a></li>
 <li><a class="reference internal" href="#coverage-semantics">Coverage semantics</a></li>
 <li><a class="reference internal" href="#truncation-and-censoring">Truncation and censoring</a></li>
+<li><a class="reference internal" href="#tail-fitting-and-splicing">Tail fitting and splicing</a></li>
+<li><a class="reference internal" href="#rates-exposure-and-decomposition">Rates, exposure, and decomposition</a></li>
 <li><a class="reference internal" href="#margin-and-denominators">Margin and denominators</a></li>
 </ul>
 </li>
