@@ -61,7 +61,9 @@ flowchart LR
 :::
 
 Dependencies stay light — numpy and pandas in the core and `ratingmodels`, with
-scipy (and matplotlib in `extremeloss`) where the loss and tail work needs it.
+scipy where the loss and tail work needs it. `extremeloss` pulls in matplotlib
+only through its optional `plot` extra (`pip install "extremeloss[plot]"`), for
+the diagnostic plots; the base install does not require it.
 
 ## Conventions
 
