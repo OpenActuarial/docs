@@ -1,8 +1,6 @@
 # OpenActuarial
 
-A small ecosystem of dependency-light Python libraries for the group health
-pricing and risk workflow — experience analysis, rate building, loss modeling,
-tail estimation, and portfolio capital — organized around one shared core.
+OpenActuarial is a dependency-light Python ecosystem for general actuarial workflows: experience analysis, rating and pricing models, loss modeling, tail estimation, simulation, and portfolio capital. The packages are organized around a shared core, while each library installs and runs independently.
 
 ## The ecosystem
 
