@@ -277,23 +277,23 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    experience_claims_pmpm : float</span>
-<span class="sd">        Trended, pooled, adjusted experience claims PMPM</span>
+<span class="sd">    experience_loss_cost : float</span>
+<span class="sd">        Trended, pooled, adjusted experience loss cost (per exposure unit)</span>
 <span class="sd">        (see :class:`ratingmodels.ExperienceRate`).</span>
-<span class="sd">    manual_claims_pmpm : float</span>
-<span class="sd">        Manual claims PMPM at the rating-period level</span>
+<span class="sd">    manual_loss_cost : float</span>
+<span class="sd">        Manual loss cost at the rating-period level</span>
 <span class="sd">        (see :class:`ratingmodels.ManualRate`).</span>
 <span class="sd">    credibility : float</span>
 <span class="sd">        Credibility ``Z`` assigned to experience, in [0, 1].</span>
 <span class="sd">    current_rate : float</span>
-<span class="sd">        Current charged rate PMPM.</span>
+<span class="sd">        Current charged rate per exposure unit.</span>
 <span class="sd">    target_loss_ratio : float</span>
 <span class="sd">        Claims / premium target used to load claims to a charged rate.</span>
 <span class="sd">    current_premium : float, optional</span>
 <span class="sd">        On-level earned premium over the experience period; required only for</span>
 <span class="sd">        the loss-ratio method.</span>
 <span class="sd">    exposure : float, optional</span>
-<span class="sd">        Member-months over the experience period; required for the loss-ratio</span>
+<span class="sd">        Exposure units over the experience period; required for the loss-ratio</span>
 <span class="sd">        method (with ``current_premium``) to form an experience loss ratio.</span>
 <span class="sd">    trend_total_factor : float</span>
 <span class="sd">        Total claims trend factor :math:`(1+t)^\Delta`; used by the loss-ratio</span>
@@ -302,8 +302,8 @@
 <span class="sd">        Driver factors for the rate-change decomposition. Default 1.0.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">experience_claims_pmpm</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">manual_claims_pmpm</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">experience_loss_cost</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">manual_loss_cost</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">credibility</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">target_loss_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.85</span>
@@ -315,33 +315,33 @@
     <span class="n">retention</span><span class="p">:</span> <span class="s2">&quot;RetentionLoad | None&quot;</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experience_claims_pmpm</span> <span class="o">+</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="s2">&quot;experience_claims_pmpm&quot;</span><span class="p">)</span>
-        <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manual_claims_pmpm</span><span class="p">,</span> <span class="s2">&quot;manual_claims_pmpm&quot;</span><span class="p">)</span>
+        <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experience_loss_cost</span> <span class="o">+</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="s2">&quot;experience_loss_cost&quot;</span><span class="p">)</span>
+        <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manual_loss_cost</span><span class="p">,</span> <span class="s2">&quot;manual_loss_cost&quot;</span><span class="p">)</span>
         <span class="n">require_unit_interval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">credibility</span><span class="p">,</span> <span class="s2">&quot;credibility&quot;</span><span class="p">)</span>
         <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_rate</span><span class="p">,</span> <span class="s2">&quot;current_rate&quot;</span><span class="p">)</span>
         <span class="n">require_unit_interval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span><span class="p">,</span> <span class="s2">&quot;target_loss_ratio&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="c1"># ----- claims-level blending ----- #</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">blended_claims_pmpm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">blended_loss_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">blend</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">experience_claims_pmpm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">manual_claims_pmpm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">credibility</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">experience_loss_cost</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">manual_loss_cost</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">credibility</span>
         <span class="p">)</span>
 
     <span class="c1"># ----- charged rates ----- #</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_gross</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">claims_pmpm</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_gross</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss_cost</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gross claims to a charged rate via retention, else target loss ratio.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retention</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">retention</span><span class="o">.</span><span class="n">gross_rate</span><span class="p">(</span><span class="n">claims_pmpm</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">claims_pmpm</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">retention</span><span class="o">.</span><span class="n">gross_rate</span><span class="p">(</span><span class="n">loss_cost</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss_cost</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">experience_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gross</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experience_claims_pmpm</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gross</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experience_loss_cost</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">manual_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gross</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manual_claims_pmpm</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gross</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manual_loss_cost</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">blended_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gross</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blended_claims_pmpm</span><span class="p">())</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gross</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blended_loss_cost</span><span class="p">())</span>
 
     <span class="c1"># ----- indication (build-up) ----- #</span>
 <div class="viewcode-block" id="RateIndication.indicated_rate">
@@ -366,7 +366,7 @@
             <span class="p">)</span>
         <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_premium</span><span class="p">,</span> <span class="s2">&quot;current_premium&quot;</span><span class="p">)</span>
         <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">)</span>
-        <span class="n">experience_claims</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">experience_claims_pmpm</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span>
+        <span class="n">experience_claims</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">experience_loss_cost</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span>
         <span class="k">return</span> <span class="n">experience_claims</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_premium</span>
 
 <div class="viewcode-block" id="RateIndication.loss_ratio_indication">
@@ -399,7 +399,7 @@
 <span class="sd">        Any remaining movement (rate adequacy / loading) is absorbed by an</span>
 <span class="sd">        explicit ``residual`` factor so the parts reconcile to the total.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">experience_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">blended_claims_pmpm</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">manual_claims_pmpm</span>
+        <span class="n">experience_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">blended_loss_cost</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">manual_loss_cost</span>
         <span class="n">drivers</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;trend&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_total_factor</span><span class="p">,</span>
             <span class="s2">&quot;experience&quot;</span><span class="p">:</span> <span class="n">experience_factor</span><span class="p">,</span>
@@ -442,7 +442,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="../../_static/documentation_options.js?v=78e06d40"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

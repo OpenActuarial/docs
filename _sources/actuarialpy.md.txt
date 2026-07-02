@@ -26,7 +26,7 @@ exp = ap.Experience(df, expense="paid", revenue="premium",
 exp.by("product")                              # grouped view
 exp.loss_ratio                                 # paid / premium
 
-ap.pmpm(df["paid"], df["member_months"])       # per-member-per-month
+ap.per_exposure(df["paid"], df["member_months"])  # amount per exposure unit
 ap.loss_ratio(df["paid"], df["premium"])       # as a free function
 ```
 
@@ -123,32 +123,41 @@ The pooling module includes two general retention-stability primitives:
 ## Underwriting margin and weighted rollups
 
 The two-tier underwriting income statement — **gross margin** (revenue less
-benefit expense, admin excluded) and **gain/(loss)** (gross margin less
-admin). Ratio denominators are explicit parameters because real exhibits mix
-them (MCR over net revenue, AER over gross premium), and `reconciliation()`
-reports the resulting gap in `gain% = 1 − MCR − AER`; the full convention is
-on the [conventions](conventions.md) page.
+loss expense, operating expense excluded) and **gain/(loss)** (gross margin
+less operating expense). The ratios mirror the `loss_ratio` /
+`expense_ratio` / `combined_ratio` trio in `metrics`, and denominators are
+explicit parameters because real exhibits mix them (loss ratio over net
+revenue beside an expense ratio over gross premium); `reconciliation()`
+reports the resulting gap in `gain% = 1 − combined ratio`. Domain naming is
+a **view concern, never a calculation concern**: the `profile` option
+renames the loss-ratio column the same way `summarize_experience` does
+(`"health"` → `mlr`, `"life"` → `benefit_ratio`), and `labels` renames
+anything else. The full convention is on the [conventions](conventions.md)
+page.
 
 ```python
 import actuarialpy as ap
 
-uw = ap.UnderwritingSummary.from_pmpm(
-    revenue_pmpm={"premium": 400.0, "refund": -1.4},
-    benefit_pmpm={"medical": 340.0, "pharmacy_net": 16.4},
-    admin_pmpm=37.4,
-    member_months=300_000,
+uw = ap.UnderwritingSummary.from_per_exposure(
+    revenue_per_exposure={"premium": 400.0, "refund": -1.4},
+    loss_per_exposure={"claims": 340.0, "other_loss": 16.4},
+    expense_per_exposure=37.4,
+    exposure=300_000,
 )
-uw.mcr, uw.aer                       # explicit denominators
-uw.gross_margin_pmpm, uw.gain_pmpm   # the two tiers
-uw.statement()                       # exhibit-shaped Series
+uw.loss_ratio, uw.expense_ratio, uw.combined_ratio   # explicit denominators
+uw.gross_margin_per_exposure, uw.gain_per_exposure   # the two tiers
+uw.to_frame(profile="health")                        # loss_ratio -> mlr, math unchanged
 
 # grouped, from a tidy table: components summed first,
 # every ratio a ratio of sums
 ap.underwriting_summary(
     df, groupby="cohort",
-    revenue_cols=["premium", "refund"], benefit_cols=["medical", "pharmacy"],
-    admin_cols="admin", exposure_col="member_months", premium_col="premium",
+    revenue_cols=["premium", "refund"], loss_cols=["claims"],
+    expense_cols="expense", exposure_col="member_months",
+    premium_col="premium",
 )
+# per-exposure outputs are the mechanical {name}_per_{exposure_col};
+# domain names (a health shop's _pmpm) are opt-in via labels
 ```
 
 Quantities that are already rates at the row level — rate actions,

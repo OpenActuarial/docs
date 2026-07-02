@@ -132,17 +132,18 @@ feed.
 Underwriting margin is **two-tier** everywhere in the ecosystem:
 
 $$
-\text{gross margin} = \text{total revenue} - \text{total benefit}, \qquad
-\text{gain/(loss)} = \text{gross margin} - \text{total admin}.
+\text{gross margin} = \text{total revenue} - \text{total loss}, \qquad
+\text{gain/(loss)} = \text{gross margin} - \text{total expense}.
 $$
 
-Gross margin is the benefit-tier result — administrative expense is excluded,
-which is also why admin never enters a medical loss ratio. Gain/(loss) is the
-underwriting result after admin. Both packages use these identical
+Gross margin is the loss-tier result — operating expense is excluded, which
+is also why operating expense never enters a loss ratio. Gain/(loss) is the
+underwriting result after expense. Both packages use these identical
 definitions: the reporting side in [actuarialpy](actuarialpy.md)
 (`UnderwritingSummary`, `underwriting_summary`) and the pricing side in
 [ratingmodels](ratingmodels.md) (`PricingEvaluation`), where at charged rate
-$P$ with claims $L$, LAE ratio, fixed expense $F$ PMPM, and variable load $V$:
+$P$ with loss cost $L$ per exposure unit, LAE ratio, fixed expense $F$, and
+variable load $V$:
 
 $$
 \text{gross margin} = P - L(1+\text{lae}), \qquad
@@ -161,19 +162,27 @@ with the standard indication as the special case $m = Q$ and the zero-margin
 rate at $m = 0$.
 
 **Denominators are parameters, never assumptions.** Real exhibits mix bases
-on one page — a medical cost ratio over total (net) revenue beside an admin
-expense ratio over gross premium — so every ratio in the underwriting
-summary names its denominator (`"total_revenue"` or `"premium"`). The
-identity
+on one page — a loss ratio over total (net) revenue beside an expense ratio
+over gross premium — so every ratio in the underwriting summary names its
+denominator (`"total_revenue"` or `"premium"`). The identity
 
 $$
-\text{gain ratio} \;=\; 1 - \text{MCR} - \text{AER}
+\text{gain ratio} \;=\; 1 - \text{combined ratio}
+\;=\; 1 - \text{loss ratio} - \text{expense ratio}
 $$
 
-holds exactly only when all three ratios share one denominator;
+holds exactly only when all ratios share one denominator;
 `UnderwritingSummary.reconciliation()` reports the gap (for the default
-mixed convention, exactly $\text{admin} \cdot (1/\text{gross} -
+mixed convention, exactly $\text{expense} \cdot (1/\text{gross} -
 1/\text{net})$) so the drift is visible instead of silent.
+
+**Domain naming is a view concern.** Required parameter and field names stay
+line-agnostic everywhere (`losses`, `expenses`, `loss_cost`, `exposure`);
+a domain's vocabulary appears only through the profile / label options on
+output views — a health shop's `mlr`, a life shop's `benefit_ratio`, a
+`labels={"gain_per_member_months": "gain_pmpm"}` rename — and per-exposure
+outputs are always the mechanical `{name}_per_{exposure_col}`, never
+inferred from column names. The calculation never changes.
 
 **Weighted rollups.** Additive amounts roll up by summation and their ratios
 as ratios of sums — never averages of row-level ratios. Quantities that are
@@ -181,6 +190,6 @@ already rates at the row level (rate actions, persistency) are averaged with
 an **explicit, required weight** (`weighted_mean`, `weighted_summary`), and
 the weight total is reported beside every average.
 
-These are management / pricing metrics. The ACA rebate MLR is a separate
-regulated calculation with its own numerator and denominator adjustments and
-is deliberately out of scope.
+These are management / pricing metrics. Regulated ratio calculations (for
+example, a rebate loss ratio prescribed by statute) have their own numerator
+and denominator adjustments and are deliberately out of scope.

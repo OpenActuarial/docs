@@ -247,7 +247,7 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.columns</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">is_date_like</span><span class="p">,</span> <span class="n">sum_columns</span><span class="p">,</span> <span class="n">validate_columns</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.columns</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">is_date_like</span><span class="p">,</span> <span class="n">per_exposure_name</span><span class="p">,</span> <span class="n">sum_columns</span><span class="p">,</span> <span class="n">validate_columns</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">loss_ratio</span><span class="p">,</span> <span class="n">per_exposure</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_profile_labels</span><span class="p">,</span> <span class="n">get_profile_defaults</span>
 
@@ -262,15 +262,6 @@
             <span class="sa">f</span><span class="s2">&quot;Invalid exposure column(s): </span><span class="si">{</span><span class="n">bad</span><span class="si">}</span><span class="s2">. For member-level monthly data, create a &quot;</span>
             <span class="s2">&quot;member_months column equal to 1 and use exposure_cols=&#39;member_months&#39;.&quot;</span>
         <span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_per_exposure_column_names</span><span class="p">(</span><span class="n">total_expense_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">total_revenue_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">exposure</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-    <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;member_months&quot;</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;expense_pmpm&quot;</span><span class="p">,</span> <span class="s2">&quot;revenue_pmpm&quot;</span><span class="p">),</span>
-        <span class="s2">&quot;subscriber_months&quot;</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;expense_pspm&quot;</span><span class="p">,</span> <span class="s2">&quot;revenue_pspm&quot;</span><span class="p">),</span>
-        <span class="s2">&quot;employee_months&quot;</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;expense_pepm&quot;</span><span class="p">,</span> <span class="s2">&quot;revenue_pepm&quot;</span><span class="p">),</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_expense_name</span><span class="si">}</span><span class="s2">_per_</span><span class="si">{</span><span class="n">exposure</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_revenue_name</span><span class="si">}</span><span class="s2">_per_</span><span class="si">{</span><span class="n">exposure</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_order_summary_columns</span><span class="p">(</span>
@@ -369,7 +360,8 @@
     <span class="n">expense_per_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">revenue_per_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">exposure</span> <span class="ow">in</span> <span class="n">exposures</span><span class="p">:</span>
-        <span class="n">expense_per</span><span class="p">,</span> <span class="n">revenue_per</span> <span class="o">=</span> <span class="n">_per_exposure_column_names</span><span class="p">(</span><span class="n">total_expense_name</span><span class="p">,</span> <span class="n">total_revenue_name</span><span class="p">,</span> <span class="n">exposure</span><span class="p">)</span>
+        <span class="n">expense_per</span> <span class="o">=</span> <span class="n">per_exposure_name</span><span class="p">(</span><span class="n">total_expense_name</span><span class="p">,</span> <span class="n">exposure</span><span class="p">)</span>
+        <span class="n">revenue_per</span> <span class="o">=</span> <span class="n">per_exposure_name</span><span class="p">(</span><span class="n">total_revenue_name</span><span class="p">,</span> <span class="n">exposure</span><span class="p">)</span>
         <span class="n">summary</span><span class="p">[</span><span class="n">expense_per</span><span class="p">]</span> <span class="o">=</span> <span class="n">per_exposure</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="n">total_expense_name</span><span class="p">],</span> <span class="n">summary</span><span class="p">[</span><span class="n">exposure</span><span class="p">])</span>
         <span class="n">summary</span><span class="p">[</span><span class="n">revenue_per</span><span class="p">]</span> <span class="o">=</span> <span class="n">per_exposure</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="n">total_revenue_name</span><span class="p">],</span> <span class="n">summary</span><span class="p">[</span><span class="n">exposure</span><span class="p">])</span>
         <span class="n">expense_per_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">expense_per</span><span class="p">)</span>
@@ -484,7 +476,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="../../_static/documentation_options.js?v=78e06d40"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

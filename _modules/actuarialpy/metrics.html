@@ -304,14 +304,6 @@
 
 
 
-<div class="viewcode-block" id="medical_loss_ratio">
-<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.medical_loss_ratio">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">medical_loss_ratio</span><span class="p">(</span><span class="n">claims</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">premium</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate a medical loss ratio: claims divided by premium.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">loss_ratio</span><span class="p">(</span><span class="n">claims</span><span class="p">,</span> <span class="n">premium</span><span class="p">)</span></div>
-
-
-
 <div class="viewcode-block" id="expense_ratio">
 <a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.expense_ratio">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">expense_ratio</span><span class="p">(</span><span class="n">expenses</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">revenue</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -346,30 +338,6 @@
 
 
 
-<div class="viewcode-block" id="pmpm">
-<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.pmpm">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">pmpm</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">member_months</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate amount per member month.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">per_exposure</span><span class="p">(</span><span class="n">amount</span><span class="p">,</span> <span class="n">member_months</span><span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="pspm">
-<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.pspm">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">pspm</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">subscriber_months</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate amount per subscriber month.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">per_exposure</span><span class="p">(</span><span class="n">amount</span><span class="p">,</span> <span class="n">subscriber_months</span><span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="pepm">
-<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.pepm">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">pepm</span><span class="p">(</span><span class="n">amount</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">employee_months</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate amount per employee month.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">per_exposure</span><span class="p">(</span><span class="n">amount</span><span class="p">,</span> <span class="n">employee_months</span><span class="p">)</span></div>
-
-
-
 <div class="viewcode-block" id="frequency">
 <a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.frequency">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">frequency</span><span class="p">(</span><span class="n">claim_count</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">exposure</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -391,20 +359,6 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">pure_premium</span><span class="p">(</span><span class="n">losses</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">exposure</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate pure premium: losses divided by exposure.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">per_exposure</span><span class="p">(</span><span class="n">losses</span><span class="p">,</span> <span class="n">exposure</span><span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="utilization_per_1000">
-<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.utilization_per_1000">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">utilization_per_1000</span><span class="p">(</span><span class="n">claim_count</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">exposure</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">annualization</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">12</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Annualized utilization per 1,000 members.</span>
-
-<span class="sd">    Returns ``claim_count / exposure * annualization * 1000``. With monthly member</span>
-<span class="sd">    months as ``exposure`` the default ``annualization=12`` yields services (admits,</span>
-<span class="sd">    visits, scripts, ...) per 1,000 members per year. If ``exposure`` is already in</span>
-<span class="sd">    member-years, pass ``annualization=1``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">ratio</span><span class="p">(</span><span class="n">claim_count</span><span class="p">,</span> <span class="n">exposure</span><span class="p">)</span> <span class="o">*</span> <span class="n">annualization</span> <span class="o">*</span> <span class="mi">1000</span></div>
 
 
 
@@ -470,7 +424,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="../../_static/documentation_options.js?v=78e06d40"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

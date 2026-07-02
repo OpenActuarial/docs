@@ -253,9 +253,9 @@
 <span class="sd">    \bar{x}_w = \frac{\sum_i w_i x_i}{\sum_i w_i}.</span>
 
 <span class="sd">The weight is a **required** argument everywhere in this module. An</span>
-<span class="sd">unweighted mean of rate actions silently equal-weights a 50-life group with</span>
-<span class="sd">a 5,000-life group; forcing the caller to name the weight (premium, member</span>
-<span class="sd">months, ...) makes that choice visible and reviewable.</span>
+<span class="sd">unweighted mean of rate actions silently equal-weights a small risk with a</span>
+<span class="sd">large one; forcing the caller to name the weight (premium, exposure, ...)</span>
+<span class="sd">makes that choice visible and reviewable.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -325,7 +325,7 @@
 <span class="sd">    :math:`\\sum wx / \\sum w` per group; the weight total is reported as</span>
 <span class="sd">    ``{weight_col}_total`` so the base of every average is visible.</span>
 
-<span class="sd">    Typical use: premium-weighted rate actions by cohort, member-weighted</span>
+<span class="sd">    Typical use: premium-weighted rate actions by cohort, exposure-weighted</span>
 <span class="sd">    persistency by segment.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">values</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">value_cols</span><span class="p">)</span>
@@ -403,7 +403,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="../../_static/documentation_options.js?v=78e06d40"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

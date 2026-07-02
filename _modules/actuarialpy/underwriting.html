@@ -241,39 +241,47 @@
           <h1>Source code for actuarialpy.underwriting</h1><div class="highlight"><pre>
 <span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Underwriting income statement: the two-tier margin view.</span>
 
-<span class="sd">Group underwriting results are reported in two tiers. **Gross margin** (the</span>
-<span class="sd">medical or benefit margin) is revenue less benefit expense, and excludes</span>
-<span class="sd">administrative cost -- which is also why administrative expense never enters</span>
-<span class="sd">a medical loss ratio. **Gain / (loss)** is gross margin less administrative</span>
+<span class="sd">Underwriting results are reported in two tiers, generically across lines of</span>
+<span class="sd">business. **Gross margin** is revenue less loss (claim / benefit) expense and</span>
+<span class="sd">excludes operating expense -- which is also why operating expense never</span>
+<span class="sd">enters a loss ratio. **Gain / (loss)** is gross margin less operating</span>
 <span class="sd">expense: the underwriting result.</span>
 
 <span class="sd">.. math::</span>
 
 <span class="sd">    \text{total revenue} &amp;= \textstyle\sum \text{revenue components</span>
 <span class="sd">        (premium, refunds, recasts, ...)} \\</span>
-<span class="sd">    \text{total benefit} &amp;= \textstyle\sum \text{benefit components</span>
-<span class="sd">        (inpatient, outpatient, professional, pharmacy, ...)} \\</span>
-<span class="sd">    \text{gross margin}  &amp;= \text{total revenue} - \text{total benefit} \\</span>
-<span class="sd">    \text{gain / (loss)} &amp;= \text{gross margin} - \text{total admin}</span>
+<span class="sd">    \text{total loss}    &amp;= \textstyle\sum \text{loss components</span>
+<span class="sd">        (claims by category, benefits, ...)} \\</span>
+<span class="sd">    \text{gross margin}  &amp;= \text{total revenue} - \text{total loss} \\</span>
+<span class="sd">    \text{gain / (loss)} &amp;= \text{gross margin} - \text{total expense}</span>
+
+<span class="sd">The three ratios mirror :func:`actuarialpy.loss_ratio`,</span>
+<span class="sd">:func:`actuarialpy.expense_ratio`, and :func:`actuarialpy.combined_ratio`.</span>
+<span class="sd">Component labels and ratio names are the caller&#39;s vocabulary: the library</span>
+<span class="sd">only sums the components, and domain naming (a health shop&#39;s ``mlr``, a life</span>
+<span class="sd">shop&#39;s ``benefit_ratio``) comes from the ``profile`` / ``labels`` options on</span>
+<span class="sd">the output views -- never from the calculation itself.</span>
 
 <span class="sd">Ratio conventions differ across shops -- and often across metrics on the same</span>
 <span class="sd">exhibit -- so denominators here are **explicit parameters**, never</span>
 <span class="sd">assumptions:</span>
 
-<span class="sd">* ``mcr``: total benefit / *mcr denominator*. Default ``&quot;total_revenue&quot;``</span>
-<span class="sd">  (premium net of refunds and other revenue offsets).</span>
-<span class="sd">* ``aer``: total admin / *aer denominator*. Default ``&quot;premium&quot;``: the gross</span>
-<span class="sd">  premium component named by ``premium_label``, before refunds.</span>
+<span class="sd">* ``loss_ratio``: total loss / *loss-ratio denominator*. Default</span>
+<span class="sd">  ``&quot;total_revenue&quot;`` (revenue net of refunds and other offsets).</span>
+<span class="sd">* ``expense_ratio``: total expense / *expense-ratio denominator*. Default</span>
+<span class="sd">  ``&quot;premium&quot;``: the gross premium component named by ``premium_label``,</span>
+<span class="sd">  before refunds.</span>
 <span class="sd">* ``gain ratio``: gain / *gain denominator*. Default ``&quot;total_revenue&quot;``.</span>
 
-<span class="sd">With mixed denominators the identity ``gain ratio = 1 - MCR - AER`` holds</span>
-<span class="sd">only approximately; it is exact when every denominator is the same series.</span>
-<span class="sd">:meth:`UnderwritingSummary.reconciliation` reports the difference so the</span>
-<span class="sd">convention drift is visible instead of silent.</span>
+<span class="sd">With mixed denominators the identity ``gain ratio = 1 - combined ratio``</span>
+<span class="sd">holds only approximately; it is exact when every denominator is the same</span>
+<span class="sd">series. :meth:`UnderwritingSummary.reconciliation` reports the difference so</span>
+<span class="sd">the convention drift is visible instead of silent.</span>
 
-<span class="sd">These are *management / pricing* metrics. The ACA rebate MLR is a separate</span>
-<span class="sd">regulated calculation with its own numerator and denominator adjustments and</span>
-<span class="sd">is out of scope for this module.</span>
+<span class="sd">These are management / pricing metrics. Regulated ratio calculations (for</span>
+<span class="sd">example, a rebate loss ratio prescribed by statute) have their own numerator</span>
+<span class="sd">and denominator adjustments and are out of scope for this module.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -284,11 +292,11 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.columns</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">sum_columns</span><span class="p">,</span> <span class="n">validate_columns</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.columns</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">per_exposure_name</span><span class="p">,</span> <span class="n">sum_columns</span><span class="p">,</span> <span class="n">validate_columns</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">per_exposure</span><span class="p">,</span> <span class="n">safe_divide</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_profile_labels</span><span class="p">,</span> <span class="n">get_profile_defaults</span>
 
 <span class="n">_DENOMINATORS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;total_revenue&quot;</span><span class="p">,</span> <span class="s2">&quot;premium&quot;</span><span class="p">)</span>
-
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_validate_denominator</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_DENOMINATORS</span><span class="p">:</span>
@@ -296,6 +304,16 @@
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be one of </span><span class="si">{</span><span class="n">_DENOMINATORS</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">value</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ratio_rename</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Output renames: the profile&#39;s ratio name for ``loss_ratio``, then labels.&quot;&quot;&quot;</span>
+    <span class="n">rename</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">ratio_col</span> <span class="o">=</span> <span class="n">get_profile_defaults</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ratio_col&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ratio_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ratio_col</span> <span class="o">!=</span> <span class="s2">&quot;loss_ratio&quot;</span><span class="p">:</span>
+        <span class="n">rename</span><span class="p">[</span><span class="s2">&quot;loss_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ratio_col</span>
+    <span class="n">rename</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">labels</span> <span class="ow">or</span> <span class="p">{}))</span>
+    <span class="k">return</span> <span class="n">rename</span>
 
 
 <div class="viewcode-block" id="UnderwritingSummary">
@@ -307,32 +325,33 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    revenue : Mapping[str, float]</span>
-<span class="sd">        Labeled revenue components in dollars (e.g. ``{&quot;premium&quot;: ...,</span>
-<span class="sd">        &quot;refund&quot;: ...}``). Offsets such as refunds should be signed</span>
-<span class="sd">        (negative). The library never interprets the labels; it only sums</span>
-<span class="sd">        them -- component vocabulary stays with the caller.</span>
-<span class="sd">    benefit : Mapping[str, float]</span>
-<span class="sd">        Labeled benefit (medical / claims) expense components in dollars.</span>
-<span class="sd">    admin : Mapping[str, float] | float</span>
-<span class="sd">        Administrative expense, itemized or as a single amount. Default 0.</span>
-<span class="sd">    member_months : float, optional</span>
-<span class="sd">        Exposure used for per-member-per-month figures. Required only when a</span>
-<span class="sd">        ``*_pmpm`` property is accessed.</span>
+<span class="sd">        Labeled revenue components (e.g. ``{&quot;premium&quot;: ..., &quot;refund&quot;: ...}``).</span>
+<span class="sd">        Offsets such as refunds should be signed (negative). The library</span>
+<span class="sd">        never interprets the labels; it only sums them.</span>
+<span class="sd">    losses : Mapping[str, float]</span>
+<span class="sd">        Labeled loss components -- claim or benefit expense by whatever</span>
+<span class="sd">        categories the caller uses.</span>
+<span class="sd">    expenses : Mapping[str, float] | float</span>
+<span class="sd">        Operating expense, itemized or as a single amount. Default 0.</span>
+<span class="sd">    exposure : float, optional</span>
+<span class="sd">        Exposure units (member months, policy months, earned exposures, ...)</span>
+<span class="sd">        for per-exposure figures. Required only when a ``*_per_exposure``</span>
+<span class="sd">        property is accessed.</span>
 <span class="sd">    premium_label : str</span>
 <span class="sd">        Which revenue component is the gross premium, used when a</span>
 <span class="sd">        denominator is ``&quot;premium&quot;``. Default ``&quot;premium&quot;``.</span>
-<span class="sd">    mcr_denominator, aer_denominator, gain_denominator : str</span>
+<span class="sd">    loss_ratio_denominator, expense_ratio_denominator, gain_denominator : str</span>
 <span class="sd">        ``&quot;total_revenue&quot;`` or ``&quot;premium&quot;``. Defaults follow the common</span>
-<span class="sd">        exhibit convention: MCR and gain ratio over total revenue, AER over</span>
-<span class="sd">        gross premium.</span>
+<span class="sd">        exhibit convention: loss and gain ratios over total revenue, expense</span>
+<span class="sd">        ratio over gross premium.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
 <span class="sd">    &gt;&gt;&gt; uw = UnderwritingSummary(</span>
 <span class="sd">    ...     revenue={&quot;premium&quot;: 1_200_000.0, &quot;refund&quot;: -4_000.0},</span>
-<span class="sd">    ...     benefit={&quot;inpatient&quot;: 500_000.0, &quot;outpatient&quot;: 590_000.0},</span>
-<span class="sd">    ...     admin=110_000.0,</span>
-<span class="sd">    ...     member_months=3_000.0,</span>
+<span class="sd">    ...     losses={&quot;claims&quot;: 1_090_000.0},</span>
+<span class="sd">    ...     expenses=110_000.0,</span>
+<span class="sd">    ...     exposure=3_000.0,</span>
 <span class="sd">    ... )</span>
 <span class="sd">    &gt;&gt;&gt; round(uw.gross_margin, 0)</span>
 <span class="sd">    106000.0</span>
@@ -341,29 +360,33 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">revenue</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
-    <span class="n">benefit</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
-    <span class="n">admin</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">member_months</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">losses</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+    <span class="n">expenses</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">exposure</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">premium_label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;premium&quot;</span>
-    <span class="n">mcr_denominator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;total_revenue&quot;</span>
-    <span class="n">aer_denominator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;premium&quot;</span>
+    <span class="n">loss_ratio_denominator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;total_revenue&quot;</span>
+    <span class="n">expense_ratio_denominator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;premium&quot;</span>
     <span class="n">gain_denominator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;total_revenue&quot;</span>
-    <span class="n">_admin_items</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">_expense_items</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;revenue must contain at least one component&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">benefit</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;benefit must contain at least one component&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">admin</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_admin_items</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">admin</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">losses</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;losses must contain at least one component&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expenses</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_expense_items</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expenses</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_admin_items</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;admin&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">admin</span><span class="p">)}</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;mcr_denominator&quot;</span><span class="p">,</span> <span class="s2">&quot;aer_denominator&quot;</span><span class="p">,</span> <span class="s2">&quot;gain_denominator&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_expense_items</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;expense&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expenses</span><span class="p">)}</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="s2">&quot;loss_ratio_denominator&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;expense_ratio_denominator&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;gain_denominator&quot;</span><span class="p">,</span>
+        <span class="p">):</span>
             <span class="n">_validate_denominator</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="n">name</span><span class="p">)</span>
         <span class="n">uses_premium</span> <span class="o">=</span> <span class="s2">&quot;premium&quot;</span> <span class="ow">in</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mcr_denominator</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">aer_denominator</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loss_ratio_denominator</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expense_ratio_denominator</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">gain_denominator</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">uses_premium</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">premium_label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">:</span>
@@ -371,46 +394,44 @@
                 <span class="sa">f</span><span class="s2">&quot;premium_label </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">premium_label</span><span class="si">!r}</span><span class="s2"> is not a revenue &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;component; available: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">member_months</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">member_months</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;member_months must be positive when provided, got &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">member_months</span><span class="si">!r}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;exposure must be positive when provided, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="si">!r}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
-<div class="viewcode-block" id="UnderwritingSummary.from_pmpm">
-<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.UnderwritingSummary.from_pmpm">[docs]</a>
+<div class="viewcode-block" id="UnderwritingSummary.from_per_exposure">
+<a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.UnderwritingSummary.from_per_exposure">[docs]</a>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">from_pmpm</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_per_exposure</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">revenue_pmpm</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
-        <span class="n">benefit_pmpm</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
-        <span class="n">admin_pmpm</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-        <span class="n">member_months</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">revenue_per_exposure</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+        <span class="n">loss_per_exposure</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+        <span class="n">expense_per_exposure</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">exposure</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;UnderwritingSummary&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a summary from PMPM components and member months.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a summary from per-exposure components and total exposure.</span>
 
-<span class="sd">        Forecast exhibits are usually stated PMPM; this dollarizes each</span>
-<span class="sd">        component by ``member_months`` so totals, PMPMs, and ratios all come</span>
-<span class="sd">        from one set of inputs.</span>
+<span class="sd">        Forecast exhibits are usually stated per exposure unit (PMPM in a</span>
+<span class="sd">        health shop, per policy month in life); this converts each component</span>
+<span class="sd">        to amounts by ``exposure`` so totals, per-exposure figures, and</span>
+<span class="sd">        ratios all come from one set of inputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">member_months</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;member_months must be positive, got </span><span class="si">{</span><span class="n">member_months</span><span class="si">!r}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
-        <span class="n">mm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">member_months</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">admin_pmpm</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
-            <span class="n">admin</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="o">*</span> <span class="n">mm</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">admin_pmpm</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">exposure</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;exposure must be positive, got </span><span class="si">{</span><span class="n">exposure</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">exposure</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expense_per_exposure</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+            <span class="n">expenses</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="o">*</span> <span class="n">units</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">expense_per_exposure</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
             <span class="p">}</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">admin</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">admin_pmpm</span><span class="p">)</span> <span class="o">*</span> <span class="n">mm</span>
+            <span class="n">expenses</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">expense_per_exposure</span><span class="p">)</span> <span class="o">*</span> <span class="n">units</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-            <span class="n">revenue</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="o">*</span> <span class="n">mm</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">revenue_pmpm</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
-            <span class="n">benefit</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="o">*</span> <span class="n">mm</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">benefit_pmpm</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
-            <span class="n">admin</span><span class="o">=</span><span class="n">admin</span><span class="p">,</span>
-            <span class="n">member_months</span><span class="o">=</span><span class="n">mm</span><span class="p">,</span>
+            <span class="n">revenue</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="o">*</span> <span class="n">units</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">revenue_per_exposure</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+            <span class="n">losses</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="o">*</span> <span class="n">units</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">loss_per_exposure</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+            <span class="n">expenses</span><span class="o">=</span><span class="n">expenses</span><span class="p">,</span>
+            <span class="n">exposure</span><span class="o">=</span><span class="n">units</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -421,22 +442,22 @@
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">total_benefit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">benefit</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">total_admin</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_admin_items</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_expense</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_expense_items</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">gross_margin</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Tier one: total revenue less benefit expense (admin excluded).&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_revenue</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_benefit</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Tier one: total revenue less loss expense (operating expense excluded).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_revenue</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_loss</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">gain</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Tier two: gross margin less administrative expense.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_margin</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_admin</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Tier two: gross margin less operating expense.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_margin</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_expense</span>
 
     <span class="c1"># ----- ratios (explicit denominators) ----- #</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_denominator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">which</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
@@ -445,24 +466,33 @@
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">premium_label</span><span class="p">])</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">mcr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Benefit expense over the ``mcr_denominator``.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">loss_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Loss expense over the ``loss_ratio_denominator``.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span>
-            <span class="n">safe_divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_benefit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denominator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mcr_denominator</span><span class="p">))</span>
+            <span class="n">safe_divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_loss</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denominator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loss_ratio_denominator</span><span class="p">))</span>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">aer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Administrative expense over the ``aer_denominator``.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">expense_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Operating expense over the ``expense_ratio_denominator``.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span>
-            <span class="n">safe_divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_admin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denominator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aer_denominator</span><span class="p">))</span>
+            <span class="n">safe_divide</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">total_expense</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denominator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expense_ratio_denominator</span><span class="p">)</span>
+            <span class="p">)</span>
         <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">combined_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Loss ratio plus expense ratio, each on its own denominator.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_ratio</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">expense_ratio</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">gross_margin_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gross margin over the ``mcr_denominator`` (its complement).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gross margin over the ``loss_ratio_denominator`` (its complement).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span>
-            <span class="n">safe_divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gross_margin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denominator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mcr_denominator</span><span class="p">))</span>
+            <span class="n">safe_divide</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">gross_margin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_denominator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loss_ratio_denominator</span><span class="p">)</span>
+            <span class="p">)</span>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -475,90 +505,109 @@
 <div class="viewcode-block" id="UnderwritingSummary.reconciliation">
 <a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.UnderwritingSummary.reconciliation">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">reconciliation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;``gain_ratio - (1 - mcr - aer)``: the mixed-denominator gap.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;``gain_ratio - (1 - combined_ratio)``: the mixed-denominator gap.</span>
 
 <span class="sd">        Zero when every denominator is the same series; otherwise the size</span>
-<span class="sd">        of the drift introduced by quoting MCR, AER, and gain over different</span>
-<span class="sd">        bases. Useful as an exhibit footnote or a data-quality check.</span>
+<span class="sd">        of the drift introduced by quoting the loss, expense, and gain</span>
+<span class="sd">        ratios over different bases. Useful as an exhibit footnote or a</span>
+<span class="sd">        data-quality check.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gain_ratio</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcr</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">aer</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gain_ratio</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">combined_ratio</span><span class="p">)</span></div>
 
 
-    <span class="c1"># ----- per member per month ----- #</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_require_member_months</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">member_months</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># ----- per exposure ----- #</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_require_exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;member_months is required for PMPM figures; pass it to the &quot;</span>
-                <span class="s2">&quot;constructor or use from_pmpm(...)&quot;</span>
+                <span class="s2">&quot;exposure is required for per-exposure figures; pass it to &quot;</span>
+                <span class="s2">&quot;the constructor or use from_per_exposure(...)&quot;</span>
             <span class="p">)</span>
-        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">member_months</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">revenue_pmpm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_revenue</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_member_months</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">revenue_per_exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_revenue</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_exposure</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">benefit_pmpm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_benefit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_member_months</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">loss_per_exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_loss</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_exposure</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">admin_pmpm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_admin</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_member_months</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">expense_per_exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_expense</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_exposure</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">gross_margin_pmpm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_margin</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_member_months</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gross_margin_per_exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_margin</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_exposure</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">gain_pmpm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gain</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_member_months</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gain_per_exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">gain</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_exposure</span><span class="p">()</span>
 
     <span class="c1"># ----- views ----- #</span>
 <div class="viewcode-block" id="UnderwritingSummary.to_frame">
 <a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.UnderwritingSummary.to_frame">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">to_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;One tidy row of every total and ratio (PMPMs when exposure given).&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_frame</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;One tidy row of every total and ratio (per-exposure when given).</span>
+
+<span class="sd">        ``profile`` renames only the loss-ratio column to the domain&#39;s ratio</span>
+<span class="sd">        name (``&quot;health&quot;`` -&gt; ``mlr``, ``&quot;life&quot;`` -&gt; ``benefit_ratio``);</span>
+<span class="sd">        ``labels`` renames any output column. Calculations are unaffected.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;total_revenue&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_revenue</span><span class="p">,</span>
-            <span class="s2">&quot;total_benefit&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_benefit</span><span class="p">,</span>
-            <span class="s2">&quot;total_admin&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_admin</span><span class="p">,</span>
+            <span class="s2">&quot;total_loss&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_loss</span><span class="p">,</span>
+            <span class="s2">&quot;total_expense&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_expense</span><span class="p">,</span>
             <span class="s2">&quot;gross_margin&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_margin</span><span class="p">,</span>
             <span class="s2">&quot;gain&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">gain</span><span class="p">,</span>
-            <span class="s2">&quot;mcr&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcr</span><span class="p">,</span>
-            <span class="s2">&quot;aer&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">aer</span><span class="p">,</span>
+            <span class="s2">&quot;loss_ratio&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_ratio</span><span class="p">,</span>
+            <span class="s2">&quot;expense_ratio&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">expense_ratio</span><span class="p">,</span>
+            <span class="s2">&quot;combined_ratio&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">combined_ratio</span><span class="p">,</span>
             <span class="s2">&quot;gross_margin_ratio&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_margin_ratio</span><span class="p">,</span>
             <span class="s2">&quot;gain_ratio&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">gain_ratio</span><span class="p">,</span>
         <span class="p">}</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">member_months</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;member_months&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">member_months</span><span class="p">)</span>
-            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;revenue_pmpm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue_pmpm</span>
-            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;benefit_pmpm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">benefit_pmpm</span>
-            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;admin_pmpm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">admin_pmpm</span>
-            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;gross_margin_pmpm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_margin_pmpm</span>
-            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;gain_pmpm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gain_pmpm</span>
-        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">row</span><span class="p">])</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">)</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;revenue_per_exposure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue_per_exposure</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;loss_per_exposure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_per_exposure</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;expense_per_exposure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expense_per_exposure</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;gross_margin_per_exposure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_margin_per_exposure</span>
+            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;gain_per_exposure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gain_per_exposure</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">row</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">_ratio_rename</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="n">labels</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="UnderwritingSummary.statement">
 <a class="viewcode-back" href="../../actuarialpy.html#actuarialpy.UnderwritingSummary.statement">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">statement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">statement</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Exhibit-shaped Series: components, subtotals, tiers, then ratios.&quot;&quot;&quot;</span>
         <span class="n">lines</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">revenue</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">lines</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
         <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;total_revenue&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_revenue</span>
-        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">benefit</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">lines</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-        <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;total_benefit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_benefit</span>
-        <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;mcr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mcr</span>
+        <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;total_loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_loss</span>
+        <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;loss_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_ratio</span>
         <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;gross_margin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_margin</span>
-        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_admin_items</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expense_items</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">lines</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-        <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;total_admin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_admin</span>
-        <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;aer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aer</span>
+        <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;total_expense&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_expense</span>
+        <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;expense_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expense_ratio</span>
         <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;gain&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gain</span>
         <span class="n">lines</span><span class="p">[</span><span class="s2">&quot;gain_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gain_ratio</span>
-        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;statement&quot;</span><span class="p">)</span></div>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;statement&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">_ratio_rename</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="n">labels</span><span class="p">))</span></div>
 </div>
 
 
@@ -570,13 +619,15 @@
     <span class="o">*</span><span class="p">,</span>
     <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">revenue_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">benefit_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">admin_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">loss_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">expense_cols</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">exposure_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">premium_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">mcr_denominator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;total_revenue&quot;</span><span class="p">,</span>
-    <span class="n">aer_denominator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;premium&quot;</span><span class="p">,</span>
+    <span class="n">loss_ratio_denominator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;total_revenue&quot;</span><span class="p">,</span>
+    <span class="n">expense_ratio_denominator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;premium&quot;</span><span class="p">,</span>
     <span class="n">gain_denominator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;total_revenue&quot;</span><span class="p">,</span>
+    <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Grouped two-tier underwriting summary from a tidy table.</span>
 
@@ -590,43 +641,54 @@
 <span class="sd">        One row per entity / period at whatever grain is being rolled up.</span>
 <span class="sd">    groupby : str | Iterable[str], optional</span>
 <span class="sd">        Grouping columns; omit for a single all-rows summary.</span>
-<span class="sd">    revenue_cols, benefit_cols, admin_cols : str | Iterable[str]</span>
+<span class="sd">    revenue_cols, loss_cols, expense_cols : str | Iterable[str]</span>
 <span class="sd">        Component columns for each tier. Revenue offsets (refunds) should be</span>
 <span class="sd">        signed.</span>
 <span class="sd">    exposure_col : str, optional</span>
-<span class="sd">        Member-months column; adds ``*_pmpm`` output columns.</span>
+<span class="sd">        Exposure column; adds ``{amount}_per_{exposure_col}`` output columns.</span>
+<span class="sd">        Domain-style names (a health shop&#39;s ``_pmpm``) are applied via</span>
+<span class="sd">        ``labels``, never inferred from the column name.</span>
 <span class="sd">    premium_col : str, optional</span>
 <span class="sd">        Gross premium column, required when any denominator is</span>
 <span class="sd">        ``&quot;premium&quot;``.</span>
-<span class="sd">    mcr_denominator, aer_denominator, gain_denominator : str</span>
+<span class="sd">    loss_ratio_denominator, expense_ratio_denominator, gain_denominator : str</span>
 <span class="sd">        ``&quot;total_revenue&quot;`` or ``&quot;premium&quot;``; see the module docstring for</span>
 <span class="sd">        the convention discussion.</span>
+<span class="sd">    profile : str, optional</span>
+<span class="sd">        Renames only the loss-ratio column to the domain&#39;s ratio name</span>
+<span class="sd">        (``&quot;health&quot;`` -&gt; ``mlr``, ``&quot;life&quot;`` -&gt; ``benefit_ratio``).</span>
+<span class="sd">    labels : dict, optional</span>
+<span class="sd">        Explicit output column renames, applied after ``profile``.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    pd.DataFrame</span>
-<span class="sd">        Group keys, component sums, ``total_revenue``, ``total_benefit``,</span>
-<span class="sd">        ``total_admin``, ``gross_margin``, ``gain``, ``mcr``, ``aer``,</span>
-<span class="sd">        ``gross_margin_ratio``, ``gain_ratio``, and PMPM columns when</span>
-<span class="sd">        ``exposure_col`` is given.</span>
+<span class="sd">        Group keys, component sums, ``total_revenue``, ``total_loss``,</span>
+<span class="sd">        ``total_expense``, ``gross_margin``, ``gain``, the three ratios plus</span>
+<span class="sd">        ``gross_margin_ratio`` and ``gain_ratio``, and per-exposure columns</span>
+<span class="sd">        when ``exposure_col`` is given.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">groups</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">groupby</span><span class="p">)</span>
     <span class="n">revenues</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">revenue_cols</span><span class="p">)</span>
-    <span class="n">benefits</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">benefit_cols</span><span class="p">)</span>
-    <span class="n">admins</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">admin_cols</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span>
-        <span class="p">(</span><span class="s2">&quot;mcr_denominator&quot;</span><span class="p">,</span> <span class="n">mcr_denominator</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;aer_denominator&quot;</span><span class="p">,</span> <span class="n">aer_denominator</span><span class="p">),</span>
+    <span class="n">losses</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">loss_cols</span><span class="p">)</span>
+    <span class="n">expenses</span> <span class="o">=</span> <span class="n">as_list</span><span class="p">(</span><span class="n">expense_cols</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s2">&quot;loss_ratio_denominator&quot;</span><span class="p">,</span> <span class="n">loss_ratio_denominator</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;expense_ratio_denominator&quot;</span><span class="p">,</span> <span class="n">expense_ratio_denominator</span><span class="p">),</span>
         <span class="p">(</span><span class="s2">&quot;gain_denominator&quot;</span><span class="p">,</span> <span class="n">gain_denominator</span><span class="p">),</span>
     <span class="p">):</span>
-        <span class="n">_validate_denominator</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">uses_premium</span> <span class="o">=</span> <span class="s2">&quot;premium&quot;</span> <span class="ow">in</span> <span class="p">(</span><span class="n">mcr_denominator</span><span class="p">,</span> <span class="n">aer_denominator</span><span class="p">,</span> <span class="n">gain_denominator</span><span class="p">)</span>
+        <span class="n">_validate_denominator</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="n">uses_premium</span> <span class="o">=</span> <span class="s2">&quot;premium&quot;</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="n">loss_ratio_denominator</span><span class="p">,</span>
+        <span class="n">expense_ratio_denominator</span><span class="p">,</span>
+        <span class="n">gain_denominator</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="k">if</span> <span class="n">uses_premium</span> <span class="ow">and</span> <span class="n">premium_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="s1">&#39;premium_col is required when any denominator is &quot;premium&quot;&#39;</span>
         <span class="p">)</span>
 
-    <span class="n">amount_cols</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">revenues</span> <span class="o">+</span> <span class="n">benefits</span> <span class="o">+</span> <span class="n">admins</span><span class="p">))</span>
+    <span class="n">amount_cols</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">revenues</span> <span class="o">+</span> <span class="n">losses</span> <span class="o">+</span> <span class="n">expenses</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">premium_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">validate_columns</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="p">[</span><span class="n">premium_col</span><span class="p">])</span>
         <span class="k">if</span> <span class="n">premium_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">amount_cols</span><span class="p">:</span>
@@ -646,20 +708,25 @@
         <span class="p">)</span>
 
     <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_revenue&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum_columns</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">revenues</span><span class="p">)</span>
-    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_benefit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum_columns</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">benefits</span><span class="p">)</span>
-    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_admin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum_columns</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">admins</span><span class="p">)</span>
-    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;gross_margin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_revenue&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_benefit&quot;</span><span class="p">]</span>
-    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;gain&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;gross_margin&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_admin&quot;</span><span class="p">]</span>
+    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum_columns</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">losses</span><span class="p">)</span>
+    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_expense&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum_columns</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">expenses</span><span class="p">)</span>
+    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;gross_margin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_revenue&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_loss&quot;</span><span class="p">]</span>
+    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;gain&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;gross_margin&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_expense&quot;</span><span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_denom</span><span class="p">(</span><span class="n">which</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s2">&quot;total_revenue&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_revenue&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">summary</span><span class="p">[</span><span class="n">premium_col</span><span class="p">]</span>
 
-    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;mcr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">safe_divide</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_benefit&quot;</span><span class="p">],</span> <span class="n">_denom</span><span class="p">(</span><span class="n">mcr_denominator</span><span class="p">))</span>
-    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;aer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">safe_divide</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_admin&quot;</span><span class="p">],</span> <span class="n">_denom</span><span class="p">(</span><span class="n">aer_denominator</span><span class="p">))</span>
+    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;loss_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">safe_divide</span><span class="p">(</span>
+        <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_loss&quot;</span><span class="p">],</span> <span class="n">_denom</span><span class="p">(</span><span class="n">loss_ratio_denominator</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;expense_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">safe_divide</span><span class="p">(</span>
+        <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_expense&quot;</span><span class="p">],</span> <span class="n">_denom</span><span class="p">(</span><span class="n">expense_ratio_denominator</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;combined_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;loss_ratio&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;expense_ratio&quot;</span><span class="p">]</span>
     <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;gross_margin_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">safe_divide</span><span class="p">(</span>
-        <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;gross_margin&quot;</span><span class="p">],</span> <span class="n">_denom</span><span class="p">(</span><span class="n">mcr_denominator</span><span class="p">)</span>
+        <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;gross_margin&quot;</span><span class="p">],</span> <span class="n">_denom</span><span class="p">(</span><span class="n">loss_ratio_denominator</span><span class="p">)</span>
     <span class="p">)</span>
     <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;gain_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">safe_divide</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="s2">&quot;gain&quot;</span><span class="p">],</span> <span class="n">_denom</span><span class="p">(</span><span class="n">gain_denominator</span><span class="p">))</span>
 
@@ -669,27 +736,32 @@
         <span class="o">+</span> <span class="n">exposures</span>
         <span class="o">+</span> <span class="p">[</span>
             <span class="s2">&quot;total_revenue&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;total_benefit&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;total_admin&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;total_loss&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;total_expense&quot;</span><span class="p">,</span>
             <span class="s2">&quot;gross_margin&quot;</span><span class="p">,</span>
             <span class="s2">&quot;gain&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;mcr&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;aer&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;loss_ratio&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;expense_ratio&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;combined_ratio&quot;</span><span class="p">,</span>
             <span class="s2">&quot;gross_margin_ratio&quot;</span><span class="p">,</span>
             <span class="s2">&quot;gain_ratio&quot;</span><span class="p">,</span>
         <span class="p">]</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">exposure_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">amount</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span>
-            <span class="p">(</span><span class="s2">&quot;total_revenue&quot;</span><span class="p">,</span> <span class="s2">&quot;revenue_pmpm&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;total_benefit&quot;</span><span class="p">,</span> <span class="s2">&quot;benefit_pmpm&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;total_admin&quot;</span><span class="p">,</span> <span class="s2">&quot;admin_pmpm&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;gross_margin&quot;</span><span class="p">,</span> <span class="s2">&quot;gross_margin_pmpm&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;gain&quot;</span><span class="p">,</span> <span class="s2">&quot;gain_pmpm&quot;</span><span class="p">),</span>
+        <span class="k">for</span> <span class="n">amount</span><span class="p">,</span> <span class="n">base</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s2">&quot;total_revenue&quot;</span><span class="p">,</span> <span class="s2">&quot;revenue&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;total_loss&quot;</span><span class="p">,</span> <span class="s2">&quot;loss&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;total_expense&quot;</span><span class="p">,</span> <span class="s2">&quot;expense&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;gross_margin&quot;</span><span class="p">,</span> <span class="s2">&quot;gross_margin&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;gain&quot;</span><span class="p">,</span> <span class="s2">&quot;gain&quot;</span><span class="p">),</span>
         <span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">per_exposure_name</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">exposure_col</span><span class="p">)</span>
             <span class="n">summary</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">per_exposure</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="n">amount</span><span class="p">],</span> <span class="n">summary</span><span class="p">[</span><span class="n">exposure_col</span><span class="p">])</span>
             <span class="n">ordered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">summary</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">ordered</span><span class="p">))]</span></div>
+    <span class="n">summary</span> <span class="o">=</span> <span class="n">summary</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">ordered</span><span class="p">))]</span>
+    <span class="k">return</span> <span class="n">apply_profile_labels</span><span class="p">(</span>
+        <span class="n">summary</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">_ratio_rename</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="kc">None</span><span class="p">)),</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span>
+    <span class="p">)</span></div>
 
 </pre></div>
         </article>
@@ -723,7 +795,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="../../_static/documentation_options.js?v=78e06d40"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

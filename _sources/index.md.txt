@@ -85,10 +85,10 @@ import ratingmodels as rm
 # credibility from exposure (lives in actuarialpy; ratingmodels delegates to it)
 z = ap.limited_fluctuation_z(exposure=96_000, full_credibility_standard=120_000)
 
-manual = rm.ManualRate(base_pmpm=480, factors={"area": 1.05, "industry": 0.97})
+manual = rm.ManualRate(base_loss_cost=480, factors={"area": 1.05, "industry": 0.97})
 indication = rm.RateIndication(
-    experience_claims_pmpm=512,
-    manual_claims_pmpm=manual.claims_pmpm(),
+    experience_loss_cost=512,
+    manual_loss_cost=manual.loss_cost(),
     credibility=z,
     current_rate=560,
     target_loss_ratio=0.85,

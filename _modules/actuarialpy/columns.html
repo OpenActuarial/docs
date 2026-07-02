@@ -385,6 +385,16 @@
     <span class="k">if</span> <span class="n">lowered</span> <span class="ow">in</span> <span class="n">_DATE_NAME_TOKENS</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
     <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">lowered</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">tok</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">lowered</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">tok</span><span class="p">)</span> <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="n">_DATE_AFFIX_TOKENS</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">per_exposure_name</span><span class="p">(</span><span class="n">stem</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">exposure_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Output column name for a per-exposure quantity: ``{stem}_per_{exposure_col}``.</span>
+
+<span class="sd">    Naming is mechanical and domain-free. Domain conventions (a health shop&#39;s</span>
+<span class="sd">    ``_pmpm``) belong to the caller and are applied via the ``labels`` /</span>
+<span class="sd">    ``profile`` options on the output views, never inferred from column names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">stem</span><span class="si">}</span><span class="s2">_per_</span><span class="si">{</span><span class="n">exposure_col</span><span class="si">}</span><span class="s2">&quot;</span>
 </pre></div>
         </article>
       </div>
@@ -417,7 +427,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="../../_static/documentation_options.js?v=78e06d40"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -242,8 +242,9 @@
 <span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Renewal actions: turn an indicated rate into a charged renewal rate.</span>
 
 <span class="sd">A renewal action applies the indicated change, then the filed constraints</span>
-<span class="sd">(caps, floors, rounding), and reports the realised change. A member-level</span>
-<span class="sd">helper re-rates a census under new relativities and rolls up to a group total.</span>
+<span class="sd">(caps, floors, rounding), and reports the realised change. A row-level</span>
+<span class="sd">helper re-rates a census or schedule under new relativities and rolls up to</span>
+<span class="sd">a book total.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -310,17 +311,17 @@
 
 
 
-<div class="viewcode-block" id="member_level_renewal">
-<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.member_level_renewal">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">member_level_renewal</span><span class="p">(</span>
+<div class="viewcode-block" id="unit_level_renewal">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.unit_level_renewal">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">unit_level_renewal</span><span class="p">(</span>
     <span class="n">census</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">base_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">factor_cols</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">member_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;members&quot;</span><span class="p">,</span>
+    <span class="n">count_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;count&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Re-rate each census row as ``base_rate * product(factor_cols)``.</span>
 
-<span class="sd">    Returns the census with ``member_rate`` and ``premium`` columns; the group</span>
+<span class="sd">    Returns the census with ``unit_rate`` and ``premium`` columns; the group</span>
 <span class="sd">    total is the sum of ``premium``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">require_positive</span><span class="p">(</span><span class="n">base_rate</span><span class="p">,</span> <span class="s2">&quot;base_rate&quot;</span><span class="p">)</span>
@@ -328,8 +329,8 @@
     <span class="n">rates</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">out</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
         <span class="n">rates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_rate</span> <span class="o">*</span> <span class="n">product</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">factor_cols</span><span class="p">))</span>
-    <span class="n">out</span><span class="p">[</span><span class="s2">&quot;member_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rates</span>
-    <span class="n">out</span><span class="p">[</span><span class="s2">&quot;premium&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;member_rate&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">out</span><span class="p">[</span><span class="n">member_col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">&quot;unit_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rates</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">&quot;premium&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;unit_rate&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">out</span><span class="p">[</span><span class="n">count_col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span></div>
 
 </pre></div>
@@ -364,7 +365,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="../../_static/documentation_options.js?v=78e06d40"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -392,17 +392,18 @@ feed.</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[
-\text{gross margin} = \text{total revenue} - \text{total benefit}, \qquad
-\text{gain/(loss)} = \text{gross margin} - \text{total admin}.
+\text{gross margin} = \text{total revenue} - \text{total loss}, \qquad
+\text{gain/(loss)} = \text{gross margin} - \text{total expense}.
 \]</div>
 </div>
-<p>Gross margin is the benefit-tier result — administrative expense is excluded,
-which is also why admin never enters a medical loss ratio. Gain/(loss) is the
-underwriting result after admin. Both packages use these identical
+<p>Gross margin is the loss-tier result — operating expense is excluded, which
+is also why operating expense never enters a loss ratio. Gain/(loss) is the
+underwriting result after expense. Both packages use these identical
 definitions: the reporting side in <a class="reference internal" href="actuarialpy.html"><span class="std std-doc">actuarialpy</span></a>
 (<code class="docutils literal notranslate"><span class="pre">UnderwritingSummary</span></code>, <code class="docutils literal notranslate"><span class="pre">underwriting_summary</span></code>) and the pricing side in
 <a class="reference internal" href="ratingmodels.html"><span class="std std-doc">ratingmodels</span></a> (<code class="docutils literal notranslate"><span class="pre">PricingEvaluation</span></code>), where at charged rate
-<span class="math notranslate nohighlight">\(P\)</span> with claims <span class="math notranslate nohighlight">\(L\)</span>, LAE ratio, fixed expense <span class="math notranslate nohighlight">\(F\)</span> PMPM, and variable load <span class="math notranslate nohighlight">\(V\)</span>:</p>
+<span class="math notranslate nohighlight">\(P\)</span> with loss cost <span class="math notranslate nohighlight">\(L\)</span> per exposure unit, LAE ratio, fixed expense <span class="math notranslate nohighlight">\(F\)</span>, and
+variable load <span class="math notranslate nohighlight">\(V\)</span>:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[
@@ -422,28 +423,35 @@ P(m) \;=\; \frac{L(1+\text{lae}) + F}{1 - V - m},
 <p>with the standard indication as the special case <span class="math notranslate nohighlight">\(m = Q\)</span> and the zero-margin
 rate at <span class="math notranslate nohighlight">\(m = 0\)</span>.</p>
 <p><strong>Denominators are parameters, never assumptions.</strong> Real exhibits mix bases
-on one page — a medical cost ratio over total (net) revenue beside an admin
-expense ratio over gross premium — so every ratio in the underwriting
-summary names its denominator (<code class="docutils literal notranslate"><span class="pre">&quot;total_revenue&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;premium&quot;</span></code>). The
-identity</p>
+on one page — a loss ratio over total (net) revenue beside an expense ratio
+over gross premium — so every ratio in the underwriting summary names its
+denominator (<code class="docutils literal notranslate"><span class="pre">&quot;total_revenue&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;premium&quot;</span></code>). The identity</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[
-\text{gain ratio} \;=\; 1 - \text{MCR} - \text{AER}
+\text{gain ratio} \;=\; 1 - \text{combined ratio}
+\;=\; 1 - \text{loss ratio} - \text{expense ratio}
 \]</div>
 </div>
-<p>holds exactly only when all three ratios share one denominator;
+<p>holds exactly only when all ratios share one denominator;
 <code class="docutils literal notranslate"><span class="pre">UnderwritingSummary.reconciliation()</span></code> reports the gap (for the default
-mixed convention, exactly <span class="math notranslate nohighlight">\(\text{admin} \cdot (1/\text{gross} -
+mixed convention, exactly <span class="math notranslate nohighlight">\(\text{expense} \cdot (1/\text{gross} -
 1/\text{net})\)</span>) so the drift is visible instead of silent.</p>
+<p><strong>Domain naming is a view concern.</strong> Required parameter and field names stay
+line-agnostic everywhere (<code class="docutils literal notranslate"><span class="pre">losses</span></code>, <code class="docutils literal notranslate"><span class="pre">expenses</span></code>, <code class="docutils literal notranslate"><span class="pre">loss_cost</span></code>, <code class="docutils literal notranslate"><span class="pre">exposure</span></code>);
+a domain’s vocabulary appears only through the profile / label options on
+output views — a health shop’s <code class="docutils literal notranslate"><span class="pre">mlr</span></code>, a life shop’s <code class="docutils literal notranslate"><span class="pre">benefit_ratio</span></code>, a
+<code class="docutils literal notranslate"><span class="pre">labels={&quot;gain_per_member_months&quot;:</span> <span class="pre">&quot;gain_pmpm&quot;}</span></code> rename — and per-exposure
+outputs are always the mechanical <code class="docutils literal notranslate"><span class="pre">{name}_per_{exposure_col}</span></code>, never
+inferred from column names. The calculation never changes.</p>
 <p><strong>Weighted rollups.</strong> Additive amounts roll up by summation and their ratios
 as ratios of sums — never averages of row-level ratios. Quantities that are
 already rates at the row level (rate actions, persistency) are averaged with
 an <strong>explicit, required weight</strong> (<code class="docutils literal notranslate"><span class="pre">weighted_mean</span></code>, <code class="docutils literal notranslate"><span class="pre">weighted_summary</span></code>), and
 the weight total is reported beside every average.</p>
-<p>These are management / pricing metrics. The ACA rebate MLR is a separate
-regulated calculation with its own numerator and denominator adjustments and
-is deliberately out of scope.</p>
+<p>These are management / pricing metrics. Regulated ratio calculations (for
+example, a rebate loss ratio prescribed by statute) have their own numerator
+and denominator adjustments and are deliberately out of scope.</p>
 </section>
 </section>
 
@@ -520,7 +528,7 @@ is deliberately out of scope.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="_static/documentation_options.js?v=78e06d40"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

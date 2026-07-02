@@ -340,10 +340,10 @@ in the core and <code class="docutils literal notranslate"><span class="pre">rat
 <span class="c1"># credibility from exposure (lives in actuarialpy; ratingmodels delegates to it)</span>
 <span class="n">z</span> <span class="o">=</span> <span class="n">ap</span><span class="o">.</span><span class="n">limited_fluctuation_z</span><span class="p">(</span><span class="n">exposure</span><span class="o">=</span><span class="mi">96_000</span><span class="p">,</span> <span class="n">full_credibility_standard</span><span class="o">=</span><span class="mi">120_000</span><span class="p">)</span>
 
-<span class="n">manual</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ManualRate</span><span class="p">(</span><span class="n">base_pmpm</span><span class="o">=</span><span class="mi">480</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="mf">1.05</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">:</span> <span class="mf">0.97</span><span class="p">})</span>
+<span class="n">manual</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ManualRate</span><span class="p">(</span><span class="n">base_loss_cost</span><span class="o">=</span><span class="mi">480</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="mf">1.05</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">:</span> <span class="mf">0.97</span><span class="p">})</span>
 <span class="n">indication</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RateIndication</span><span class="p">(</span>
-    <span class="n">experience_claims_pmpm</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
-    <span class="n">manual_claims_pmpm</span><span class="o">=</span><span class="n">manual</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">(),</span>
+    <span class="n">experience_loss_cost</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+    <span class="n">manual_loss_cost</span><span class="o">=</span><span class="n">manual</span><span class="o">.</span><span class="n">loss_cost</span><span class="p">(),</span>
     <span class="n">credibility</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
     <span class="n">current_rate</span><span class="o">=</span><span class="mi">560</span><span class="p">,</span>
     <span class="n">target_loss_ratio</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
@@ -427,7 +427,7 @@ dependency.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="_static/documentation_options.js?v=78e06d40"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

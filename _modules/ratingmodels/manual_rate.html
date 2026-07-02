@@ -245,11 +245,11 @@
 <span class="sd">relativities and then loaded for expenses and margin:</span>
 
 <span class="sd">.. math::</span>
-<span class="sd">    \text{manual PMPM} = \text{base} \times \prod_i f_i, \qquad</span>
-<span class="sd">    \text{manual rate} = \frac{\text{manual PMPM}}{\text{target loss ratio}}.</span>
+<span class="sd">    \text{manual loss cost} = \text{base} \times \prod_i f_i, \qquad</span>
+<span class="sd">    \text{manual rate} = \frac{\text{manual loss cost}}{\text{target loss ratio}}.</span>
 
-<span class="sd">For a group, member-level demographic factors are aggregated to a single</span>
-<span class="sd">relativity (membership-weighted) before composing with group-level factors</span>
+<span class="sd">For a group, unit-level demographic factors are aggregated to a single</span>
+<span class="sd">relativity (exposure-weighted) before composing with group-level factors</span>
 <span class="sd">(area, industry, group size, network, plan/benefit).</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -265,12 +265,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.loading</span><span class="w"> </span><span class="kn">import</span> <span class="n">RetentionLoad</span>
 
 
-<div class="viewcode-block" id="manual_pmpm">
-<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.manual_pmpm">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">manual_pmpm</span><span class="p">(</span><span class="n">base_pmpm</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">factors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Base PMPM scaled by the product of relativities.&quot;&quot;&quot;</span>
-    <span class="n">require_positive</span><span class="p">(</span><span class="n">base_pmpm</span><span class="p">,</span> <span class="s2">&quot;base_pmpm&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">base_pmpm</span> <span class="o">*</span> <span class="n">product</span><span class="p">(</span><span class="n">factors</span><span class="p">)</span></div>
+<div class="viewcode-block" id="manual_loss_cost">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.manual_loss_cost">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">manual_loss_cost</span><span class="p">(</span><span class="n">base_loss_cost</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">factors</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Base loss cost scaled by the product of relativities.&quot;&quot;&quot;</span>
+    <span class="n">require_positive</span><span class="p">(</span><span class="n">base_loss_cost</span><span class="p">,</span> <span class="s2">&quot;base_loss_cost&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">base_loss_cost</span> <span class="o">*</span> <span class="n">product</span><span class="p">(</span><span class="n">factors</span><span class="p">)</span></div>
 
 
 
@@ -279,9 +279,10 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">aggregate_demographic_factor</span><span class="p">(</span>
     <span class="n">census</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">factor_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">weight_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;members&quot;</span><span class="p">,</span>
+    <span class="n">weight_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;count&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Membership-weighted average of a member-level demographic factor.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Weighted average of a unit-level demographic factor (e.g. an age/sex</span>
+<span class="sd">    factor weighted by member counts).&quot;&quot;&quot;</span>
     <span class="n">w</span> <span class="o">=</span> <span class="n">census</span><span class="p">[</span><span class="n">weight_col</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="n">f</span> <span class="o">=</span> <span class="n">census</span><span class="p">[</span><span class="n">factor_col</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">w</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
@@ -298,8 +299,8 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    base_pmpm : float</span>
-<span class="sd">        Base claims cost PMPM at the rating-period level (see</span>
+<span class="sd">    base_loss_cost : float</span>
+<span class="sd">        Base loss cost (per exposure unit) at the rating-period level (see</span>
 <span class="sd">        :func:`ratingmodels.base_rate_from_experience` to derive it).</span>
 <span class="sd">    factors : mapping</span>
 <span class="sd">        Named relativities, e.g. ``{&quot;area&quot;: 1.05, &quot;industry&quot;: 0.97, ...}``.</span>
@@ -309,36 +310,36 @@
 <span class="sd">    retention : RetentionLoad, optional</span>
 <span class="sd">        Full expense / profit loading. When provided, the charged rate is built</span>
 <span class="sd">        with the fundamental insurance equation instead of a single loss ratio,</span>
-<span class="sd">        and fixed expense is applied per member (flat across cells).</span>
+<span class="sd">        and fixed expense is applied per exposure unit (flat across cells).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">base_pmpm</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">base_loss_cost</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">factors</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
     <span class="n">target_loss_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.85</span>
     <span class="n">retention</span><span class="p">:</span> <span class="s2">&quot;RetentionLoad | None&quot;</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pmpm</span><span class="p">,</span> <span class="s2">&quot;base_pmpm&quot;</span><span class="p">)</span>
+        <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_loss_cost</span><span class="p">,</span> <span class="s2">&quot;base_loss_cost&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retention</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">require_unit_interval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span><span class="p">,</span> <span class="s2">&quot;target_loss_ratio&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">total_relativity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">product</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
 
-<div class="viewcode-block" id="ManualRate.claims_pmpm">
-<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.ManualRate.claims_pmpm">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">claims_pmpm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Expected manual claims PMPM (before expense/margin loading).&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_pmpm</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_relativity</span><span class="p">()</span></div>
+<div class="viewcode-block" id="ManualRate.loss_cost">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.ManualRate.loss_cost">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">loss_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Expected manual loss cost (before expense/margin loading).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_loss_cost</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_relativity</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="ManualRate.steps">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.ManualRate.steps">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">steps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The manual claims build-up as an ordered list of steps.&quot;&quot;&quot;</span>
-        <span class="n">s</span> <span class="o">=</span> <span class="p">[</span><span class="n">start</span><span class="p">(</span><span class="s2">&quot;Base claims cost&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_pmpm</span><span class="p">)]</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="p">[</span><span class="n">start</span><span class="p">(</span><span class="s2">&quot;Base claims cost&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_loss_cost</span><span class="p">)]</span>
         <span class="n">s</span> <span class="o">+=</span> <span class="p">[</span><span class="n">multiply</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">factor</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">factor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
-        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">(</span><span class="s2">&quot;Manual claims PMPM&quot;</span><span class="p">))</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">(</span><span class="s2">&quot;Manual loss cost&quot;</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">s</span></div>
 
 
@@ -347,7 +348,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">breakdown</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BuildUpResult&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Audit trail of the manual claims build-up (base x each relativity).</span>
 
-<span class="sd">        The final running total equals :meth:`claims_pmpm` up to floating point.</span>
+<span class="sd">        The final running total equals :meth:`loss_cost` up to floating point.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">())</span></div>
 
@@ -355,20 +356,20 @@
 <div class="viewcode-block" id="ManualRate.rate">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.ManualRate.rate">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">rate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Charged manual rate PMPM.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Charged manual rate per exposure unit.</span>
 
 <span class="sd">        Uses ``retention`` (the full gross-up) when supplied, otherwise</span>
-<span class="sd">        ``claims PMPM / target_loss_ratio``.</span>
+<span class="sd">        ``loss cost / target_loss_ratio``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retention</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">retention</span><span class="o">.</span><span class="n">gross_rate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">())</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">claims_pmpm</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span></div>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">retention</span><span class="o">.</span><span class="n">gross_rate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loss_cost</span><span class="p">())</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_cost</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">with_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ManualRate&quot;</span><span class="p">:</span>
         <span class="n">new</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span>
         <span class="n">new</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
-        <span class="k">return</span> <span class="n">ManualRate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pmpm</span><span class="p">,</span> <span class="n">new</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">ManualRate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_loss_cost</span><span class="p">,</span> <span class="n">new</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span><span class="p">)</span></div>
 
 </pre></div>
         </article>
@@ -402,7 +403,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="../../_static/documentation_options.js?v=78e06d40"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

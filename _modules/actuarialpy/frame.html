@@ -256,7 +256,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.columns</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_list</span><span class="p">,</span> <span class="n">sum_columns</span><span class="p">,</span> <span class="n">validate_columns</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.components</span><span class="w"> </span><span class="kn">import</span> <span class="n">component_driver_analysis</span><span class="p">,</span> <span class="n">summarize_components</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.credibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">credibility_weighted_estimate</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.decomposition</span><span class="w"> </span><span class="kn">import</span> <span class="n">decompose_pmpm_trend</span><span class="p">,</span> <span class="n">frequency_severity_summary</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.decomposition</span><span class="w"> </span><span class="kn">import</span> <span class="n">decompose_per_exposure_trend</span><span class="p">,</span> <span class="n">frequency_severity_summary</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.expected</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize_actual_vs_expected</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.experience</span><span class="w"> </span><span class="kn">import</span> <span class="n">status_summary</span><span class="p">,</span> <span class="n">summarize_experience</span><span class="p">,</span> <span class="n">summarize_views</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">actuarialpy.lifecycle</span><span class="w"> </span><span class="kn">import</span> <span class="n">derive_status</span>
@@ -638,12 +638,11 @@
         <span class="n">loss_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">exposure_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">groupby</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">annualization</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Per-group claim frequency, severity, and PMPM (see ``frequency_severity_summary``).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Per-group claim frequency, severity, and per-exposure loss (see ``frequency_severity_summary``).</span>
 
 <span class="sd">        Uses the bound ``count``, ``expense`` (as the loss), and ``exposure`` roles, so the</span>
-<span class="sd">        columns are specified once on the object. The identity ``pmpm == frequency *</span>
+<span class="sd">        columns are specified once on the object. The identity ``loss_per_exposure == frequency *</span>
 <span class="sd">        severity`` holds for every row.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">data</span><span class="p">,</span> <span class="n">resolved_loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_with_amount</span><span class="p">(</span><span class="n">loss_col</span><span class="p">)</span>
@@ -653,7 +652,6 @@
             <span class="n">loss_col</span><span class="o">=</span><span class="n">resolved_loss</span><span class="p">,</span>
             <span class="n">exposure_col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolve_exposure</span><span class="p">(</span><span class="n">exposure_col</span><span class="p">),</span>
             <span class="n">groupby</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
-            <span class="n">annualization</span><span class="o">=</span><span class="n">annualization</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -677,15 +675,14 @@
         <span class="n">current_end</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">prior_filter</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">current_filter</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">annualization</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Decompose the PMPM trend between two periods of the bound data.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Decompose the per-exposure loss trend between two periods of the bound data.</span>
 
 <span class="sd">        Splits the bound frame into prior and current with the same comparison modes as</span>
 <span class="sd">        :meth:`trend` -- ``period_col`` with ``prior_period`` / ``current_period``, a</span>
 <span class="sd">        ``date_col`` with prior/current ranges (the bound ``date`` is used when no</span>
 <span class="sd">        ``date_col`` is passed), or explicit ``prior_filter`` / ``current_filter`` masks --</span>
-<span class="sd">        then decomposes the change via :func:`decompose_pmpm_trend`, using the bound</span>
+<span class="sd">        then decomposes the change via :func:`decompose_per_exposure_trend`, using the bound</span>
 <span class="sd">        ``count``, ``expense`` (as the loss), and ``exposure`` roles. Pass ``mix_by`` to add</span>
 <span class="sd">        the third LMDI mix term; ``groupby`` reports one decomposition per group.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -707,7 +704,7 @@
             <span class="n">prior_filter</span><span class="o">=</span><span class="n">prior_filter</span><span class="p">,</span>
             <span class="n">current_filter</span><span class="o">=</span><span class="n">current_filter</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">decompose_pmpm_trend</span><span class="p">(</span>
+        <span class="k">return</span> <span class="n">decompose_per_exposure_trend</span><span class="p">(</span>
             <span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">prior_mask</span><span class="p">],</span>
             <span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">current_mask</span><span class="p">],</span>
             <span class="n">count_col</span><span class="o">=</span><span class="n">resolved_count</span><span class="p">,</span>
@@ -715,7 +712,6 @@
             <span class="n">exposure_col</span><span class="o">=</span><span class="n">resolved_exposure</span><span class="p">,</span>
             <span class="n">on</span><span class="o">=</span><span class="n">groupby</span><span class="p">,</span>
             <span class="n">mix_by</span><span class="o">=</span><span class="n">mix_by</span><span class="p">,</span>
-            <span class="n">annualization</span><span class="o">=</span><span class="n">annualization</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -1180,7 +1176,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="../../_static/documentation_options.js?v=78e06d40"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

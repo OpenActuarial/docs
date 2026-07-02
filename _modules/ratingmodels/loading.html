@@ -242,8 +242,8 @@
 <span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Retention and expense loading: turning a claims cost into a charged rate.</span>
 
 <span class="sd">The charged (gross) rate is built from the **fundamental insurance equation**.</span>
-<span class="sd">With loss &amp; LAE per member :math:`L(1+\text{lae})`, a flat fixed expense per</span>
-<span class="sd">member :math:`F`, a variable load :math:`V` (expenses that are a percentage of</span>
+<span class="sd">With loss &amp; LAE per exposure unit :math:`L(1+\text{lae})`, a flat fixed</span>
+<span class="sd">expense per unit :math:`F`, a variable load :math:`V` (expenses that are a percentage of</span>
 <span class="sd">premium -- commission, premium tax, percent-of-premium fees and admin), and a</span>
 <span class="sd">profit / contingency provision :math:`Q` (also a percentage of premium):</span>
 
@@ -259,8 +259,8 @@
 <span class="sd">.. math::</span>
 <span class="sd">    \text{PLR} = \frac{L}{P} = \frac{L\,(1 - V - Q)}{L(1+\text{lae}) + F}.</span>
 
-<span class="sd">Because the fixed expense :math:`F` is added per member (not scaled by a risk&#39;s</span>
-<span class="sd">relativity), grossing ``base_pmpm * relativities`` with this formula keeps fixed</span>
+<span class="sd">Because the fixed expense :math:`F` is added per exposure unit (not scaled by a risk&#39;s</span>
+<span class="sd">relativity), grossing ``base_loss_cost * relativities`` with this formula keeps fixed</span>
 <span class="sd">expense flat across all rate cells, which is the correct treatment.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -279,8 +279,8 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    fixed_expense_pmpm : float</span>
-<span class="sd">        Flat administrative expense per member per month (a dollar amount, not</span>
+<span class="sd">    fixed_expense : float</span>
+<span class="sd">        Flat operating expense per exposure unit (a dollar amount, not</span>
 <span class="sd">        a percentage of premium). Default 0.</span>
 <span class="sd">    variable_expense_ratio : float</span>
 <span class="sd">        Sum of percent-of-premium loads: commission, premium tax, exchange /</span>
@@ -293,13 +293,13 @@
 <span class="sd">        Loss adjustment expense as a percentage of claims. Default 0.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">fixed_expense_pmpm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">fixed_expense</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
     <span class="n">variable_expense_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
     <span class="n">profit_margin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
     <span class="n">lae_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">require_nonnegative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_expense_pmpm</span><span class="p">,</span> <span class="s2">&quot;fixed_expense_pmpm&quot;</span><span class="p">)</span>
+        <span class="n">require_nonnegative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed_expense</span><span class="p">,</span> <span class="s2">&quot;fixed_expense&quot;</span><span class="p">)</span>
         <span class="n">require_nonnegative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_expense_ratio</span><span class="p">,</span> <span class="s2">&quot;variable_expense_ratio&quot;</span><span class="p">)</span>
         <span class="n">require_nonnegative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">profit_margin</span><span class="p">,</span> <span class="s2">&quot;profit_margin&quot;</span><span class="p">)</span>
         <span class="n">require_nonnegative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lae_ratio</span><span class="p">,</span> <span class="s2">&quot;lae_ratio&quot;</span><span class="p">)</span>
@@ -314,7 +314,7 @@
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_items</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
-        <span class="n">fixed_expense_pmpm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">fixed_expense</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">variable_items</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">profit_margin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">lae_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
@@ -327,7 +327,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">total_variable</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">((</span><span class="n">variable_items</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-            <span class="n">fixed_expense_pmpm</span><span class="o">=</span><span class="n">fixed_expense_pmpm</span><span class="p">,</span>
+            <span class="n">fixed_expense</span><span class="o">=</span><span class="n">fixed_expense</span><span class="p">,</span>
             <span class="n">variable_expense_ratio</span><span class="o">=</span><span class="n">total_variable</span><span class="p">,</span>
             <span class="n">profit_margin</span><span class="o">=</span><span class="n">profit_margin</span><span class="p">,</span>
             <span class="n">lae_ratio</span><span class="o">=</span><span class="n">lae_ratio</span><span class="p">,</span>
@@ -341,50 +341,50 @@
 
 <div class="viewcode-block" id="RetentionLoad.gross_rate">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.RetentionLoad.gross_rate">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">gross_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">claims_pmpm</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Gross a claims PMPM up to a charged rate via :math:`(L(1+\text{lae})+F)/(1-V-Q)`.&quot;&quot;&quot;</span>
-        <span class="n">require_nonnegative</span><span class="p">(</span><span class="n">claims_pmpm</span><span class="p">,</span> <span class="s2">&quot;claims_pmpm&quot;</span><span class="p">)</span>
-        <span class="n">numerator</span> <span class="o">=</span> <span class="n">claims_pmpm</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">lae_ratio</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fixed_expense_pmpm</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gross_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss_cost</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Gross a loss cost up to a charged rate via :math:`(L(1+\text{lae})+F)/(1-V-Q)`.&quot;&quot;&quot;</span>
+        <span class="n">require_nonnegative</span><span class="p">(</span><span class="n">loss_cost</span><span class="p">,</span> <span class="s2">&quot;loss_cost&quot;</span><span class="p">)</span>
+        <span class="n">numerator</span> <span class="o">=</span> <span class="n">loss_cost</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">lae_ratio</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fixed_expense</span>
         <span class="k">return</span> <span class="n">numerator</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_and_profit</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="RetentionLoad.implied_loss_ratio">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.RetentionLoad.implied_loss_ratio">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">implied_loss_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">claims_pmpm</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implied_loss_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss_cost</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Loss ratio implied at a given claims level (claims / gross rate).</span>
 
 <span class="sd">        With a non-zero fixed expense this varies with the claims level; with</span>
 <span class="sd">        only percentage loads it equals ``1 - variable_expense_ratio -</span>
 <span class="sd">        profit_margin``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">require_nonnegative</span><span class="p">(</span><span class="n">claims_pmpm</span><span class="p">,</span> <span class="s2">&quot;claims_pmpm&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">claims_pmpm</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">require_nonnegative</span><span class="p">(</span><span class="n">loss_cost</span><span class="p">,</span> <span class="s2">&quot;loss_cost&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">loss_cost</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="mf">0.0</span>
-        <span class="k">return</span> <span class="n">claims_pmpm</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_rate</span><span class="p">(</span><span class="n">claims_pmpm</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">loss_cost</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">gross_rate</span><span class="p">(</span><span class="n">loss_cost</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="RetentionLoad.expense_and_profit_ratio">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.RetentionLoad.expense_and_profit_ratio">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">expense_and_profit_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">claims_pmpm</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">expense_and_profit_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loss_cost</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Share of the gross rate going to expense and profit (1 - loss ratio).&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">implied_loss_ratio</span><span class="p">(</span><span class="n">claims_pmpm</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">implied_loss_ratio</span><span class="p">(</span><span class="n">loss_cost</span><span class="p">)</span></div>
 </div>
 
 
 
 <div class="viewcode-block" id="gross_rate">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.gross_rate">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">gross_rate</span><span class="p">(</span><span class="n">claims_pmpm</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">retention</span><span class="p">:</span> <span class="n">RetentionLoad</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">gross_rate</span><span class="p">(</span><span class="n">loss_cost</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">retention</span><span class="p">:</span> <span class="n">RetentionLoad</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Functional form of :meth:`RetentionLoad.gross_rate`.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">retention</span><span class="o">.</span><span class="n">gross_rate</span><span class="p">(</span><span class="n">claims_pmpm</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">retention</span><span class="o">.</span><span class="n">gross_rate</span><span class="p">(</span><span class="n">loss_cost</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="permissible_loss_ratio">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.permissible_loss_ratio">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">permissible_loss_ratio</span><span class="p">(</span><span class="n">retention</span><span class="p">:</span> <span class="n">RetentionLoad</span><span class="p">,</span> <span class="n">claims_pmpm</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">permissible_loss_ratio</span><span class="p">(</span><span class="n">retention</span><span class="p">:</span> <span class="n">RetentionLoad</span><span class="p">,</span> <span class="n">loss_cost</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Functional form of :meth:`RetentionLoad.implied_loss_ratio`.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">retention</span><span class="o">.</span><span class="n">implied_loss_ratio</span><span class="p">(</span><span class="n">claims_pmpm</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">retention</span><span class="o">.</span><span class="n">implied_loss_ratio</span><span class="p">(</span><span class="n">loss_cost</span><span class="p">)</span></div>
 
 </pre></div>
         </article>
@@ -418,7 +418,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=b17fcdc8"></script>
+</div><script src="../../_static/documentation_options.js?v=78e06d40"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
