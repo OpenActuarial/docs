@@ -243,10 +243,14 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="n">aic</span><span class="p">,</span> <span class="n">bic</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.mle</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">fit_burr</span><span class="p">,</span>
     <span class="n">fit_exponential</span><span class="p">,</span>
     <span class="n">fit_gamma</span><span class="p">,</span>
+    <span class="n">fit_inverse_gamma</span><span class="p">,</span>
+    <span class="n">fit_loglogistic</span><span class="p">,</span>
     <span class="n">fit_lognormal</span><span class="p">,</span>
     <span class="n">fit_pareto</span><span class="p">,</span>
+    <span class="n">fit_paretoII</span><span class="p">,</span>
     <span class="n">fit_weibull</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.moments</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -264,6 +268,11 @@
     <span class="s2">&quot;lognormal&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">fit_lognormal</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
     <span class="s2">&quot;pareto&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">fit_pareto</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
     <span class="s2">&quot;weibull&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">fit_weibull</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="c1"># FAM / ASTAM families (0.6.0); all support truncation/censoring</span>
+    <span class="s2">&quot;paretoII&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">fit_paretoII</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;loglogistic&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">fit_loglogistic</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;inverse_gamma&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">fit_inverse_gamma</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="s2">&quot;burr&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">fit_burr</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
 <span class="p">}</span>
 
 <span class="n">SEVERITY_MOMENT_FITTERS</span> <span class="o">=</span> <span class="p">{</span>
@@ -277,7 +286,8 @@
 
 <div class="viewcode-block" id="fit_best_severity">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.fit_best_severity">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">fit_best_severity</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">candidates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;mle&quot;</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="s2">&quot;aic&quot;</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_best_severity</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">candidates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;mle&quot;</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="s2">&quot;aic&quot;</span><span class="p">,</span>
+                      <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fit a set of severity models and return the best one by AIC or BIC.</span>
 
@@ -312,6 +322,8 @@
 
     <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;mle&quot;</span><span class="p">,</span> <span class="s2">&quot;moments&quot;</span><span class="p">}:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;method must be &#39;mle&#39; or &#39;moments&#39;.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">truncation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">method</span> <span class="o">!=</span> <span class="s2">&quot;mle&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;truncation/censoring is only supported with method=&#39;mle&#39;.&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">criterion</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;aic&quot;</span><span class="p">,</span> <span class="s2">&quot;bic&quot;</span><span class="p">}:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;criterion must be &#39;aic&#39; or &#39;bic&#39;.&quot;</span><span class="p">)</span>
 
@@ -329,8 +341,15 @@
         <span class="n">fitter</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">fitters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="n">fitter</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-            <span class="n">score</span> <span class="o">=</span> <span class="n">aic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span> <span class="k">if</span> <span class="n">criterion</span> <span class="o">==</span> <span class="s2">&quot;aic&quot;</span> <span class="k">else</span> <span class="n">bic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">fitter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">fitter</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">aic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">criterion</span> <span class="o">==</span> <span class="s2">&quot;aic&quot;</span>
+                <span class="k">else</span> <span class="n">bic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">)</span>
+            <span class="p">)</span>
 
             <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>

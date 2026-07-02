@@ -241,10 +241,12 @@
           <h1>Source code for lossmodels.estimation.diagnostics</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.censoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">censored_log_likelihood</span><span class="p">,</span> <span class="n">_prepare</span><span class="p">,</span> <span class="n">kaplan_meier</span>
+
 
 <div class="viewcode-block" id="log_likelihood">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.log_likelihood">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">log_likelihood</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">log_likelihood</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute the log-likelihood of observed data under a fitted model.</span>
 
@@ -255,12 +257,19 @@
 <span class="sd">        or pmf(x) method for discrete models.</span>
 <span class="sd">    data : array-like</span>
 <span class="sd">        Observed data.</span>
+<span class="sd">    truncation, censored : array-like, optional</span>
+<span class="sd">        Per-observation left-truncation points and right-censoring flags.</span>
+<span class="sd">        When either is given the individual-data likelihood of</span>
+<span class="sd">        :func:`lossmodels.estimation.censored_log_likelihood` is used</span>
+<span class="sd">        (requires ``model.cdf``).</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    float</span>
 <span class="sd">        Log-likelihood value.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">censored_log_likelihood</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;data must not be empty.&quot;</span><span class="p">)</span>
@@ -289,7 +298,7 @@
 
 <div class="viewcode-block" id="aic">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.aic">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">aic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">aic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute Akaike Information Criterion.</span>
 
@@ -310,7 +319,7 @@
     <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;k must be positive.&quot;</span><span class="p">)</span>
 
-    <span class="n">ll</span> <span class="o">=</span> <span class="n">log_likelihood</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+    <span class="n">ll</span> <span class="o">=</span> <span class="n">log_likelihood</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">ll</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
 
@@ -320,7 +329,7 @@
 
 <div class="viewcode-block" id="bic">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.bic">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">bic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">bic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute Bayesian Information Criterion.</span>
 
@@ -344,7 +353,7 @@
     <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;k must be positive.&quot;</span><span class="p">)</span>
 
-    <span class="n">ll</span> <span class="o">=</span> <span class="n">log_likelihood</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+    <span class="n">ll</span> <span class="o">=</span> <span class="n">log_likelihood</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">ll</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
 
@@ -385,14 +394,69 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">model</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">x</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 
 
+<div class="viewcode-block" id="pit_values">
+<a class="viewcode-back" href="../../../lossmodels.html#lossmodels.pit_values">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pit_values</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Probability-integral-transform values for the *uncensored* observations.</span>
+
+<span class="sd">    Each uncensored ground-up value :math:`x_i` with truncation point</span>
+<span class="sd">    :math:`t_i` maps to</span>
+
+<span class="sd">    .. math:: u_i = \frac{F(x_i) - F(t_i)}{1 - F(t_i)},</span>
+
+<span class="sd">    which is Uniform(0, 1) under a correctly specified model, whatever the</span>
+<span class="sd">    (possibly heterogeneous) truncation points. Requires fully uncensored</span>
+<span class="sd">    data: dropping censored observations would leave the remaining PIT values</span>
+<span class="sd">    uniform only on a sub-interval of (0, 1), so for censored data use</span>
+<span class="sd">    :func:`ks_statistic`, which compares against the Kaplan-Meier estimate</span>
+<span class="sd">    instead.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span> <span class="o">=</span> <span class="n">_prepare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">cens</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;pit_values requires fully uncensored data: censored observations &quot;</span>
+            <span class="s2">&quot;carry no exact value, and dropping them leaves the remainder &quot;</span>
+            <span class="s2">&quot;uniform only on a sub-interval of (0, 1). For censored data use &quot;</span>
+            <span class="s2">&quot;ks_statistic, which compares against the Kaplan-Meier estimate.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;no observations to transform.&quot;</span><span class="p">)</span>
+    <span class="n">f_x</span> <span class="o">=</span> <span class="n">_eval_cdf</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+    <span class="n">f_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">trunc</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">_eval_cdf</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">trunc</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">f_t</span><span class="p">,</span> <span class="mf">1e-300</span><span class="p">)</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="p">(</span><span class="n">f_x</span> <span class="o">-</span> <span class="n">f_t</span><span class="p">)</span> <span class="o">/</span> <span class="n">denom</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="ks_statistic">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.ks_statistic">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">ks_statistic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Kolmogorov-Smirnov distance sup_x |F_n(x) - F(x)| (smaller is better).</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ks_statistic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Kolmogorov-Smirnov distance ``sup_x |F_n(x) - F(x)|`` (smaller is better).</span>
 
 <span class="sd">    Most sensitive in the body of the distribution. See the module note on</span>
-<span class="sd">    estimated-parameter p-values.</span>
+<span class="sd">    estimated-parameter p-values. With ``truncation`` only, the statistic is</span>
+<span class="sd">    computed on the PIT sample of :func:`pit_values` against the Uniform(0, 1)</span>
+<span class="sd">    cdf -- exact under heterogeneous truncation. With censoring present, it is</span>
+<span class="sd">    the sup-distance between the Kaplan-Meier estimate and the model cdf, both</span>
+<span class="sd">    conditional on exceeding the smallest truncation point.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">censored</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)):</span>
+        <span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span> <span class="o">=</span> <span class="n">_prepare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
+        <span class="n">times</span><span class="p">,</span> <span class="n">surv</span> <span class="o">=</span> <span class="n">kaplan_meier</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span><span class="p">)</span>
+        <span class="n">t_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">trunc</span><span class="p">))</span>
+        <span class="n">f_t</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">_eval_cdf</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">t_min</span><span class="p">]))[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">t_min</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="n">denom</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">f_t</span><span class="p">,</span> <span class="mf">1e-300</span><span class="p">)</span>
+        <span class="n">f_model</span> <span class="o">=</span> <span class="p">(</span><span class="n">_eval_cdf</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span> <span class="o">-</span> <span class="n">f_t</span><span class="p">)</span> <span class="o">/</span> <span class="n">denom</span>  <span class="c1"># conditional on X &gt; t_min</span>
+        <span class="n">f_km</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">surv</span>
+        <span class="n">f_km_left</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">f_km</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">f_km</span> <span class="o">-</span> <span class="n">f_model</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">f_km_left</span> <span class="o">-</span> <span class="n">f_model</span><span class="p">))))</span>
+    <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">pit_values</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">d_plus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span> <span class="o">-</span> <span class="n">f</span><span class="p">)</span>
+        <span class="n">d_minus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">f</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">d_plus</span><span class="p">,</span> <span class="n">d_minus</span><span class="p">))</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">_sorted_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
     <span class="n">f</span> <span class="o">=</span> <span class="n">_eval_cdf</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
@@ -404,12 +468,25 @@
 
 <div class="viewcode-block" id="anderson_darling">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.anderson_darling">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">anderson_darling</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">anderson_darling</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Anderson-Darling statistic A^2 (smaller is better).</span>
 
 <span class="sd">    Weights the tails more than KS, so it is the better whole-distribution</span>
-<span class="sd">    statistic for heavy-tailed loss data.</span>
+<span class="sd">    statistic for heavy-tailed loss data. With ``truncation`` the statistic</span>
+<span class="sd">    is computed on the (exactly uniform) PIT sample of :func:`pit_values`;</span>
+<span class="sd">    censored data are not supported -- use :func:`ks_statistic`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">censored</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;anderson_darling does not support censored data; use &quot;</span>
+            <span class="s2">&quot;ks_statistic, which compares against the Kaplan-Meier estimate.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">pit_values</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="kc">None</span><span class="p">)),</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="mf">1e-12</span><span class="p">)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">srt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">f</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])))</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="o">-</span><span class="n">n</span> <span class="o">-</span> <span class="n">srt</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">_sorted_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
     <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">_eval_cdf</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="mf">1e-12</span><span class="p">)</span>
@@ -421,8 +498,23 @@
 
 <div class="viewcode-block" id="cramer_von_mises">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.cramer_von_mises">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">cramer_von_mises</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cramer-von Mises statistic W^2 (smaller is better).&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cramer_von_mises</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cramer-von Mises statistic W^2 (smaller is better).</span>
+
+<span class="sd">    With ``truncation`` the statistic is computed on the (exactly uniform)</span>
+<span class="sd">    PIT sample of :func:`pit_values`; censored data are not supported -- use</span>
+<span class="sd">    :func:`ks_statistic`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">censored</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;cramer_von_mises does not support censored data; use &quot;</span>
+            <span class="s2">&quot;ks_statistic, which compares against the Kaplan-Meier estimate.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">pit_values</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">12.0</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">f</span> <span class="o">-</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">n</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">_sorted_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
     <span class="n">f</span> <span class="o">=</span> <span class="n">_eval_cdf</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
@@ -448,7 +540,10 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;data must not be empty.&quot;</span><span class="p">)</span>
     <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">probs</span><span class="p">:</span>
-        <span class="n">emp</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span>
+        <span class="c1"># Inverted-CDF quantile: the same estimator the ecosystem&#39;s var/tvar</span>
+        <span class="c1"># use, so the tail diagnostic is measured against what will actually</span>
+        <span class="c1"># be computed downstream.</span>
+        <span class="n">emp</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;inverted_cdf&quot;</span><span class="p">))</span>
         <span class="n">fit</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
         <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
             <span class="s2">&quot;prob&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">p</span><span class="p">),</span>
@@ -463,23 +558,42 @@
 
 <div class="viewcode-block" id="goodness_of_fit">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.goodness_of_fit">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">goodness_of_fit</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">goodness_of_fit</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;One-call fit report combining relative and absolute measures.</span>
 
 <span class="sd">    Returns ``n``, ``log_likelihood``, ``aic``, ``bic`` (relative -- compare</span>
 <span class="sd">    across candidates) and ``ks``, ``anderson_darling``, ``cramer_von_mises``</span>
 <span class="sd">    (absolute distance-to-empirical -- smaller is better). See the module note</span>
 <span class="sd">    on the estimated-parameter caveat for the distance statistics.</span>
+
+<span class="sd">    With ``truncation``/``censored``, the likelihood-based measures use the</span>
+<span class="sd">    individual-data likelihood; ``ks`` compares against the PIT sample</span>
+<span class="sd">    (truncation only) or the Kaplan-Meier estimate (censoring present), and</span>
+<span class="sd">    ``anderson_darling``/``cramer_von_mises`` are reported as NaN under</span>
+<span class="sd">    censoring, where they are not defined here. ``n_uncensored`` is added to</span>
+<span class="sd">    the report.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">{</span>
+    <span class="n">has_censoring</span> <span class="o">=</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">censored</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;n&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">),</span>
-        <span class="s2">&quot;log_likelihood&quot;</span><span class="p">:</span> <span class="n">log_likelihood</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">),</span>
-        <span class="s2">&quot;aic&quot;</span><span class="p">:</span> <span class="n">aic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">),</span>
-        <span class="s2">&quot;bic&quot;</span><span class="p">:</span> <span class="n">bic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">),</span>
-        <span class="s2">&quot;ks&quot;</span><span class="p">:</span> <span class="n">ks_statistic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">),</span>
-        <span class="s2">&quot;anderson_darling&quot;</span><span class="p">:</span> <span class="n">anderson_darling</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">),</span>
-        <span class="s2">&quot;cramer_von_mises&quot;</span><span class="p">:</span> <span class="n">cramer_von_mises</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">),</span>
-    <span class="p">}</span></div>
+        <span class="s2">&quot;log_likelihood&quot;</span><span class="p">:</span> <span class="n">log_likelihood</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">),</span>
+        <span class="s2">&quot;aic&quot;</span><span class="p">:</span> <span class="n">aic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">),</span>
+        <span class="s2">&quot;bic&quot;</span><span class="p">:</span> <span class="n">bic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">),</span>
+        <span class="s2">&quot;ks&quot;</span><span class="p">:</span> <span class="n">ks_statistic</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">),</span>
+        <span class="s2">&quot;anderson_darling&quot;</span><span class="p">:</span> <span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">has_censoring</span>
+            <span class="k">else</span> <span class="n">anderson_darling</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;cramer_von_mises&quot;</span><span class="p">:</span> <span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">has_censoring</span>
+            <span class="k">else</span> <span class="n">cramer_von_mises</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">cens</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span> <span class="k">if</span> <span class="n">censored</span> <span class="ow">is</span> <span class="kc">None</span> \
+            <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">censored</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">&quot;n_uncensored&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">~</span><span class="n">cens</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">out</span></div>
 
 </pre></div>
         </article>

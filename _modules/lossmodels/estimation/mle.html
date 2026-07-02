@@ -245,7 +245,18 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">weibull_min</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..frequency</span><span class="w"> </span><span class="kn">import</span> <span class="n">NegativeBinomial</span><span class="p">,</span> <span class="n">Poisson</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..severity</span><span class="w"> </span><span class="kn">import</span> <span class="n">Exponential</span><span class="p">,</span> <span class="n">Gamma</span><span class="p">,</span> <span class="n">Lognormal</span><span class="p">,</span> <span class="n">Pareto</span><span class="p">,</span> <span class="n">Weibull</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..severity</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Burr</span><span class="p">,</span>
+    <span class="n">Exponential</span><span class="p">,</span>
+    <span class="n">Gamma</span><span class="p">,</span>
+    <span class="n">InverseGamma</span><span class="p">,</span>
+    <span class="n">Loglogistic</span><span class="p">,</span>
+    <span class="n">Lognormal</span><span class="p">,</span>
+    <span class="n">Pareto</span><span class="p">,</span>
+    <span class="n">ParetoII</span><span class="p">,</span>
+    <span class="n">Weibull</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.censoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">_prepare</span><span class="p">,</span> <span class="n">fit_mle_censored</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_validate_positive_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;data&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
@@ -276,25 +287,41 @@
 
 <div class="viewcode-block" id="fit_exponential">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.fit_exponential">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">fit_exponential</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Exponential</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_exponential</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Exponential</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fit an Exponential severity model by maximum likelihood.</span>
 
-<span class="sd">    For X_i ~ Exponential(rate), the MLE is:</span>
-<span class="sd">        rate_hat = 1 / mean(data)</span>
+<span class="sd">    For complete data the MLE is ``rate_hat = 1 / mean(data)``. Under left</span>
+<span class="sd">    truncation and right censoring the MLE remains closed form</span>
+<span class="sd">    (Loss Models, ch. 11): with ``n_u`` uncensored observations,</span>
+
+<span class="sd">        rate_hat = n_u / sum_i (x_i - t_i)</span>
+
+<span class="sd">    summed over *all* observations (censored ones contribute their censoring</span>
+<span class="sd">    point). ``truncation``/``censored`` follow the conventions of</span>
+<span class="sd">    :mod:`lossmodels.estimation.censoring`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">_validate_positive_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-    <span class="n">mean_x</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">mean_x</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Mean of data must be positive.&quot;</span><span class="p">)</span>
-    <span class="n">rate_hat</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">mean_x</span>
-    <span class="k">return</span> <span class="n">Exponential</span><span class="p">(</span><span class="n">rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">rate_hat</span><span class="p">))</span></div>
+    <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">censored</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">_validate_positive_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">mean_x</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">mean_x</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Mean of data must be positive.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Exponential</span><span class="p">(</span><span class="n">rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">mean_x</span><span class="p">))</span>
+
+    <span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span> <span class="o">=</span> <span class="n">_prepare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
+    <span class="n">n_u</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">~</span><span class="n">cens</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">n_u</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;at least one uncensored observation is required.&quot;</span><span class="p">)</span>
+    <span class="n">total_excess</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">values</span> <span class="o">-</span> <span class="n">trunc</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">total_excess</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;total observed excess over truncation must be positive.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Exponential</span><span class="p">(</span><span class="n">rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">n_u</span> <span class="o">/</span> <span class="n">total_excess</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="fit_lognormal">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.fit_lognormal">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">fit_lognormal</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Lognormal</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_lognormal</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Lognormal</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fit a Lognormal severity model by maximum likelihood.</span>
 
@@ -306,6 +333,18 @@
 <span class="sd">    -----</span>
 <span class="sd">    This uses the MLE version of the variance (ddof=0).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span> <span class="o">=</span> <span class="n">_prepare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
+        <span class="n">unc</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="o">~</span><span class="n">cens</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">unc</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;at least two uncensored observations are required.&quot;</span><span class="p">)</span>
+        <span class="n">mu0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">unc</span><span class="p">)))</span>
+        <span class="n">sigma0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">unc</span><span class="p">)),</span> <span class="mf">1e-3</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">fit_mle_censored</span><span class="p">(</span>
+            <span class="n">Lognormal</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="p">[</span><span class="n">mu0</span><span class="p">,</span> <span class="n">sigma0</span><span class="p">],</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="p">[(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="mf">1e-8</span><span class="p">,</span> <span class="kc">None</span><span class="p">)],</span>
+            <span class="n">truncation</span><span class="o">=</span><span class="n">trunc</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">cens</span><span class="p">,</span>
+        <span class="p">)</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">_validate_positive_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">log_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">mu_hat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">log_data</span><span class="p">))</span>
@@ -395,7 +434,7 @@
 
 <div class="viewcode-block" id="fit_gamma">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.fit_gamma">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">fit_gamma</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Gamma</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_gamma</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Gamma</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fit a Gamma severity model by maximum likelihood using SciPy.</span>
 
@@ -409,6 +448,17 @@
 <span class="sd">    This constrains loc = 0 so the support is x &gt; 0, consistent with the</span>
 <span class="sd">    severity model implementation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span> <span class="o">=</span> <span class="n">_prepare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
+        <span class="n">unc</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="o">~</span><span class="n">cens</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">unc</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;at least two uncensored observations are required.&quot;</span><span class="p">)</span>
+        <span class="n">a0</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">t0</span> <span class="o">=</span> <span class="n">gamma_dist</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">unc</span><span class="p">,</span> <span class="n">floc</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fit_mle_censored</span><span class="p">(</span>
+            <span class="n">Gamma</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">a0</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">)],</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="p">[(</span><span class="mf">1e-8</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="mf">1e-8</span><span class="p">,</span> <span class="kc">None</span><span class="p">)],</span>
+            <span class="n">truncation</span><span class="o">=</span><span class="n">trunc</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">cens</span><span class="p">,</span>
+        <span class="p">)</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">_validate_positive_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">alpha_hat</span><span class="p">,</span> <span class="n">loc_hat</span><span class="p">,</span> <span class="n">theta_hat</span> <span class="o">=</span> <span class="n">gamma_dist</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">floc</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">loc_hat</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
@@ -419,7 +469,7 @@
 
 <div class="viewcode-block" id="fit_pareto">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.fit_pareto">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">fit_pareto</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pareto</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_pareto</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pareto</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fit a Pareto Type I severity model by maximum likelihood.</span>
 
@@ -433,27 +483,47 @@
 <span class="sd">    Pareto</span>
 <span class="sd">        Fitted Pareto(alpha, theta) model.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">_validate_positive_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">censored</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">_validate_positive_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">theta_hat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">theta_hat</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Estimated theta must be positive.&quot;</span><span class="p">)</span>
+        <span class="n">log_ratios</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">data</span> <span class="o">/</span> <span class="n">theta_hat</span><span class="p">)</span>
+        <span class="n">denom</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">log_ratios</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">denom</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Pareto MLE requires data with at least one observation above the minimum.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">alpha_hat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">/</span> <span class="n">denom</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Pareto</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">alpha_hat</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta_hat</span><span class="p">)</span>
 
-    <span class="n">theta_hat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">theta_hat</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Estimated theta must be positive.&quot;</span><span class="p">)</span>
-
-    <span class="n">log_ratios</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">data</span> <span class="o">/</span> <span class="n">theta_hat</span><span class="p">)</span>
-    <span class="n">denom</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">log_ratios</span><span class="p">))</span>
+    <span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span> <span class="o">=</span> <span class="n">_prepare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
+    <span class="n">n_u</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">~</span><span class="n">cens</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">n_u</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;at least one uncensored observation is required.&quot;</span><span class="p">)</span>
+    <span class="c1"># Left truncation at t &gt;= theta makes theta unidentifiable (the conditional</span>
+    <span class="c1"># density alpha t^alpha x^-(alpha+1) does not involve theta), so theta is</span>
+    <span class="c1"># pinned at the smallest observable point: the minimum untruncated value if</span>
+    <span class="c1"># any observation is untruncated, else the smallest truncation point.</span>
+    <span class="n">untruncated</span> <span class="o">=</span> <span class="n">trunc</span> <span class="o">&lt;=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">untruncated</span><span class="p">):</span>
+        <span class="n">theta_hat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="n">untruncated</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">theta_hat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">trunc</span><span class="p">))</span>
+    <span class="n">lower</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">trunc</span><span class="p">,</span> <span class="n">theta_hat</span><span class="p">)</span>
+    <span class="n">denom</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">values</span> <span class="o">/</span> <span class="n">lower</span><span class="p">)))</span>
     <span class="k">if</span> <span class="n">denom</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Pareto MLE requires data with at least one observation above the minimum.&quot;</span>
+            <span class="s2">&quot;Pareto MLE requires at least one observation strictly above its &quot;</span>
+            <span class="s2">&quot;effective lower bound.&quot;</span>
         <span class="p">)</span>
-
-    <span class="n">alpha_hat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">/</span> <span class="n">denom</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">Pareto</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">alpha_hat</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta_hat</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">Pareto</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">n_u</span> <span class="o">/</span> <span class="n">denom</span><span class="p">),</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta_hat</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="fit_weibull">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.fit_weibull">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">fit_weibull</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Weibull</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_weibull</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Weibull</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fit a Weibull severity model by maximum likelihood using SciPy.</span>
 
@@ -467,6 +537,17 @@
 <span class="sd">    This constrains loc = 0 so the support is x &gt; 0, consistent with the</span>
 <span class="sd">    severity model implementation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span> <span class="o">=</span> <span class="n">_prepare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
+        <span class="n">unc</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="o">~</span><span class="n">cens</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">unc</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;at least two uncensored observations are required.&quot;</span><span class="p">)</span>
+        <span class="n">k0</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">lam0</span> <span class="o">=</span> <span class="n">weibull_min</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">unc</span><span class="p">,</span> <span class="n">floc</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fit_mle_censored</span><span class="p">(</span>
+            <span class="n">Weibull</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">k0</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">lam0</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">)],</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="p">[(</span><span class="mf">1e-8</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="mf">1e-8</span><span class="p">,</span> <span class="kc">None</span><span class="p">)],</span>
+            <span class="n">truncation</span><span class="o">=</span><span class="n">trunc</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">cens</span><span class="p">,</span>
+        <span class="p">)</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">_validate_positive_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">k_hat</span><span class="p">,</span> <span class="n">loc_hat</span><span class="p">,</span> <span class="n">lam_hat</span> <span class="o">=</span> <span class="n">weibull_min</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">floc</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">loc_hat</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
@@ -477,14 +558,14 @@
 
 <div class="viewcode-block" id="fit_mle">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.fit_mle">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">fit_mle</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">initial_params</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_mle</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">initial_params</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generic numerical maximum likelihood estimation for models with a pdf method.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    model_class : class</span>
-<span class="sd">        A model class that can be instantiated as model_class(*params)</span>
+<span class="sd">        A model class that can be instantiated as ``model_class(*params)``</span>
 <span class="sd">        and provides a pdf(x) method.</span>
 <span class="sd">    data : array-like</span>
 <span class="sd">        Observed data.</span>
@@ -498,6 +579,11 @@
 <span class="sd">    object</span>
 <span class="sd">        Fitted model instance of type model_class.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">truncation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">censored</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">fit_mle_censored</span><span class="p">(</span>
+            <span class="n">model_class</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">initial_params</span><span class="p">,</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">censored</span><span class="p">,</span>
+        <span class="p">)</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">_validate_positive_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="n">initial_params</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">initial_params</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 
@@ -525,6 +611,111 @@
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MLE optimization failed: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">model_class</span><span class="p">(</span><span class="o">*</span><span class="n">result</span><span class="o">.</span><span class="n">x</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_uncensored_moments</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">censored</span><span class="p">):</span>
+    <span class="n">unc</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="o">~</span><span class="n">censored</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">unc</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;at least two uncensored observations are required.&quot;</span><span class="p">)</span>
+    <span class="n">m1</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">unc</span><span class="p">))</span>
+    <span class="n">m2</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">unc</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">unc</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span>
+
+
+<div class="viewcode-block" id="fit_paretoII">
+<a class="viewcode-back" href="../../../lossmodels.html#lossmodels.fit_paretoII">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_paretoII</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ParetoII</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fit a Pareto Type II (Lomax) severity -- the FAM/ASTAM &quot;Pareto&quot; --</span>
+<span class="sd">    by numerical maximum likelihood, with optional left truncation and right</span>
+<span class="sd">    censoring (deductibles and limits).</span>
+
+<span class="sd">    Initialization uses the method of moments on the uncensored values when</span>
+<span class="sd">    the implied second moment exists, else a heavy-tail default.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span> <span class="o">=</span> <span class="n">_prepare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
+    <span class="n">unc</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span> <span class="o">=</span> <span class="n">_uncensored_moments</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">cens</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">m2</span> <span class="o">/</span> <span class="p">(</span><span class="n">m1</span> <span class="o">*</span> <span class="n">m1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">r</span> <span class="o">&gt;</span> <span class="mf">2.0</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
+        <span class="n">alpha0</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">r</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">r</span> <span class="o">-</span> <span class="mf">2.0</span><span class="p">)</span>
+        <span class="n">theta0</span> <span class="o">=</span> <span class="n">m1</span> <span class="o">*</span> <span class="p">(</span><span class="n">alpha0</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">alpha0</span><span class="p">,</span> <span class="n">theta0</span> <span class="o">=</span> <span class="mf">1.5</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">unc</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">fit_mle_censored</span><span class="p">(</span>
+        <span class="n">ParetoII</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">alpha0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">theta0</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">)],</span>
+        <span class="n">bounds</span><span class="o">=</span><span class="p">[(</span><span class="mf">1e-6</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="mf">1e-8</span><span class="p">,</span> <span class="kc">None</span><span class="p">)],</span>
+        <span class="n">truncation</span><span class="o">=</span><span class="n">trunc</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">cens</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="fit_loglogistic">
+<a class="viewcode-back" href="../../../lossmodels.html#lossmodels.fit_loglogistic">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_loglogistic</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Loglogistic</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fit a Loglogistic severity by numerical maximum likelihood, with</span>
+<span class="sd">    optional left truncation and right censoring.</span>
+
+<span class="sd">    Initialization: theta from the median (the loglogistic median is theta)</span>
+<span class="sd">    and gamma from the interquartile ratio, q75/q25 = 9**(1/gamma).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span> <span class="o">=</span> <span class="n">_prepare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
+    <span class="n">unc</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="o">~</span><span class="n">cens</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">unc</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;at least two uncensored observations are required.&quot;</span><span class="p">)</span>
+    <span class="n">theta0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">unc</span><span class="p">))</span>
+    <span class="n">q25</span><span class="p">,</span> <span class="n">q75</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">unc</span><span class="p">,</span> <span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">75</span><span class="p">])</span>
+    <span class="n">gamma0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">9.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">q75</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">q25</span><span class="p">,</span> <span class="mf">1e-300</span><span class="p">),</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="mf">1e-6</span><span class="p">)),</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">fit_mle_censored</span><span class="p">(</span>
+        <span class="n">Loglogistic</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="p">[</span><span class="n">gamma0</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">theta0</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">)],</span>
+        <span class="n">bounds</span><span class="o">=</span><span class="p">[(</span><span class="mf">1e-3</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="mf">1e-8</span><span class="p">,</span> <span class="kc">None</span><span class="p">)],</span>
+        <span class="n">truncation</span><span class="o">=</span><span class="n">trunc</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">cens</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="fit_inverse_gamma">
+<a class="viewcode-back" href="../../../lossmodels.html#lossmodels.fit_inverse_gamma">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_inverse_gamma</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InverseGamma</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fit an Inverse Gamma severity by numerical maximum likelihood, with</span>
+<span class="sd">    optional left truncation and right censoring.</span>
+
+<span class="sd">    Initialization by moments on the uncensored values:</span>
+<span class="sd">    alpha0 = 2 + m1^2/(m2 - m1^2), theta0 = m1 (alpha0 - 1).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span> <span class="o">=</span> <span class="n">_prepare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
+    <span class="n">unc</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span> <span class="o">=</span> <span class="n">_uncensored_moments</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">cens</span><span class="p">)</span>
+    <span class="n">var</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">m2</span> <span class="o">-</span> <span class="n">m1</span> <span class="o">*</span> <span class="n">m1</span><span class="p">,</span> <span class="mf">1e-12</span><span class="p">)</span>
+    <span class="n">alpha0</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">+</span> <span class="n">m1</span> <span class="o">*</span> <span class="n">m1</span> <span class="o">/</span> <span class="n">var</span>
+    <span class="n">theta0</span> <span class="o">=</span> <span class="n">m1</span> <span class="o">*</span> <span class="p">(</span><span class="n">alpha0</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fit_mle_censored</span><span class="p">(</span>
+        <span class="n">InverseGamma</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">alpha0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">theta0</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">)],</span>
+        <span class="n">bounds</span><span class="o">=</span><span class="p">[(</span><span class="mf">1e-6</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="mf">1e-8</span><span class="p">,</span> <span class="kc">None</span><span class="p">)],</span>
+        <span class="n">truncation</span><span class="o">=</span><span class="n">trunc</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">cens</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="fit_burr">
+<a class="viewcode-back" href="../../../lossmodels.html#lossmodels.fit_burr">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_burr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Burr</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fit a Burr (Type XII) severity by numerical maximum likelihood, with</span>
+<span class="sd">    optional left truncation and right censoring.</span>
+
+<span class="sd">    A three-parameter fit: initialized at the loglogistic special case</span>
+<span class="sd">    (alpha = 1, gamma from the interquartile ratio, theta at the median).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">values</span><span class="p">,</span> <span class="n">trunc</span><span class="p">,</span> <span class="n">cens</span> <span class="o">=</span> <span class="n">_prepare</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">truncation</span><span class="p">,</span> <span class="n">censored</span><span class="p">)</span>
+    <span class="n">unc</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="o">~</span><span class="n">cens</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">unc</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;at least three uncensored observations are required.&quot;</span><span class="p">)</span>
+    <span class="n">theta0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">unc</span><span class="p">))</span>
+    <span class="n">q25</span><span class="p">,</span> <span class="n">q75</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">unc</span><span class="p">,</span> <span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">75</span><span class="p">])</span>
+    <span class="n">gamma0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">9.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">q75</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">q25</span><span class="p">,</span> <span class="mf">1e-300</span><span class="p">),</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="mf">1e-6</span><span class="p">)),</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">fit_mle_censored</span><span class="p">(</span>
+        <span class="n">Burr</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">theta0</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">),</span> <span class="n">gamma0</span><span class="p">],</span>
+        <span class="n">bounds</span><span class="o">=</span><span class="p">[(</span><span class="mf">1e-3</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="mf">1e-8</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="mf">1e-3</span><span class="p">,</span> <span class="kc">None</span><span class="p">)],</span>
+        <span class="n">truncation</span><span class="o">=</span><span class="n">trunc</span><span class="p">,</span> <span class="n">censored</span><span class="o">=</span><span class="n">cens</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 </pre></div>
         </article>

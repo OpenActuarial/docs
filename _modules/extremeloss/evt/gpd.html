@@ -308,8 +308,8 @@
     <span class="n">validate_threshold</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">beta</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;beta must be positive&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">exceedance_fraction</span> <span class="o">&lt;=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">exceedance_fraction</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exceedance_fraction must lie strictly between 0 and 1&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">exceedance_fraction</span> <span class="o">&lt;=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">exceedance_fraction</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exceedance_fraction must lie in (0, 1]&quot;</span><span class="p">)</span>
     <span class="n">tail_prob</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">p</span>
     <span class="k">if</span> <span class="n">tail_prob</span> <span class="o">&gt;=</span> <span class="n">exceedance_fraction</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>

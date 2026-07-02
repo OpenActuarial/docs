@@ -324,6 +324,32 @@ tail. Moments raise when they do not exist (<code class="docutils literal notran
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="extremeloss.empirical_tvar">
+<span class="sig-name descname"><span class="pre">empirical_tvar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">losses</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/extremeloss/estimation/metrics.html#empirical_tvar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#extremeloss.empirical_tvar" title="Link to this definition">¶</a></dt>
+<dd><p>Empirical TVaR via the average-quantile (Acerbi-Tasche) plug-in.</p>
+<p>Implements <code class="docutils literal notranslate"><span class="pre">TVaR_q</span> <span class="pre">=</span> <span class="pre">(1/(1-q))</span> <span class="pre">*</span> <span class="pre">integral_q^1</span> <span class="pre">VaR_u</span> <span class="pre">du</span></code> exactly on the
+empirical distribution: with sorted losses and <code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">=</span> <span class="pre">ceil(n*q)</span></code>,</p>
+<blockquote>
+<div><p>TVaR_q = [ sum_{i&gt;k} x_(i) + x_(k) * (k - n*q) ] / (n * (1 - q)).</p>
+</div></blockquote>
+<p>Correct in the presence of ties/atoms and always <code class="docutils literal notranslate"><span class="pre">&gt;=</span> <span class="pre">empirical_var</span></code>.
+Ecosystem-standard estimator shared with <code class="docutils literal notranslate"><span class="pre">risksim</span></code> and <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">q</span></code> may be scalar (returns <code class="docutils literal notranslate"><span class="pre">float</span></code>) or array-like (returns array).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="extremeloss.empirical_var">
+<span class="sig-name descname"><span class="pre">empirical_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">losses</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/extremeloss/estimation/metrics.html#empirical_var"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#extremeloss.empirical_var" title="Link to this definition">¶</a></dt>
+<dd><p>Empirical VaR: the order statistic <code class="docutils literal notranslate"><span class="pre">x_(ceil(n*q))</span></code>.</p>
+<p>Implements <code class="docutils literal notranslate"><span class="pre">VaR_q</span> <span class="pre">=</span> <span class="pre">inf{x</span> <span class="pre">:</span> <span class="pre">F(x)</span> <span class="pre">&gt;=</span> <span class="pre">q}</span></code> on the empirical distribution
+(identical to <code class="docutils literal notranslate"><span class="pre">np.quantile(...,</span> <span class="pre">method=&quot;inverted_cdf&quot;)</span></code>). This is the
+ecosystem-standard estimator shared with <code class="docutils literal notranslate"><span class="pre">risksim</span></code> and <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code>;
+it serves as the crude-Monte-Carlo baseline that the variance-reduced
+estimators in this subpackage are compared against.</p>
+<p><code class="docutils literal notranslate"><span class="pre">q</span></code> may be scalar (returns <code class="docutils literal notranslate"><span class="pre">float</span></code>) or array-like (returns array).</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="extremeloss.estimate_tail_probability">
 <span class="sig-name descname"><span class="pre">estimate_tail_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#extremeloss.TailEstimateResult" title="extremeloss.results.TailEstimateResult"><span class="pre">TailEstimateResult</span></a></span></span><a class="reference internal" href="_modules/extremeloss/estimation/rare_event.html#estimate_tail_probability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#extremeloss.estimate_tail_probability" title="Link to this definition">¶</a></dt>
 <dd><p>Estimate P(X &gt; threshold) from simulated or observed losses.</p>
@@ -349,6 +375,21 @@ tail. Moments raise when they do not exist (<code class="docutils literal notran
 <dd><p>Estimate TVaR from conditional expectations of tail losses.</p>
 <p><cite>conditional_tail_expectations</cite> should contain draws of E[X | X &gt;= VaR_q, Y]
 or another conditionally unbiased TVaR contribution.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="extremeloss.estimate_tvar_is">
+<span class="sig-name descname"><span class="pre">estimate_tvar_is</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">losses</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#extremeloss.TailEstimateResult" title="extremeloss.results.TailEstimateResult"><span class="pre">TailEstimateResult</span></a></span></span><a class="reference internal" href="_modules/extremeloss/estimation/importance_sampling.html#estimate_tvar_is"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#extremeloss.estimate_tvar_is" title="Link to this definition">¶</a></dt>
+<dd><p>Weighted TVaR under the ecosystem average-quantile convention.</p>
+<p>Implements the weighted Acerbi-Tasche plug-in for
+<code class="docutils literal notranslate"><span class="pre">TVaR_q</span> <span class="pre">=</span> <span class="pre">(1/(1-q))</span> <span class="pre">*</span> <span class="pre">integral_q^1</span> <span class="pre">VaR_u</span> <span class="pre">du</span></code>: with values sorted, weights
+normalized, cumulative weights <code class="docutils literal notranslate"><span class="pre">W_i</span></code> and <code class="docutils literal notranslate"><span class="pre">k</span></code> the weighted-VaR index,</p>
+<blockquote>
+<div><p>TVaR_q = [ sum_{i&gt;k} w_i x_i + x_k (W_k - q) ] / (1 - q).</p>
+</div></blockquote>
+<p>The atom at VaR contributes only the weight mass above level <code class="docutils literal notranslate"><span class="pre">q</span></code>, which
+keeps the estimator coherent with ties and makes it reduce <em>exactly</em> to
+<code class="docutils literal notranslate"><span class="pre">empirical_tvar</span></code> when all weights are equal.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -462,9 +503,12 @@ threshold. The mixing weight defaults to the body mass implied by the fit,
 </li>
 <li><a class="reference internal" href="#extremeloss.TailEstimateResult"><code class="docutils literal notranslate"><span class="pre">TailEstimateResult</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.ThresholdScan"><code class="docutils literal notranslate"><span class="pre">ThresholdScan</span></code></a></li>
+<li><a class="reference internal" href="#extremeloss.empirical_tvar"><code class="docutils literal notranslate"><span class="pre">empirical_tvar()</span></code></a></li>
+<li><a class="reference internal" href="#extremeloss.empirical_var"><code class="docutils literal notranslate"><span class="pre">empirical_var()</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.estimate_tail_probability"><code class="docutils literal notranslate"><span class="pre">estimate_tail_probability()</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.estimate_tail_probability_cmc"><code class="docutils literal notranslate"><span class="pre">estimate_tail_probability_cmc()</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.estimate_tvar_cmc"><code class="docutils literal notranslate"><span class="pre">estimate_tvar_cmc()</span></code></a></li>
+<li><a class="reference internal" href="#extremeloss.estimate_tvar_is"><code class="docutils literal notranslate"><span class="pre">estimate_tvar_is()</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.fit_gpd"><code class="docutils literal notranslate"><span class="pre">fit_gpd()</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.fit_spliced_gpd"><code class="docutils literal notranslate"><span class="pre">fit_spliced_gpd()</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.splice_gpd_tail"><code class="docutils literal notranslate"><span class="pre">splice_gpd_tail()</span></code></a></li>
