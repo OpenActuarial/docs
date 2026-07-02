@@ -14,7 +14,7 @@ copyright = "2026, OpenActuarial"
 try:
     release = _md.version("actuarialpy")
 except Exception:  # pragma: no cover - fallback when not installed
-    release = "0.33.1"
+    release = "0.34.0"
 version = release
 
 # -- General configuration ---------------------------------------------------

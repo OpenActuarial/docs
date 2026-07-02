@@ -13,9 +13,10 @@ can build on.
   age bases. `ratingmodels` builds directly on these.
 - **ratingmodels** — the pricing layer: manual and experience rate build-up,
   credibility blending, rate indication and rate-change decomposition, GLM
-  relativities, and renewal constraints.
-- **lossmodels** — loss-distribution modeling: severity and frequency fitting,
-  and aggregate loss.
+  relativities with model evaluation, and renewal constraints.
+- **lossmodels** — loss-distribution modeling: severity and frequency fitting
+  (complete data or under deductibles and limits), model selection and
+  diagnostics, and aggregate loss.
 - **extremeloss** — the tail: peaks-over-threshold / GPD estimation and
   large-claim loading.
 - **risksim** — portfolio Monte Carlo and risk measures.
@@ -60,8 +61,8 @@ flowchart LR
     classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
 :::
 
-Dependencies stay light — numpy and pandas in the core and `ratingmodels`, with
-scipy where the loss and tail work needs it. `extremeloss` pulls in matplotlib
+Dependencies stay light — numpy and pandas in the core and `ratingmodels`;
+`lossmodels` and `extremeloss` are numpy + scipy; `risksim` is numpy only. `extremeloss` pulls in matplotlib
 only through its optional `plot` extra (`pip install "extremeloss[plot]"`), for
 the diagnostic plots; the base install does not require it.
 
@@ -70,4 +71,7 @@ the diagnostic plots; the base install does not require it.
 Every package works on plain numpy arrays and pandas Series/DataFrames. There is
 no framework to buy into: functions take and return the data structures you
 already have, and the classes (`Experience`, `ManualRate`, `RateIndication`, …)
-are thin, inspectable wrappers over those functions.
+are thin, inspectable wrappers over those functions. Cross-package numerical
+conventions — the empirical VaR/TVaR estimators, the `rng` reproducibility
+contract, distribution naming, coverage semantics, and the truncation/censoring
+data layout — are collected on the [Conventions](conventions.md) page.

@@ -23,15 +23,16 @@ mathematics, and exposure — that `ratingmodels` builds on directly.
 :link-type: doc
 
 **Pricing.** Manual and experience rate build-up, credibility blending,
-rate indication and decomposition, GLM relativities, and renewal constraints.
+rate indication and decomposition, GLM relativities and model evaluation, and
+renewal constraints.
 :::
 
 :::{grid-item-card} lossmodels
 :link: lossmodels
 :link-type: doc
 
-**Loss modeling.** Severity and frequency fitting, and aggregate loss
-distributions.
+**Loss modeling.** Severity and frequency fitting — including under
+deductibles and limits — and aggregate loss distributions.
 :::
 
 :::{grid-item-card} extremeloss
@@ -71,8 +72,8 @@ The arrows are the analytical sequence, not install requirements. `actuarialpy`
 is the shared core — credibility, trend, financial math, and exposure live there
 once — and `ratingmodels` builds directly on it. `lossmodels`, `extremeloss`, and
 `risksim` install independently (`extremeloss` can optionally integrate
-`lossmodels` for severity splicing). Dependencies stay light: numpy and pandas,
-with scipy where the loss and tail work needs it.
+`lossmodels` for severity splicing). Dependencies stay light: numpy everywhere, pandas
+in the core and `ratingmodels`, scipy where the loss and tail work needs it.
 
 ## A cross-package example
 
@@ -112,6 +113,7 @@ dependency.
 :maxdepth: 1
 
 overview
+conventions
 actuarialpy
 ratingmodels
 lossmodels
