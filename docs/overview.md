@@ -8,7 +8,7 @@ can build on.
 ## Division of labor
 
 - **actuarialpy** — experience analysis on a tidy table, and the shared
-  primitives: PMPM and loss-ratio metrics, trend, completion, seasonality,
+  primitives: per-exposure and loss-ratio metrics, trend, completion, seasonality,
   credibility, financial mathematics (time value of money), exposure /
   age bases, and the two-tier underwriting margin summary. `ratingmodels`
   builds directly on these.

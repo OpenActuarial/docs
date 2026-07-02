@@ -15,11 +15,11 @@ import ratingmodels as rm
 
 z = rm.limited_fluctuation_credibility(n=96_000, n_full=120_000)
 
-manual = rm.ManualRate(base_pmpm=480, factors={"area": 1.05, "industry": 0.97})
+manual = rm.ManualRate(base_loss_cost=480, factors={"area": 1.05, "industry": 0.97})
 
 indication = rm.RateIndication(
-    experience_claims_pmpm=512,
-    manual_claims_pmpm=manual.claims_pmpm(),
+    experience_loss_cost=512,
+    manual_loss_cost=manual.loss_cost(),
     credibility=z,
     current_rate=560,
     target_loss_ratio=0.85,
@@ -41,10 +41,10 @@ result = rm.evaluate([
     rm.start("Par base claim cost", 941.63),
     rm.add("$30 specialist copay", -11.44),
     rm.multiply("Rating region", 1.083),
-    rm.checkpoint("Net claim cost PMPM"),
+    rm.checkpoint("Net claim cost"),
 ])
 
-result.value        # final PMPM
+result.value        # final per-unit value
 result.to_frame()   # every step as a DataFrame — inputs, factors, running total
 ```
 
@@ -115,10 +115,10 @@ ratio equals the retention's `profit_margin` exactly:
 ```python
 import ratingmodels as rm
 
-ret = rm.RetentionLoad(fixed_expense_pmpm=8, variable_expense_ratio=0.10,
+ret = rm.RetentionLoad(fixed_expense=8, variable_expense_ratio=0.10,
                        profit_margin=0.03, lae_ratio=0.02)
-case = rm.PricingEvaluation(claims_pmpm=410, current_rate=470, retention=ret,
-                            member_months=14_400, persistency=0.85)
+case = rm.PricingEvaluation(loss_cost=410, current_rate=470, retention=ret,
+                            exposure=14_400, persistency=0.85)
 
 case.at(0.062, name="issued")        # premium, gross margin, margin, ratio
 case.rate_change_for_margin(0.03)    # closed form: P(m) = (L(1+lae)+F)/(1-V-m)

@@ -14,7 +14,7 @@ copyright = "2026, OpenActuarial"
 try:
     release = _md.version("actuarialpy")
 except Exception:  # pragma: no cover - fallback when not installed
-    release = "0.35.0"
+    release = "0.37.0"
 version = release
 
 # -- General configuration ---------------------------------------------------
@@ -58,7 +58,7 @@ autodoc_typehints = "signature"
 autodoc_typehints_format = "short"
 autodoc_preserve_defaults = True
 autosummary_generate = False
-add_module_names = False               # render `pmpm`, not `actuarialpy.pmpm`
+add_module_names = False               # render `loss_ratio`, not `actuarialpy.loss_ratio`
 python_use_unqualified_type_names = True
 toc_object_entries = True
 toc_object_entries_show_parents = "hide"
