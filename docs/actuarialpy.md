@@ -120,6 +120,47 @@ The pooling module includes two general retention-stability primitives:
   retention at which retained CV hits a target. The basis for a size-graded
   pooling schedule.
 
+## Underwriting margin and weighted rollups
+
+The two-tier underwriting income statement — **gross margin** (revenue less
+benefit expense, admin excluded) and **gain/(loss)** (gross margin less
+admin). Ratio denominators are explicit parameters because real exhibits mix
+them (MCR over net revenue, AER over gross premium), and `reconciliation()`
+reports the resulting gap in `gain% = 1 − MCR − AER`; the full convention is
+on the [conventions](conventions.md) page.
+
+```python
+import actuarialpy as ap
+
+uw = ap.UnderwritingSummary.from_pmpm(
+    revenue_pmpm={"premium": 400.0, "refund": -1.4},
+    benefit_pmpm={"medical": 340.0, "pharmacy_net": 16.4},
+    admin_pmpm=37.4,
+    member_months=300_000,
+)
+uw.mcr, uw.aer                       # explicit denominators
+uw.gross_margin_pmpm, uw.gain_pmpm   # the two tiers
+uw.statement()                       # exhibit-shaped Series
+
+# grouped, from a tidy table: components summed first,
+# every ratio a ratio of sums
+ap.underwriting_summary(
+    df, groupby="cohort",
+    revenue_cols=["premium", "refund"], benefit_cols=["medical", "pharmacy"],
+    admin_cols="admin", exposure_col="member_months", premium_col="premium",
+)
+```
+
+Quantities that are already rates at the row level — rate actions,
+persistency — cannot be summed. `weighted_mean` and `weighted_summary`
+average them with a **required, named weight** and report the weight total
+beside every average:
+
+```python
+ap.weighted_summary(book, value_cols="rate_action",
+                    weight_col="premium", groupby="cohort")
+```
+
 ## API reference
 
 ```{eval-rst}

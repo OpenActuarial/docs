@@ -9,11 +9,13 @@ can build on.
 
 - **actuarialpy** — experience analysis on a tidy table, and the shared
   primitives: PMPM and loss-ratio metrics, trend, completion, seasonality,
-  credibility, financial mathematics (time value of money), and exposure /
-  age bases. `ratingmodels` builds directly on these.
+  credibility, financial mathematics (time value of money), exposure /
+  age bases, and the two-tier underwriting margin summary. `ratingmodels`
+  builds directly on these.
 - **ratingmodels** — the pricing layer: manual and experience rate build-up,
   credibility blending, rate indication and rate-change decomposition, GLM
-  relativities with model evaluation, and renewal constraints.
+  relativities with model evaluation, renewal constraints, and pricing
+  scenarios with closed-form margin solves.
 - **lossmodels** — loss-distribution modeling: severity and frequency fitting
   (complete data or under deductibles and limits), model selection and
   diagnostics, and aggregate loss.
