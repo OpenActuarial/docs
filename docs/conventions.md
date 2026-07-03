@@ -69,6 +69,44 @@ crm.sample(10_000, rng=42)     # reproducible
 crm.sample(10_000, rng=42)     # ... identical
 ```
 
+## Vectorization contract
+
+**Scalar in, float out; column in, column out.** Every public numeric
+argument accepts a scalar, a numpy array, or a pandas Series under one
+contract, uniform across the ecosystem:
+
+- a scalar call returns a plain `float` — the historical behavior, exactly;
+- a Series returns a Series on the **same index**; any other array-like
+  returns a numpy array;
+- scalars and length-$n$ vectors mix freely by broadcasting, so one trend
+  assumption prices against a column of per-group claims;
+- validation is elementwise but **all-or-nothing**: one bad row fails the
+  whole call, and the error names the first offending index label.
+
+Reductions must never flatten. A product over $k$ factor columns reduces
+*across the factors* and keeps the rows —
+
+```text
+product([f1, f2, f3])   ==  f1 * f2 * f3   elementwise, length n
+```
+
+— never over all $k \times n$ elements at once. The flattened product is the
+canonical silent-corruption bug of naive vectorization: it returns
+plausible-looking numbers with no exception. Pinned by tests against
+row-by-row scalar loops.
+
+Functions that reduce **across multiple vector inputs** (`product`, the
+build-up engine, `blend`, trend application) require those inputs to share
+one index and raise on a mismatch, rather than letting pandas alignment
+manufacture NaN. Elementwise arithmetic between two Series keeps normal
+pandas alignment — draw columns from one frame.
+
+Aggregating functions answer the grouped question with `by=`, not with a
+changed return type for vectors: `base_rate_from_experience(..., by=...)`
+is a DataFrame of per-segment base rates, `pool_claims(..., by=...)` pools
+a claim file per group, `gini_coefficient(..., by=...)` scores every
+segment. Scalar semantics (no `by`) are untouched.
+
 ## Distribution naming and parameterizations
 
 Continuous severities follow the Appendix A parameterizations of *Loss

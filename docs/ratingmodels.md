@@ -4,7 +4,9 @@ The pricing layer of the ecosystem: manual and experience rate construction,
 credibility blending, rate indication and rate-change decomposition, GLM
 relativity estimation, model evaluation (Gini and lift), and renewal
 constraints — an auditable build-up from base rate to filed rate. Depends on
-`actuarialpy` for its credibility and trend primitives.
+`actuarialpy` for its credibility and trend primitives. Everything is
+vectorized under one contract: the same call that rates one group rates a
+whole book of columns.
 
 ## Quickstart
 
@@ -29,6 +31,50 @@ indication.indicated_rate_change()        # blended, credibility-weighted change
 indication.rate_change_decomposition()    # attribute the change to each driver
 ```
 
+## Columns in, columns out
+
+Every numeric argument accepts a scalar **or** a column, under one contract
+(the [vectorization convention](conventions.md#vectorization-contract)):
+scalar in, float out — exactly the call above; Series in, Series out,
+elementwise, index preserved, scalars broadcasting. So the quickstart *is*
+the book-level code — swap floats for columns:
+
+```python
+import pandas as pd
+import ratingmodels as rm
+
+book = pd.DataFrame(
+    {"n": [820.0, 1450.0, 260.0],
+     "base": [420.0, 435.0, 410.0],
+     "area": [1.05, 0.98, 1.12],
+     "exp_lc": [506.5, 499.2, 494.7],
+     "current": [545.0, 560.0, 530.0]},
+    index=pd.Index(["G1", "G2", "G3"], name="group"),
+)
+
+z = rm.limited_fluctuation_credibility(book["n"], n_full=1_082)
+manual = rm.ManualRate(book["base"], factors={"area": book["area"]})
+
+indication = rm.RateIndication(
+    experience_loss_cost=book["exp_lc"],
+    manual_loss_cost=manual.loss_cost(),
+    credibility=z,
+    current_rate=book["current"],
+)
+
+book["change"] = indication.indicated_rate_change()   # one change per row
+rm.renew(book["current"], indication.indicated_rate(),
+         cap=0.10, floor=0.0).to_frame()               # tidy renewal actions
+```
+
+Validation stays row-level — one bad row fails the call and the error names
+the offending index label — and helpers that reduce *across* inputs
+(`product`, the build-up engine, `blend`, trend) raise on mismatched Series
+indexes rather than silently aligning to NaN. Aggregations grow a `by=` for
+the grouped question: `base_rate_from_experience(..., by="segment")` returns
+a DataFrame of base rates (one per segment), and `pool_claims(amounts,
+point, by=groups)` pools a whole claim file in one pass.
+
 ## The build-up engine
 
 Rate build-ups are a sequence of typed steps — start, add, multiply,
@@ -49,7 +95,11 @@ result.to_frame()   # every step as a DataFrame — inputs, factors, running tot
 ```
 
 Because each step is explicit, the build-up is reproducible and reviewable: the
-same object renders the number and the audit trail behind it.
+same object renders the number and the audit trail behind it. Operands take
+columns too — per-group bases, factors, even `segment_multiply` weights and
+participation shares — and the breakdown switches to tidy long format, one
+row per `(step, entity)`, with `value` and every checkpoint returned as a
+Series on the shared index.
 
 ## GLM relativities
 
@@ -102,6 +152,9 @@ rm.lift_table(df["claims"], pred, exposure=df["member_months"], n_bands=10)
 
 A model that segments shows lift rising monotonically across bands; the
 Gini summarizes the same ordering in one number, comparable across books.
+Both take `by=` group labels to score every segment of a validation frame
+at once — a Series of Ginis, and per-group lift tables under a
+`(group, band)` MultiIndex.
 
 ## Pricing scenarios and margin
 
@@ -137,6 +190,13 @@ tidy.pivot(index="case", columns="scenario", values="margin_ratio")
 
 rm.uplift_for_target_margin(book, issued_actions, target_margin=0.03)
 ```
+
+`book` is either a mapping of scalar evaluations or a single **vector**
+`PricingEvaluation` built from columns — loss costs, current rates,
+exposures, persistencies as Series — in which case `at()` evaluates every
+case at once, `ScenarioOutcome.to_frame()` is one tidy row per case, and
+actions may be per-case Series. The uplift solve is the same closed form
+either way; the two paths agree to floating point.
 
 Scenario names are your vocabulary — the library evaluates actions and
 reports margin; what "issued" or a concession budget means stays with the
