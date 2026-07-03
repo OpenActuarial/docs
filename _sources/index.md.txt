@@ -73,8 +73,10 @@ once — and `ratingmodels` builds directly on it. `lossmodels`, `extremeloss`, 
 `risksim` install independently (`extremeloss` can optionally integrate
 `lossmodels` for severity splicing).
 
-The full arc is runnable end to end — see the
-[worked example](worked-example.md).
+The full arc is runnable end to end — see the worked examples:
+[claims to capital](worked-example.md),
+[experience to a renewal rate](worked-example-experience.md), and
+[censored payments to coverage terms](worked-example-coverage.md).
 
 ## A cross-package example
 
@@ -116,6 +118,8 @@ dependency.
 overview
 conventions
 worked-example
+worked-example-experience
+worked-example-coverage
 actuarialpy
 ratingmodels
 lossmodels
