@@ -266,8 +266,12 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Numeric</span><span class="p">,</span>
     <span class="n">as_float_array</span><span class="p">,</span>
+    <span class="n">maybe_float</span><span class="p">,</span>
     <span class="n">require_nonnegative</span><span class="p">,</span>
     <span class="n">require_positive</span><span class="p">,</span>
     <span class="n">require_unit_interval</span><span class="p">,</span>
@@ -278,32 +282,54 @@
 
 <div class="viewcode-block" id="pool_claims">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.pool_claims">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">pool_claims</span><span class="p">(</span><span class="n">claims</span><span class="p">,</span> <span class="n">pooling_point</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">pool_claims</span><span class="p">(</span>
+    <span class="n">claims</span><span class="p">,</span> <span class="n">pooling_point</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;tuple[float, float] | tuple[pd.Series, pd.Series]&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Split claims into a pooled (capped) total and the excess above ``P``.</span>
 
 <span class="sd">    Returns ``(capped_total, excess)`` where</span>
 <span class="sd">    ``excess = sum(max(0, claim - pooling_point))``.</span>
+
+<span class="sd">    With ``by`` (group labels aligned with ``claims``), pooling is applied</span>
+<span class="sd">    within each group and both returns are Series indexed by group -- one</span>
+<span class="sd">    ``groupby`` pass pools a whole claim file.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">require_positive</span><span class="p">(</span><span class="n">pooling_point</span><span class="p">,</span> <span class="s2">&quot;pooling_point&quot;</span><span class="p">)</span>
     <span class="n">arr</span> <span class="o">=</span> <span class="n">as_float_array</span><span class="p">(</span><span class="n">claims</span><span class="p">,</span> <span class="s2">&quot;claims&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">arr</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;claims must be non-negative&quot;</span><span class="p">)</span>
-    <span class="n">excess</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">arr</span> <span class="o">-</span> <span class="n">pooling_point</span><span class="p">)))</span>
+    <span class="n">excess_by_claim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">arr</span> <span class="o">-</span> <span class="n">pooling_point</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">by</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;capped&quot;</span><span class="p">:</span> <span class="n">arr</span> <span class="o">-</span> <span class="n">excess_by_claim</span><span class="p">,</span> <span class="s2">&quot;excess&quot;</span><span class="p">:</span> <span class="n">excess_by_claim</span><span class="p">},</span>
+            <span class="n">index</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">claims</span><span class="p">,</span> <span class="s2">&quot;index&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">by</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">by</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">claims</span><span class="p">)[</span><span class="n">by</span><span class="p">]</span>
+        <span class="n">grouped</span> <span class="o">=</span> <span class="n">frame</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">keys</span><span class="p">),</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">grouped</span><span class="p">[</span><span class="s2">&quot;capped&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;capped_total&quot;</span><span class="p">),</span> <span class="n">grouped</span><span class="p">[</span><span class="s2">&quot;excess&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;excess&quot;</span><span class="p">)</span>
+    <span class="n">excess</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">excess_by_claim</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">-</span> <span class="n">excess</span><span class="p">),</span> <span class="n">excess</span></div>
 
 
 
 <div class="viewcode-block" id="expected_excess_charge">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.expected_excess_charge">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">expected_excess_charge</span><span class="p">(</span><span class="n">claims</span><span class="p">,</span> <span class="n">pooling_point</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">exposure</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">expected_excess_charge</span><span class="p">(</span>
+    <span class="n">claims</span><span class="p">,</span> <span class="n">pooling_point</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">exposure</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Naive pooling charge per exposure unit: observed excess spread over exposure.</span>
 
 <span class="sd">    A filed pooling charge is normally derived from book-wide excess</span>
 <span class="sd">    experience or an EVT tail model (see the ``extremeloss`` package); this</span>
-<span class="sd">    helper gives the simple group-level estimate.</span>
+<span class="sd">    helper gives the simple group-level estimate. With ``by``, the charge is</span>
+<span class="sd">    computed per group (``exposure`` then aligns to the group index --</span>
+<span class="sd">    a Series/mapping keyed by group, or a scalar broadcast to all groups).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">excess</span> <span class="o">=</span> <span class="n">pool_claims</span><span class="p">(</span><span class="n">claims</span><span class="p">,</span> <span class="n">pooling_point</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">excess</span> <span class="o">/</span> <span class="n">require_positive</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">)</span></div>
+    <span class="n">_</span><span class="p">,</span> <span class="n">excess</span> <span class="o">=</span> <span class="n">pool_claims</span><span class="p">(</span><span class="n">claims</span><span class="p">,</span> <span class="n">pooling_point</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="n">by</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">by</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="n">exposure</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">exposure</span><span class="p">)</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">excess</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="n">exposure</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span><span class="n">excess</span> <span class="o">/</span> <span class="n">exposure</span><span class="p">)</span></div>
 
 
 
@@ -312,6 +338,12 @@
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ExperienceRate</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Develop an experience rate from incurred claims and exposure.</span>
+
+<span class="sd">    Every numeric field follows the vectorization contract: pass columns</span>
+<span class="sd">    (Series of claims, exposures, per-group trends...) and every derived</span>
+<span class="sd">    quantity -- :meth:`pooled_loss_cost`, :meth:`loss_cost`, :meth:`rate` --</span>
+<span class="sd">    comes back as a Series on the same index. Scalars broadcast, so a single</span>
+<span class="sd">    trend assumption prices against per-group claims.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -334,40 +366,42 @@
 <span class="sd">        Claims / premium target used to load to a charged rate.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">incurred_claims</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">exposure</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">trend_annual</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">trend_years</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
-    <span class="n">pooled_excess</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">pooling_charge</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">benefit_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
-    <span class="n">demographic_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
-    <span class="n">target_loss_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.85</span>
+    <span class="n">incurred_claims</span><span class="p">:</span> <span class="n">Numeric</span>
+    <span class="n">exposure</span><span class="p">:</span> <span class="n">Numeric</span>
+    <span class="n">trend_annual</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">trend_years</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">pooled_excess</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">pooling_charge</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">benefit_factor</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">demographic_factor</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">target_loss_ratio</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">=</span> <span class="mf">0.85</span>
     <span class="n">retention</span><span class="p">:</span> <span class="s2">&quot;RetentionLoad | None&quot;</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">require_nonnegative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incurred_claims</span><span class="p">,</span> <span class="s2">&quot;incurred_claims&quot;</span><span class="p">)</span>
-        <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">)</span>
-        <span class="n">require_nonnegative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pooled_excess</span><span class="p">,</span> <span class="s2">&quot;pooled_excess&quot;</span><span class="p">)</span>
-        <span class="n">require_nonnegative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pooling_charge</span><span class="p">,</span> <span class="s2">&quot;pooling_charge&quot;</span><span class="p">)</span>
-        <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">benefit_factor</span><span class="p">,</span> <span class="s2">&quot;benefit_factor&quot;</span><span class="p">)</span>
-        <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">demographic_factor</span><span class="p">,</span> <span class="s2">&quot;demographic_factor&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incurred_claims</span> <span class="o">=</span> <span class="n">require_nonnegative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incurred_claims</span><span class="p">,</span> <span class="s2">&quot;incurred_claims&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pooled_excess</span> <span class="o">=</span> <span class="n">require_nonnegative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pooled_excess</span><span class="p">,</span> <span class="s2">&quot;pooled_excess&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pooling_charge</span> <span class="o">=</span> <span class="n">require_nonnegative</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pooling_charge</span><span class="p">,</span> <span class="s2">&quot;pooling_charge&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">benefit_factor</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">benefit_factor</span><span class="p">,</span> <span class="s2">&quot;benefit_factor&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">demographic_factor</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">demographic_factor</span><span class="p">,</span> <span class="s2">&quot;demographic_factor&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retention</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">require_unit_interval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span><span class="p">,</span> <span class="s2">&quot;target_loss_ratio&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span> <span class="o">=</span> <span class="n">require_unit_interval</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span><span class="p">,</span> <span class="s2">&quot;target_loss_ratio&quot;</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
 
 <div class="viewcode-block" id="ExperienceRate.pooled_loss_cost">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.ExperienceRate.pooled_loss_cost">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">pooled_loss_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pooled_loss_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Pooled (capped) claims per exposure unit, before trend.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">incurred_claims</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">pooled_excess</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">trend_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trend_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">trend_factor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trend_annual</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_years</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ExperienceRate.loss_cost">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.ExperienceRate.loss_cost">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">loss_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">loss_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Trended, pooled, adjusted experience loss cost (charge added back).&quot;&quot;&quot;</span>
         <span class="n">trended</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pooled_loss_cost</span><span class="p">()</span>
@@ -375,12 +409,12 @@
             <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">benefit_factor</span>
             <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">demographic_factor</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">trended</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pooling_charge</span></div>
+        <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span><span class="n">trended</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pooling_charge</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ExperienceRate.rate">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.ExperienceRate.rate">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">rate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Charged experience rate per exposure unit.</span>
 
 <span class="sd">        Uses ``retention`` (the full gross-up) when supplied, otherwise</span>
@@ -388,7 +422,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">retention</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">retention</span><span class="o">.</span><span class="n">gross_rate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loss_cost</span><span class="p">())</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_cost</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span></div>
+        <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loss_cost</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_loss_ratio</span><span class="p">)</span></div>
 </div>
 
 </pre></div>
@@ -423,7 +457,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

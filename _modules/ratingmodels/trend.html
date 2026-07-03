@@ -251,15 +251,27 @@
 <span class="sd">    \text{factor} = (1 + t)^{\Delta}, \qquad</span>
 <span class="sd">    \Delta = \frac{m_{\text{rate}} - m_{\text{exp}}}{365.25}\ \text{years}.</span>
 
-<span class="sd">A total trend is often decomposed into utilization and unit-cost components,</span>
-<span class="sd">which combine multiplicatively: :math:`(1+t) = (1+t_u)(1+t_c)`.</span>
+<span class="sd">A total trend is often decomposed into frequency and severity components,</span>
+<span class="sd">which combine multiplicatively: :math:`(1+t) = (1+t_f)(1+t_s)` (a health</span>
+<span class="sd">shop&#39;s utilization / unit-cost split is the same identity under its own</span>
+<span class="sd">labels).</span>
+
+<span class="sd">All numeric arguments follow the ratingmodels vectorization contract: scalar</span>
+<span class="sd">in gives float out; a Series or array of trends / years / values gives a</span>
+<span class="sd">Series or array out, elementwise, with scalars broadcasting. Date arguments</span>
+<span class="sd">likewise accept datetime-like Series for per-row periods.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
 
-<span class="n">DateLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">common_index</span><span class="p">,</span> <span class="n">is_arraylike</span><span class="p">,</span> <span class="n">maybe_float</span>
+
+<span class="n">DateLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_to_date</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">date</span><span class="p">:</span>
@@ -270,10 +282,23 @@
     <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">))</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_datelike_vector</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">))</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+
 <div class="viewcode-block" id="years_between">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.years_between">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">years_between</span><span class="p">(</span><span class="n">start</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fractional years between two dates using a 365.25-day year.&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">years_between</span><span class="p">(</span><span class="n">start</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fractional years between two dates using a 365.25-day year.</span>
+
+<span class="sd">    Accepts scalar dates (returns float) or datetime-like Series/arrays</span>
+<span class="sd">    (returns a Series/array of year gaps, elementwise; scalars broadcast).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">_is_datelike_vector</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_is_datelike_vector</span><span class="p">(</span><span class="n">end</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
+        <span class="n">days</span> <span class="o">=</span> <span class="p">(</span><span class="n">e</span> <span class="o">-</span> <span class="n">s</span><span class="p">)</span> <span class="o">/</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">days</span> <span class="o">/</span> <span class="mf">365.25</span>
     <span class="n">s</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span> <span class="n">_to_date</span><span class="p">(</span><span class="n">start</span><span class="p">),</span> <span class="n">_to_date</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">e</span> <span class="o">-</span> <span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">days</span> <span class="o">/</span> <span class="mf">365.25</span></div>
 
@@ -281,8 +306,17 @@
 
 <div class="viewcode-block" id="period_midpoint">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.period_midpoint">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">period_midpoint</span><span class="p">(</span><span class="n">start</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">date</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Midpoint date of a period ``[start, end]`` (inclusive endpoints).&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">period_midpoint</span><span class="p">(</span><span class="n">start</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="n">DateLike</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Midpoint date of a period ``[start, end]`` (inclusive endpoints).</span>
+
+<span class="sd">    Vectorized over datetime-like Series/arrays (returns Timestamps).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">_is_datelike_vector</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_is_datelike_vector</span><span class="p">(</span><span class="n">end</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">e</span> <span class="o">&lt;</span> <span class="n">s</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;end must not precede start&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span> <span class="o">+</span> <span class="p">(</span><span class="n">e</span> <span class="o">-</span> <span class="n">s</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
     <span class="n">s</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span> <span class="n">_to_date</span><span class="p">(</span><span class="n">start</span><span class="p">),</span> <span class="n">_to_date</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">e</span> <span class="o">&lt;</span> <span class="n">s</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;end must not precede start&quot;</span><span class="p">)</span>
@@ -292,22 +326,23 @@
 
 <div class="viewcode-block" id="trend_factor">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.trend_factor">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">trend_factor</span><span class="p">(</span><span class="n">annual_trend</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">years</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:math:`(1 + \text{annual\_trend})^{\text{years}}`.&quot;&quot;&quot;</span>
-    <span class="n">base</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">annual_trend</span>
-    <span class="k">if</span> <span class="n">base</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">trend_factor</span><span class="p">(</span><span class="n">annual_trend</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">years</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:math:`(1 + \text{annual\_trend})^{\text{years}}`, elementwise.&quot;&quot;&quot;</span>
+    <span class="n">common_index</span><span class="p">([</span><span class="n">annual_trend</span><span class="p">,</span> <span class="n">years</span><span class="p">])</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">annual_trend</span> <span class="k">if</span> <span class="n">is_arraylike</span><span class="p">(</span><span class="n">annual_trend</span><span class="p">)</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">annual_trend</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;annual_trend must exceed -1&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">base</span><span class="o">**</span><span class="n">years</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span><span class="n">base</span><span class="o">**</span><span class="n">years</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="trend_factor_between">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.trend_factor_between">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">trend_factor_between</span><span class="p">(</span>
-    <span class="n">annual_trend</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">annual_trend</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span>
     <span class="n">experience_period</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">DateLike</span><span class="p">,</span> <span class="n">DateLike</span><span class="p">],</span>
     <span class="n">rating_period</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">DateLike</span><span class="p">,</span> <span class="n">DateLike</span><span class="p">],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Midpoint-to-midpoint trend factor from two date ranges.&quot;&quot;&quot;</span>
     <span class="n">m_exp</span> <span class="o">=</span> <span class="n">period_midpoint</span><span class="p">(</span><span class="o">*</span><span class="n">experience_period</span><span class="p">)</span>
     <span class="n">m_rate</span> <span class="o">=</span> <span class="n">period_midpoint</span><span class="p">(</span><span class="o">*</span><span class="n">rating_period</span><span class="p">)</span>
@@ -317,25 +352,26 @@
 
 <div class="viewcode-block" id="apply_trend">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.apply_trend">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">apply_trend</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">annual_trend</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">years</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Trend a value forward (or back, for negative ``years``).&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">*</span> <span class="n">trend_factor</span><span class="p">(</span><span class="n">annual_trend</span><span class="p">,</span> <span class="n">years</span><span class="p">)</span></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_trend</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">annual_trend</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">years</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Trend a value forward (or back, for negative ``years``), elementwise.&quot;&quot;&quot;</span>
+    <span class="n">common_index</span><span class="p">([</span><span class="n">value</span><span class="p">,</span> <span class="n">annual_trend</span><span class="p">,</span> <span class="n">years</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span><span class="n">value</span> <span class="o">*</span> <span class="n">trend_factor</span><span class="p">(</span><span class="n">annual_trend</span><span class="p">,</span> <span class="n">years</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="combine_trend">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.combine_trend">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">combine_trend</span><span class="p">(</span><span class="n">util_trend</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">cost_trend</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Combine utilization and unit-cost trends: :math:`(1+t_u)(1+t_c)-1`.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">util_trend</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">cost_trend</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">combine_trend</span><span class="p">(</span><span class="n">frequency_trend</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">severity_trend</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Combine frequency and severity trends: :math:`(1+t_f)(1+t_s)-1`.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">maybe_float</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">frequency_trend</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">severity_trend</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="split_total_trend">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.split_total_trend">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">split_total_trend</span><span class="p">(</span><span class="n">total_trend</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">util_trend</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Back out the unit-cost trend implied by a total and a utilization trend.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">total_trend</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">util_trend</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">split_total_trend</span><span class="p">(</span><span class="n">total_trend</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">frequency_trend</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Back out the severity trend implied by a total and a frequency trend.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">maybe_float</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">total_trend</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">frequency_trend</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
 
 </pre></div>
         </article>
@@ -369,7 +405,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -248,7 +248,8 @@
 <span class="sd">apply an ordered sequence of operations -- multiply by a relativity, add or</span>
 <span class="sd">subtract a dollar amount (a copay credit, a per-unit fee), apply a factor to</span>
 <span class="sd">only a segment of the cost -- recording labeled subtotals along the way, then</span>
-<span class="sd">combine streams (in-/out-of-network by participation, medical + drug). This</span>
+<span class="sd">combine streams by participation share or additively (a health book&#39;s</span>
+<span class="sd">in-/out-of-network split and medical + drug are the classic cases). This</span>
 <span class="sd">module provides that grammar; it ships **no factor values**. The numbers are</span>
 <span class="sd">yours (filed tables, state amounts, vendor fees); the engine just applies them</span>
 <span class="sd">and produces a reconciling, auditable breakdown.</span>
@@ -266,10 +267,21 @@
 <span class="sd">Combining streams</span>
 <span class="sd">-----------------</span>
 <span class="sd">* :func:`participation_blend` -- :math:`\text{par}\,p + \text{nonpar}\,(1-p)`.</span>
-<span class="sd">* :func:`combine_streams`     -- additive combine (e.g. medical + drug).</span>
+<span class="sd">* :func:`combine_streams`     -- additive combine (e.g. a health book&#39;s</span>
+<span class="sd">  medical + drug).</span>
 
 <span class="sd">Both return a :class:`BuildUpResult`, so intermediate results carry their own</span>
 <span class="sd">breakdown and can be fed into credibility, trend, and retention.</span>
+
+<span class="sd">Vectorized build-ups</span>
+<span class="sd">--------------------</span>
+<span class="sd">Every operand follows the vectorization contract: pass a Series (a column --</span>
+<span class="sd">per-group bases, per-group area factors) anywhere a float is accepted and the</span>
+<span class="sd">whole book builds up at once. ``value`` and each subtotal come back as a</span>
+<span class="sd">Series on the shared index, and ``breakdown`` switches from one row per step</span>
+<span class="sd">to tidy long format -- one row per ``(step, entity)`` -- so it pivots or</span>
+<span class="sd">filters directly. Scalar operands broadcast; Series operands must share one</span>
+<span class="sd">index.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -279,7 +291,17 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Numeric</span><span class="p">,</span>
+    <span class="n">as_numeric</span><span class="p">,</span>
+    <span class="n">common_index</span><span class="p">,</span>
+    <span class="n">is_arraylike</span><span class="p">,</span>
+    <span class="n">maybe_float</span><span class="p">,</span>
+    <span class="n">require_unit_interval</span><span class="p">,</span>
+<span class="p">)</span>
+
 <span class="n">_BREAKDOWN_COLUMNS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="s2">&quot;operation&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="s2">&quot;operand&quot;</span><span class="p">,</span> <span class="s2">&quot;running_total&quot;</span><span class="p">]</span>
+<span class="n">_BREAKDOWN_COLUMNS_VECTOR</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="s2">&quot;operation&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="s2">&quot;entity&quot;</span><span class="p">,</span> <span class="s2">&quot;operand&quot;</span><span class="p">,</span> <span class="s2">&quot;running_total&quot;</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="Step">
@@ -288,49 +310,48 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">Step</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A single build-up operation. ``operand`` is the factor (multiply /</span>
 <span class="sd">    segment), amount (add), or value (start); ``weight`` is used by</span>
-<span class="sd">    ``segment_multiply`` only.&quot;&quot;&quot;</span>
+<span class="sd">    ``segment_multiply`` only. Operands may be scalars or vectors.&quot;&quot;&quot;</span>
 
     <span class="n">op</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">operand</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
-    <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span></div>
+    <span class="n">operand</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">weight</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">=</span> <span class="mf">1.0</span></div>
 
 
 
 <div class="viewcode-block" id="start">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.start">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Step</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Step</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the running total to ``value`` (normally the first step).&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">Step</span><span class="p">(</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="n">Step</span><span class="p">(</span><span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">as_numeric</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="multiply">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.multiply">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">multiply</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Step</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">multiply</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Step</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Multiply the running total by ``factor`` (a relativity or trend).&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">Step</span><span class="p">(</span><span class="s2">&quot;multiply&quot;</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">factor</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="n">Step</span><span class="p">(</span><span class="s2">&quot;multiply&quot;</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">as_numeric</span><span class="p">(</span><span class="n">factor</span><span class="p">,</span> <span class="s2">&quot;factor&quot;</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="add">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.add">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Step</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Step</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Add ``amount`` to the running total (negative for a copay credit).&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">Step</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">amount</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="n">Step</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">as_numeric</span><span class="p">(</span><span class="n">amount</span><span class="p">,</span> <span class="s2">&quot;amount&quot;</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="segment_multiply">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.segment_multiply">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">segment_multiply</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Step</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">segment_multiply</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Step</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Apply ``factor`` to a fraction ``weight`` of the running total.</span>
 
 <span class="sd">    :math:`\text{running} \leftarrow \text{running}\,(1 - w + w f)`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">weight</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;weight must lie in [0, 1]&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">Step</span><span class="p">(</span><span class="s2">&quot;segment_multiply&quot;</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">factor</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">weight</span><span class="p">))</span></div>
+    <span class="n">weight</span> <span class="o">=</span> <span class="n">require_unit_interval</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="s2">&quot;weight&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Step</span><span class="p">(</span><span class="s2">&quot;segment_multiply&quot;</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">as_numeric</span><span class="p">(</span><span class="n">factor</span><span class="p">,</span> <span class="s2">&quot;factor&quot;</span><span class="p">),</span> <span class="n">weight</span><span class="p">)</span></div>
 
 
 
@@ -350,26 +371,32 @@
 
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
-<span class="sd">    value : float</span>
-<span class="sd">        Final running total.</span>
+<span class="sd">    value : float or pandas.Series</span>
+<span class="sd">        Final running total; a Series (index preserved) for a vectorized</span>
+<span class="sd">        build-up.</span>
 <span class="sd">    breakdown : pandas.DataFrame</span>
-<span class="sd">        One row per step: ``step, operation, label, operand, running_total``.</span>
-<span class="sd">        For ``segment_multiply`` the ``operand`` shown is the *effective*</span>
-<span class="sd">        factor :math:`(1 - w + w f)`, so the column reconciles by multiplication.</span>
+<span class="sd">        Scalar build-up: one row per step with columns ``step, operation,</span>
+<span class="sd">        label, operand, running_total``. Vectorized build-up: tidy long</span>
+<span class="sd">        format, one row per ``(step, entity)``, with an ``entity`` column</span>
+<span class="sd">        carrying the shared Series index (or positions). For</span>
+<span class="sd">        ``segment_multiply`` the ``operand`` shown is the *effective*</span>
+<span class="sd">        factor :math:`(1 - w + w f)`, so the column reconciles by</span>
+<span class="sd">        multiplication.</span>
 <span class="sd">    subtotals : dict</span>
-<span class="sd">        Ordered mapping of checkpoint label -&gt; running total at that point.</span>
+<span class="sd">        Ordered mapping of checkpoint label -&gt; running total at that point</span>
+<span class="sd">        (floats, or Series for a vectorized build-up).</span>
 <span class="sd">    steps : list[Step]</span>
 <span class="sd">        The raw steps (nominal factor and weight preserved).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">value</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">Numeric</span>
     <span class="n">breakdown</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
     <span class="n">subtotals</span><span class="p">:</span> <span class="nb">dict</span>
     <span class="n">steps</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <div class="viewcode-block" id="BuildUpResult.subtotal">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.BuildUpResult.subtotal">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">subtotal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subtotal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Running total recorded at the named checkpoint.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">label</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subtotals</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;no checkpoint labeled </span><span class="si">{</span><span class="n">label</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -380,8 +407,31 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">breakdown</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>  <span class="c1"># pragma: no cover - cosmetic</span>
+        <span class="k">if</span> <span class="n">is_arraylike</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">):</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;BuildUpResult(n=</span><span class="si">{</span><span class="n">v</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">, mean value=</span><span class="si">{</span><span class="n">v</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;steps=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;BuildUpResult(value=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, steps=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_vector_context</span><span class="p">(</span><span class="n">steps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Step</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;(n, index) implied by any vector operands/weights, validating that</span>
+<span class="sd">    all vectors agree on length and (for Series) on index.&quot;&quot;&quot;</span>
+    <span class="n">vectors</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">operand</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">steps</span> <span class="k">if</span> <span class="n">is_arraylike</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">operand</span><span class="p">)]</span>
+    <span class="n">vectors</span> <span class="o">+=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">weight</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">steps</span> <span class="k">if</span> <span class="n">is_arraylike</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">weight</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">vectors</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">common_index</span><span class="p">(</span><span class="n">vectors</span><span class="p">)</span>
+    <span class="n">lengths</span> <span class="o">=</span> <span class="p">{</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vectors</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lengths</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;vector operands must share one length, got </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">lengths</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">lengths</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;vector operands must share one length&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">n</span><span class="p">,</span> <span class="n">idx</span>
 
 
 <div class="viewcode-block" id="evaluate">
@@ -390,41 +440,70 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run an ordered sequence of :class:`Step` and return a :class:`BuildUpResult`.</span>
 
 <span class="sd">    The running total starts at 0; a leading :func:`start` sets the base.</span>
+<span class="sd">    Vector operands (Series / arrays) make the whole build-up elementwise;</span>
+<span class="sd">    see the module notes on vectorized build-ups.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n</span><span class="p">,</span> <span class="n">idx</span> <span class="o">=</span> <span class="n">_vector_context</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_wrap</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">idx</span><span class="p">)</span> <span class="k">if</span> <span class="n">idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">arr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
     <span class="n">running</span> <span class="o">=</span> <span class="mf">0.0</span>
     <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">subtotals</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">operand</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">operand</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_arraylike</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">operand</span><span class="p">)</span> <span class="k">else</span> <span class="n">s</span><span class="o">.</span><span class="n">operand</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_arraylike</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span> <span class="k">else</span> <span class="n">s</span><span class="o">.</span><span class="n">weight</span>
         <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="s2">&quot;start&quot;</span><span class="p">:</span>
-            <span class="n">running</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">operand</span>
-            <span class="n">shown</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">operand</span>
+            <span class="n">running</span> <span class="o">=</span> <span class="n">operand</span>
+            <span class="n">shown</span> <span class="o">=</span> <span class="n">operand</span>
         <span class="k">elif</span> <span class="n">s</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="s2">&quot;multiply&quot;</span><span class="p">:</span>
-            <span class="n">running</span> <span class="o">*=</span> <span class="n">s</span><span class="o">.</span><span class="n">operand</span>
-            <span class="n">shown</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">operand</span>
+            <span class="n">running</span> <span class="o">=</span> <span class="n">running</span> <span class="o">*</span> <span class="n">operand</span>
+            <span class="n">shown</span> <span class="o">=</span> <span class="n">operand</span>
         <span class="k">elif</span> <span class="n">s</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="s2">&quot;add&quot;</span><span class="p">:</span>
-            <span class="n">running</span> <span class="o">+=</span> <span class="n">s</span><span class="o">.</span><span class="n">operand</span>
-            <span class="n">shown</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">operand</span>
+            <span class="n">running</span> <span class="o">=</span> <span class="n">running</span> <span class="o">+</span> <span class="n">operand</span>
+            <span class="n">shown</span> <span class="o">=</span> <span class="n">operand</span>
         <span class="k">elif</span> <span class="n">s</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="s2">&quot;segment_multiply&quot;</span><span class="p">:</span>
-            <span class="n">effective</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">s</span><span class="o">.</span><span class="n">weight</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">weight</span> <span class="o">*</span> <span class="n">s</span><span class="o">.</span><span class="n">operand</span>
-            <span class="n">running</span> <span class="o">*=</span> <span class="n">effective</span>
+            <span class="n">effective</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">weight</span> <span class="o">+</span> <span class="n">weight</span> <span class="o">*</span> <span class="n">operand</span>
+            <span class="n">running</span> <span class="o">=</span> <span class="n">running</span> <span class="o">*</span> <span class="n">effective</span>
             <span class="n">shown</span> <span class="o">=</span> <span class="n">effective</span>
         <span class="k">elif</span> <span class="n">s</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="s2">&quot;checkpoint&quot;</span><span class="p">:</span>
-            <span class="n">subtotals</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">running</span>
+            <span class="n">subtotals</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">_wrap</span><span class="p">(</span><span class="n">running</span><span class="p">)</span>
             <span class="n">shown</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown operation </span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">op</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span>
-                <span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">op</span><span class="p">,</span>
-                <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
-                <span class="s2">&quot;operand&quot;</span><span class="p">:</span> <span class="n">shown</span><span class="p">,</span>
-                <span class="s2">&quot;running_total&quot;</span><span class="p">:</span> <span class="n">running</span><span class="p">,</span>
-            <span class="p">}</span>
-        <span class="p">)</span>
-    <span class="n">breakdown</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">_BREAKDOWN_COLUMNS</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span>
+                    <span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">op</span><span class="p">,</span>
+                    <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                    <span class="s2">&quot;operand&quot;</span><span class="p">:</span> <span class="n">shown</span><span class="p">,</span>
+                    <span class="s2">&quot;running_total&quot;</span><span class="p">:</span> <span class="n">running</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">shown_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">shown</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span>
+            <span class="n">running_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">running</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span>
+            <span class="n">entities</span> <span class="o">=</span> <span class="n">idx</span> <span class="k">if</span> <span class="n">idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">e</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="n">shown_v</span><span class="p">,</span> <span class="n">running_v</span><span class="p">):</span>
+                <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span>
+                        <span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">op</span><span class="p">,</span>
+                        <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                        <span class="s2">&quot;entity&quot;</span><span class="p">:</span> <span class="n">e</span><span class="p">,</span>
+                        <span class="s2">&quot;operand&quot;</span><span class="p">:</span> <span class="n">o</span><span class="p">,</span>
+                        <span class="s2">&quot;running_total&quot;</span><span class="p">:</span> <span class="n">r</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="n">_BREAKDOWN_COLUMNS</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_BREAKDOWN_COLUMNS_VECTOR</span>
+    <span class="n">breakdown</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">BuildUpResult</span><span class="p">(</span>
-        <span class="n">value</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">running</span><span class="p">),</span>
+        <span class="n">value</span><span class="o">=</span><span class="n">_wrap</span><span class="p">(</span><span class="n">running</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">running</span><span class="p">),</span>
         <span class="n">breakdown</span><span class="o">=</span><span class="n">breakdown</span><span class="p">,</span>
         <span class="n">subtotals</span><span class="o">=</span><span class="n">subtotals</span><span class="p">,</span>
         <span class="n">steps</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">steps</span><span class="p">),</span>
@@ -448,19 +527,19 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Step</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BuildUp&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BuildUp&quot;</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">start</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">multiply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BuildUp&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">multiply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BuildUp&quot;</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">multiply</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">factor</span><span class="p">))</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BuildUp&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BuildUp&quot;</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">add</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">amount</span><span class="p">))</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">segment_multiply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BuildUp&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">segment_multiply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BuildUp&quot;</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">segment_multiply</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">weight</span><span class="p">))</span>
         <span class="k">return</span> <span class="bp">self</span>
 
@@ -479,11 +558,13 @@
 <span class="c1"># --------------------------------------------------------------------------- #</span>
 <span class="c1"># combining streams</span>
 <span class="c1"># --------------------------------------------------------------------------- #</span>
-<span class="n">ValueLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">BuildUpResult</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+<span class="n">ValueLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">BuildUpResult</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="s2">&quot;pd.Series&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_val</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">ValueLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">BuildUpResult</span><span class="p">)</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_val</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">ValueLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">BuildUpResult</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">return</span> <span class="n">as_numeric</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="combine_streams">
@@ -495,7 +576,7 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Additively combine named streams (e.g. ``{&quot;Medical&quot;: ..., &quot;Drug&quot;: ...}``).</span>
 
 <span class="sd">    Implemented as a build-up (start + adds) so the result carries a running</span>
-<span class="sd">    total and an audit trail.</span>
+<span class="sd">    total and an audit trail. Vector-valued streams combine elementwise.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">streams</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">items</span><span class="p">:</span>
@@ -513,20 +594,24 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">participation_blend</span><span class="p">(</span>
     <span class="n">par</span><span class="p">:</span> <span class="n">ValueLike</span><span class="p">,</span>
     <span class="n">nonpar</span><span class="p">:</span> <span class="n">ValueLike</span><span class="p">,</span>
-    <span class="n">participation_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;PPO Claim Cost&quot;</span><span class="p">,</span>
+    <span class="n">participation_rate</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Blended Claim Cost&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BuildUpResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;In-/out-of-network blend :math:`\text{par}\,p + \text{nonpar}\,(1-p)`.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Two-stream participation blend :math:`\text{par}\,p + \text{nonpar}\,(1-p)`</span>
+<span class="sd">    (e.g. a health book&#39;s in-/out-of-network split).</span>
 
-<span class="sd">    ``participation_rate`` is the in-network (par) share ``p``.</span>
+<span class="sd">    ``participation_rate`` is the participating share ``p``; it may be a</span>
+<span class="sd">    Series for per-row participation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">participation_rate</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;participation_rate must lie in [0, 1]&quot;</span><span class="p">)</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">participation_rate</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">require_unit_interval</span><span class="p">(</span><span class="n">participation_rate</span><span class="p">,</span> <span class="s2">&quot;participation_rate&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">is_arraylike</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+        <span class="n">par_label</span><span class="p">,</span> <span class="n">nonpar_label</span> <span class="o">=</span> <span class="s2">&quot;Par x participation&quot;</span><span class="p">,</span> <span class="s2">&quot;Non-Par x (1 - participation)&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">par_label</span><span class="p">,</span> <span class="n">nonpar_label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Par x </span><span class="si">{</span><span class="n">p</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Non-Par x </span><span class="si">{</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="k">return</span> <span class="n">combine_streams</span><span class="p">(</span>
         <span class="p">{</span>
-            <span class="sa">f</span><span class="s2">&quot;Par x </span><span class="si">{</span><span class="n">p</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">_val</span><span class="p">(</span><span class="n">par</span><span class="p">)</span> <span class="o">*</span> <span class="n">p</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;Non-Par x </span><span class="si">{</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">_val</span><span class="p">(</span><span class="n">nonpar</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">),</span>
+            <span class="n">par_label</span><span class="p">:</span> <span class="n">_val</span><span class="p">(</span><span class="n">par</span><span class="p">)</span> <span class="o">*</span> <span class="n">p</span><span class="p">,</span>
+            <span class="n">nonpar_label</span><span class="p">:</span> <span class="n">_val</span><span class="p">(</span><span class="n">nonpar</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">),</span>
         <span class="p">},</span>
         <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
     <span class="p">)</span></div>
@@ -563,7 +648,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

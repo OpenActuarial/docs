@@ -306,15 +306,16 @@
 <span class="sd">    optionally x mix). :meth:`fit_trend` regresses a developed trend on the bound history.</span>
 
 <span class="sd">    **Grain matters.** ``Experience`` aggregates by *summing* the bound columns, so it</span>
-<span class="sd">    expects rows at the grain of the exposure unit -- one row per member-month, with</span>
-<span class="sd">    ``member_months`` = 1 (or the eligible fraction). If your data is *long* (one row per</span>
-<span class="sd">    service line, so the same member-month repeats across several rows), summing the</span>
-<span class="sd">    exposure column overcounts it, and every per-exposure figure -- PMPM, frequency, the</span>
-<span class="sd">    loss-ratio denominator -- is wrong by the number of rows per member-month. ``Experience``</span>
-<span class="sd">    does not detect this: it has no member key, so it cannot tell a long frame from a wide</span>
-<span class="sd">    one. For long or multi-table warehouse data, either aggregate to member-month grain</span>
-<span class="sd">    first, or use :meth:`bind`, which sources exposure from a correctly-grained table (e.g.</span>
-<span class="sd">    eligibility) via :class:`~actuarialpy.Count` and never sums a repeated column.</span>
+<span class="sd">    expects rows at the grain of the exposure unit -- one row per unit (a member-month in</span>
+<span class="sd">    a health book, a policy-month in life), with the exposure column = 1 (or the eligible</span>
+<span class="sd">    fraction). If your data is *long* (one row per service line or transaction, so the same</span>
+<span class="sd">    exposure unit repeats across several rows), summing the exposure column overcounts it,</span>
+<span class="sd">    and every per-exposure figure -- the per-exposure rate, frequency, the loss-ratio</span>
+<span class="sd">    denominator -- is wrong by the number of rows per unit. ``Experience`` does not detect</span>
+<span class="sd">    this: it has no record key, so it cannot tell a long frame from a wide one. For long or</span>
+<span class="sd">    multi-table warehouse data, either aggregate to the exposure grain first, or use</span>
+<span class="sd">    :meth:`bind`, which sources exposure from a correctly-grained table (e.g. a health</span>
+<span class="sd">    book&#39;s eligibility) via :class:`~actuarialpy.Count` and never sums a repeated column.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
@@ -416,8 +417,8 @@
 <span class="sd">        downstream view -- :meth:`trend`, :meth:`rolling`, :meth:`by`, and the rest --</span>
 <span class="sd">        then operates on the deseasonalized series. By default the expense</span>
 <span class="sd">        (loss / claims) columns are adjusted; pass ``columns`` to choose others. Only</span>
-<span class="sd">        the numerator is touched: exposure is left alone, so a deseasonalized PMPM is</span>
-<span class="sd">        simply deseasonalized claims over unchanged member months.</span>
+<span class="sd">        the numerator is touched: exposure is left alone, so a deseasonalized</span>
+<span class="sd">        per-exposure rate is simply deseasonalized claims over unchanged exposure.</span>
 
 <span class="sd">        ``factors`` may be a flat Series (one pattern) or a tidy per-segment table from</span>
 <span class="sd">        :func:`seasonality_factors_by`; with the latter, pass ``by`` naming the grouping</span>
@@ -732,8 +733,8 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrendFit</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit an exponential trend to the bound experience by log-linear regression.</span>
 
-<span class="sd">        Defaults to the bound ``expense`` (claims) over the bound ``exposure`` -- the PMPM</span>
-<span class="sd">        trend -- across the bound ``date``; pass ``value_col`` / ``exposure_col`` to</span>
+<span class="sd">        Defaults to the bound ``expense`` (claims) over the bound ``exposure`` -- the</span>
+<span class="sd">        per-exposure trend -- across the bound ``date``; pass ``value_col`` / ``exposure_col`` to</span>
 <span class="sd">        override, or leave the exposure unbound to trend the raw amount. Returns a</span>
 <span class="sd">        ``TrendFit`` (see :func:`fit_trend`). Run on completed, deseasonalized history.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1179,7 +1180,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

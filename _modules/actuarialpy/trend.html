@@ -548,7 +548,7 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Fit an exponential trend to a rate series by log-linear regression.</span>
 
 <span class="sd">    Aggregates ``df`` to the ``freq`` grain (summing ``value_col`` and, if given,</span>
-<span class="sd">    ``exposure_col``), forms the rate -- ``value / exposure`` (e.g. PMPM) when</span>
+<span class="sd">    ``exposure_col``), forms the rate -- ``value / exposure`` (the per-exposure rate) when</span>
 <span class="sd">    ``exposure_col`` is supplied, otherwise ``value`` itself -- and fits</span>
 <span class="sd">    ``log(rate) = intercept + slope * t`` by ordinary least squares, with ``t`` in years</span>
 <span class="sd">    from the first period. The fitted annual trend is ``exp(slope) - 1``.</span>
@@ -650,7 +650,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

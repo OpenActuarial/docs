@@ -272,7 +272,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">product</span><span class="p">,</span> <span class="n">require_positive</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">maybe_float</span><span class="p">,</span> <span class="n">product</span><span class="p">,</span> <span class="n">require_positive</span>
 
 
 <div class="viewcode-block" id="BaseRateResult">
@@ -303,9 +303,8 @@
     <span class="k">if</span> <span class="n">relativity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">rel</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">relativity</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">factor_cols</span><span class="p">:</span>
-        <span class="n">rel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">product</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">factor_cols</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()],</span>
-            <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+        <span class="n">rel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+            <span class="n">product</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">factor_cols</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;provide either `relativity` or `factor_cols`&quot;</span><span class="p">)</span>
@@ -321,12 +320,24 @@
     <span class="n">exposure</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">relativity</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">factor_cols</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">by</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;float | pd.Series&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Exposure-weighted average relativity :math:`\bar r = \sum e_i r_i / \sum e_i`.</span>
 
 <span class="sd">    Supply relativities either as a single ``relativity`` column or as</span>
-<span class="sd">    ``factor_cols`` (per-row factors that are multiplied together).</span>
+<span class="sd">    ``factor_cols`` (per-row factors that are multiplied together). With</span>
+<span class="sd">    ``by`` (a column or list of columns), the average is computed within</span>
+<span class="sd">    each group and a Series indexed by group is returned.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">by</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">by</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">g</span><span class="p">:</span> <span class="n">average_relativity</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">exposure</span><span class="p">,</span> <span class="n">relativity</span><span class="p">,</span> <span class="n">factor_cols</span><span class="p">),</span>
+                <span class="n">include_groups</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;average_relativity&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
     <span class="n">e</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">exposure</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">e</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exposures must be positive&quot;</span><span class="p">)</span>
@@ -343,7 +354,8 @@
     <span class="n">loss</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">relativity</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">factor_cols</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseRateResult</span><span class="p">:</span>
+    <span class="n">by</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseRateResult | pd.DataFrame&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Indicated base loss cost from book experience (off-balance method).</span>
 
 <span class="sd">    Returns :math:`B = \sum_i L_i / \sum_i e_i r_i` together with the average</span>
@@ -362,7 +374,25 @@
 <span class="sd">    factor_cols : sequence of str, optional</span>
 <span class="sd">        Columns of individual rating factors to multiply into :math:`r_i`</span>
 <span class="sd">        (used when ``relativity`` is not supplied).</span>
+<span class="sd">    by : str or sequence of str, optional</span>
+<span class="sd">        Segment column(s). When given, a base rate is backed out **within</span>
+<span class="sd">        each segment** and the result is a DataFrame indexed by segment with</span>
+<span class="sd">        columns ``base_loss_cost``, ``average_relativity``,</span>
+<span class="sd">        ``average_loss_cost``, ``total_exposure`` -- one call, one base rate</span>
+<span class="sd">        per row.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">by</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_one</span><span class="p">(</span><span class="n">g</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">base_rate_from_experience</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">exposure</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">relativity</span><span class="p">,</span> <span class="n">factor_cols</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;base_loss_cost&quot;</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">base_loss_cost</span><span class="p">,</span>
+                    <span class="s2">&quot;average_relativity&quot;</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">average_relativity</span><span class="p">,</span>
+                    <span class="s2">&quot;average_loss_cost&quot;</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">average_loss_cost</span><span class="p">,</span>
+                    <span class="s2">&quot;total_exposure&quot;</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">total_exposure</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">by</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">_one</span><span class="p">,</span> <span class="n">include_groups</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">e</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">exposure</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">e</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exposures must be positive&quot;</span><span class="p">)</span>
@@ -383,30 +413,35 @@
 
 <div class="viewcode-block" id="off_balance_factor">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.off_balance_factor">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">off_balance_factor</span><span class="p">(</span><span class="n">current_avg_relativity</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">new_avg_relativity</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Off-balance correction :math:`\bar r_0 / \bar r_1` from revising relativities.&quot;&quot;&quot;</span>
-    <span class="n">require_positive</span><span class="p">(</span><span class="n">current_avg_relativity</span><span class="p">,</span> <span class="s2">&quot;current_avg_relativity&quot;</span><span class="p">)</span>
-    <span class="n">require_positive</span><span class="p">(</span><span class="n">new_avg_relativity</span><span class="p">,</span> <span class="s2">&quot;new_avg_relativity&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">current_avg_relativity</span> <span class="o">/</span> <span class="n">new_avg_relativity</span></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">off_balance_factor</span><span class="p">(</span>
+    <span class="n">current_avg_relativity</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">new_avg_relativity</span><span class="p">:</span> <span class="n">Numeric</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Off-balance correction :math:`\bar r_0 / \bar r_1` from revising relativities.</span>
+
+<span class="sd">    Elementwise: Series of segment averages give a Series of corrections.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">current_avg_relativity</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="n">current_avg_relativity</span><span class="p">,</span> <span class="s2">&quot;current_avg_relativity&quot;</span><span class="p">)</span>
+    <span class="n">new_avg_relativity</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="n">new_avg_relativity</span><span class="p">,</span> <span class="s2">&quot;new_avg_relativity&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span><span class="n">current_avg_relativity</span> <span class="o">/</span> <span class="n">new_avg_relativity</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="rebalance_base_rate">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.rebalance_base_rate">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">rebalance_base_rate</span><span class="p">(</span>
-    <span class="n">current_base</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">current_avg_relativity</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">new_avg_relativity</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">overall_change</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">current_base</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span>
+    <span class="n">current_avg_relativity</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span>
+    <span class="n">new_avg_relativity</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span>
+    <span class="n">overall_change</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Off-balanced new base rate :math:`B_1 = B_0 (\bar r_0/\bar r_1)(1+\Delta)`.</span>
 
 <span class="sd">    Holds the overall premium level neutral when relativities change, then</span>
 <span class="sd">    applies the intended overall rate change ``overall_change`` (:math:`\Delta`).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">require_positive</span><span class="p">(</span><span class="n">current_base</span><span class="p">,</span> <span class="s2">&quot;current_base&quot;</span><span class="p">)</span>
+    <span class="n">current_base</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="n">current_base</span><span class="p">,</span> <span class="s2">&quot;current_base&quot;</span><span class="p">)</span>
     <span class="n">factor</span> <span class="o">=</span> <span class="n">off_balance_factor</span><span class="p">(</span><span class="n">current_avg_relativity</span><span class="p">,</span> <span class="n">new_avg_relativity</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">current_base</span> <span class="o">*</span> <span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">overall_change</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span><span class="n">current_base</span> <span class="o">*</span> <span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">overall_change</span><span class="p">))</span></div>
 
 </pre></div>
         </article>
@@ -440,7 +475,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

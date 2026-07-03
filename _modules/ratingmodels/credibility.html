@@ -265,7 +265,7 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">actuarialpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ap</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_positive</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">maybe_float</span><span class="p">,</span> <span class="n">require_nonnegative</span><span class="p">,</span> <span class="n">require_positive</span>
 
 
 <div class="viewcode-block" id="full_credibility_standard">
@@ -284,7 +284,7 @@
 <span class="sd">    &gt;&gt;&gt; round(full_credibility_standard(0.90, 0.05))</span>
 <span class="sd">    1082</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span>
+    <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span>
         <span class="n">ap</span><span class="o">.</span><span class="n">full_credibility_claims</span><span class="p">(</span><span class="n">confidence</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">severity_cv</span><span class="o">=</span><span class="n">cv_severity</span><span class="p">)</span>
     <span class="p">)</span></div>
 
@@ -292,31 +292,32 @@
 
 <div class="viewcode-block" id="limited_fluctuation_credibility">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.limited_fluctuation_credibility">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">limited_fluctuation_credibility</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n_full</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">limited_fluctuation_credibility</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">n_full</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Partial credibility by the square-root rule, ``min(1, sqrt(n / n_full))``.</span>
 
 <span class="sd">    Delegates to :func:`actuarialpy.limited_fluctuation_z`. ``n`` and ``n_full``</span>
 <span class="sd">    are in consistent units (claims, policies, exposure units, ...).</span>
+<span class="sd">    Elementwise: a Series of ``n`` returns a Series of ``Z``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">ap</span><span class="o">.</span><span class="n">limited_fluctuation_z</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n_full</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span><span class="n">ap</span><span class="o">.</span><span class="n">limited_fluctuation_z</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n_full</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="buhlmann_credibility">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.buhlmann_credibility">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">buhlmann_credibility</span><span class="p">(</span><span class="n">exposure</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">epv</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">vhm</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">buhlmann_credibility</span><span class="p">(</span><span class="n">exposure</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">epv</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">vhm</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Bühlmann credibility factor :math:`Z = n / (n + k)`, ``k = EPV/VHM``.</span>
 
 <span class="sd">    This is the credibility *factor* given structural parameters; the</span>
 <span class="sd">    greatest-accuracy *estimators* (fitting EPV/VHM from data) live in</span>
 <span class="sd">    :class:`actuarialpy.Buhlmann` / :class:`actuarialpy.BuhlmannStraub`.</span>
+<span class="sd">    Elementwise: a Series of exposures returns a Series of ``Z``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">exposure</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exposure must be non-negative&quot;</span><span class="p">)</span>
-    <span class="n">require_positive</span><span class="p">(</span><span class="n">epv</span><span class="p">,</span> <span class="s2">&quot;epv&quot;</span><span class="p">)</span>
-    <span class="n">require_positive</span><span class="p">(</span><span class="n">vhm</span><span class="p">,</span> <span class="s2">&quot;vhm&quot;</span><span class="p">)</span>
+    <span class="n">exposure</span> <span class="o">=</span> <span class="n">require_nonnegative</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">)</span>
+    <span class="n">epv</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="n">epv</span><span class="p">,</span> <span class="s2">&quot;epv&quot;</span><span class="p">)</span>
+    <span class="n">vhm</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="n">vhm</span><span class="p">,</span> <span class="s2">&quot;vhm&quot;</span><span class="p">)</span>
     <span class="n">k</span> <span class="o">=</span> <span class="n">epv</span> <span class="o">/</span> <span class="n">vhm</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">exposure</span> <span class="o">/</span> <span class="p">(</span><span class="n">exposure</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span><span class="n">exposure</span> <span class="o">/</span> <span class="p">(</span><span class="n">exposure</span> <span class="o">+</span> <span class="n">k</span><span class="p">))</span></div>
 
 
 
@@ -418,7 +419,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

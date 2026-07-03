@@ -386,15 +386,15 @@
 
 <span class="sd">    The series is first aggregated to the period grain (summing ``value_col`` and, if</span>
 <span class="sd">    given, ``exposure_col``). With ``exposure_col`` the factors are computed on the</span>
-<span class="sd">    rate ``value / exposure`` (e.g. PMPM), which is the right basis for health</span>
-<span class="sd">    seasonality; without it they are computed on the value directly.</span>
+<span class="sd">    rate ``value / exposure``, the right basis when exposure itself moves with the</span>
+<span class="sd">    season; without it they are computed on the value directly.</span>
 
 <span class="sd">    Methods:</span>
 
 <span class="sd">    - ``&quot;ratio_to_moving_average&quot;`` (default): classical multiplicative decomposition.</span>
 <span class="sd">      Each period is divided by a centered moving average (which removes trend and</span>
 <span class="sd">      level), and the seasonal factor for a calendar period is the average of those</span>
-<span class="sd">      ratios across years. Robust to trend and membership growth.</span>
+<span class="sd">      ratios across years. Robust to trend and exposure growth.</span>
 <span class="sd">    - ``&quot;period_share&quot;``: each period expressed as a share of its own year&#39;s average,</span>
 <span class="sd">      then averaged by calendar period. Simpler, but assumes little within-year trend.</span>
 
@@ -619,7 +619,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -296,9 +296,9 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Add an underwriting-margin column (premium minus summed expense columns).</span>
 
 <span class="sd">    ``expense_cols`` is summed row-wise and may mix losses and loadings (e.g.</span>
-<span class="sd">    medical/claims, retention, commission, allocated overhead). Optionally also</span>
+<span class="sd">    claims, retention, commission, allocated overhead). Optionally also</span>
 <span class="sd">    add the margin ratio (``ratio_col``) and a per-exposure margin</span>
-<span class="sd">    (``per_exposure_col``, requires ``exposure_col``) such as margin PMPM.</span>
+<span class="sd">    (``per_exposure_col``, requires ``exposure_col``) such as margin per exposure unit.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">validate_columns</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="p">[</span><span class="n">premium_col</span><span class="p">])</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">copy</span> <span class="k">else</span> <span class="n">df</span>
@@ -345,7 +345,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

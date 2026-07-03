@@ -248,6 +248,12 @@
 <span class="sd">(caps, floors, rounding), and reports the realised change. A row-level</span>
 <span class="sd">helper re-rates a census or schedule under new relativities and rolls up to</span>
 <span class="sd">a book total.</span>
+
+<span class="sd">:func:`renew` is elementwise under the vectorization contract: pass columns</span>
+<span class="sd">of current and indicated rates (and, optionally, per-row caps/floors) and</span>
+<span class="sd">the :class:`RenewalAction` fields come back as Series;</span>
+<span class="sd">:meth:`RenewalAction.to_frame` lays the whole renewal run out as one tidy</span>
+<span class="sd">DataFrame.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -256,7 +262,15 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">product</span><span class="p">,</span> <span class="n">require_positive</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Numeric</span><span class="p">,</span>
+    <span class="n">first_series</span><span class="p">,</span>
+    <span class="n">is_arraylike</span><span class="p">,</span>
+    <span class="n">match_index</span><span class="p">,</span>
+    <span class="n">maybe_float</span><span class="p">,</span>
+    <span class="n">product</span><span class="p">,</span>
+    <span class="n">require_positive</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constraints</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_cap</span><span class="p">,</span> <span class="n">round_rate</span>
 
 
@@ -264,14 +278,15 @@
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.RenewalAction">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">RenewalAction</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Result of :func:`renew`.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Result of :func:`renew`. Fields are floats for a scalar renewal and</span>
+<span class="sd">    Series/arrays for a vectorized one.&quot;&quot;&quot;</span>
 
-    <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">indicated_rate</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">proposed_rate</span><span class="p">:</span> <span class="nb">float</span>          <span class="c1"># after caps/floors and rounding</span>
-    <span class="n">indicated_change</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">proposed_change</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">capped</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">current_rate</span><span class="p">:</span> <span class="n">Numeric</span>
+    <span class="n">indicated_rate</span><span class="p">:</span> <span class="n">Numeric</span>
+    <span class="n">proposed_rate</span><span class="p">:</span> <span class="n">Numeric</span>          <span class="c1"># after caps/floors and rounding</span>
+    <span class="n">indicated_change</span><span class="p">:</span> <span class="n">Numeric</span>
+    <span class="n">proposed_change</span><span class="p">:</span> <span class="n">Numeric</span>
+    <span class="n">capped</span><span class="p">:</span> <span class="s2">&quot;bool | np.ndarray | pd.Series&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">{</span>
@@ -281,35 +296,56 @@
             <span class="s2">&quot;indicated_change&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">indicated_change</span><span class="p">,</span>
             <span class="s2">&quot;proposed_change&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">proposed_change</span><span class="p">,</span>
             <span class="s2">&quot;capped&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">capped</span><span class="p">,</span>
-        <span class="p">}</span></div>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="RenewalAction.to_frame">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.RenewalAction.to_frame">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;One tidy row per renewal (a single row for a scalar action).&quot;&quot;&quot;</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">is_arraylike</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">d</span><span class="p">])</span></div>
+</div>
 
 
 
 <div class="viewcode-block" id="renew">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.renew">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">renew</span><span class="p">(</span>
-    <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">indicated_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">cap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">floor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">current_rate</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span>
+    <span class="n">indicated_rate</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span>
+    <span class="n">cap</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">floor</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">round_to</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RenewalAction</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply caps/floors (and optional rounding) to an indicated rate.&quot;&quot;&quot;</span>
-    <span class="n">require_positive</span><span class="p">(</span><span class="n">current_rate</span><span class="p">,</span> <span class="s2">&quot;current_rate&quot;</span><span class="p">)</span>
-    <span class="n">require_positive</span><span class="p">(</span><span class="n">indicated_rate</span><span class="p">,</span> <span class="s2">&quot;indicated_rate&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply caps/floors (and optional rounding) to an indicated rate.</span>
+
+<span class="sd">    Elementwise: Series in, Series-valued :class:`RenewalAction` out.</span>
+<span class="sd">    ``cap`` and ``floor`` may be scalars or per-row vectors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">current_rate</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="n">current_rate</span><span class="p">,</span> <span class="s2">&quot;current_rate&quot;</span><span class="p">)</span>
+    <span class="n">indicated_rate</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="n">indicated_rate</span><span class="p">,</span> <span class="s2">&quot;indicated_rate&quot;</span><span class="p">)</span>
     <span class="n">indicated_change</span> <span class="o">=</span> <span class="n">indicated_rate</span> <span class="o">/</span> <span class="n">current_rate</span> <span class="o">-</span> <span class="mf">1.0</span>
     <span class="n">proposed</span> <span class="o">=</span> <span class="n">apply_cap</span><span class="p">(</span><span class="n">current_rate</span><span class="p">,</span> <span class="n">indicated_rate</span><span class="p">,</span> <span class="n">cap</span><span class="o">=</span><span class="n">cap</span><span class="p">,</span> <span class="n">floor</span><span class="o">=</span><span class="n">floor</span><span class="p">)</span>
+    <span class="n">capped</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">proposed</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+                         <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">indicated_rate</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+                         <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">round_to</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">proposed</span> <span class="o">=</span> <span class="n">round_rate</span><span class="p">(</span><span class="n">proposed</span><span class="p">,</span> <span class="n">round_to</span><span class="p">)</span>
     <span class="n">proposed_change</span> <span class="o">=</span> <span class="n">proposed</span> <span class="o">/</span> <span class="n">current_rate</span> <span class="o">-</span> <span class="mf">1.0</span>
-    <span class="n">capped</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">proposed</span><span class="p">,</span> <span class="n">indicated_rate</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">)</span>
+    <span class="n">template</span> <span class="o">=</span> <span class="n">first_series</span><span class="p">(</span><span class="n">current_rate</span><span class="p">,</span> <span class="n">indicated_rate</span><span class="p">,</span> <span class="n">cap</span><span class="p">,</span> <span class="n">floor</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">capped</span><span class="o">.</span><span class="n">ndim</span><span class="p">:</span>
+        <span class="n">capped_out</span> <span class="o">=</span> <span class="n">match_index</span><span class="p">(</span><span class="n">capped</span><span class="p">,</span> <span class="n">template</span><span class="p">)</span> <span class="k">if</span> <span class="n">template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">capped</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">capped_out</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">capped</span><span class="p">[()])</span>
     <span class="k">return</span> <span class="n">RenewalAction</span><span class="p">(</span>
-        <span class="n">current_rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">current_rate</span><span class="p">),</span>
-        <span class="n">indicated_rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">indicated_rate</span><span class="p">),</span>
-        <span class="n">proposed_rate</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">proposed</span><span class="p">),</span>
-        <span class="n">indicated_change</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">indicated_change</span><span class="p">),</span>
-        <span class="n">proposed_change</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">proposed_change</span><span class="p">),</span>
-        <span class="n">capped</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">capped</span><span class="p">),</span>
+        <span class="n">current_rate</span><span class="o">=</span><span class="n">maybe_float</span><span class="p">(</span><span class="n">current_rate</span><span class="p">),</span>
+        <span class="n">indicated_rate</span><span class="o">=</span><span class="n">maybe_float</span><span class="p">(</span><span class="n">indicated_rate</span><span class="p">),</span>
+        <span class="n">proposed_rate</span><span class="o">=</span><span class="n">maybe_float</span><span class="p">(</span><span class="n">proposed</span><span class="p">),</span>
+        <span class="n">indicated_change</span><span class="o">=</span><span class="n">maybe_float</span><span class="p">(</span><span class="n">indicated_change</span><span class="p">),</span>
+        <span class="n">proposed_change</span><span class="o">=</span><span class="n">maybe_float</span><span class="p">(</span><span class="n">proposed_change</span><span class="p">),</span>
+        <span class="n">capped</span><span class="o">=</span><span class="n">capped_out</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -318,21 +354,20 @@
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.unit_level_renewal">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">unit_level_renewal</span><span class="p">(</span>
     <span class="n">census</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
-    <span class="n">base_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">base_rate</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span>
     <span class="n">factor_cols</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">count_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;count&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Re-rate each census row as ``base_rate * product(factor_cols)``.</span>
 
 <span class="sd">    Returns the census with ``unit_rate`` and ``premium`` columns; the group</span>
-<span class="sd">    total is the sum of ``premium``.</span>
+<span class="sd">    total is the sum of ``premium``. Fully vectorized -- ``base_rate`` may be</span>
+<span class="sd">    a scalar or a per-row vector.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">require_positive</span><span class="p">(</span><span class="n">base_rate</span><span class="p">,</span> <span class="s2">&quot;base_rate&quot;</span><span class="p">)</span>
+    <span class="n">base_rate</span> <span class="o">=</span> <span class="n">require_positive</span><span class="p">(</span><span class="n">base_rate</span><span class="p">,</span> <span class="s2">&quot;base_rate&quot;</span><span class="p">)</span>
     <span class="n">out</span> <span class="o">=</span> <span class="n">census</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="n">rates</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">out</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-        <span class="n">rates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_rate</span> <span class="o">*</span> <span class="n">product</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">factor_cols</span><span class="p">))</span>
-    <span class="n">out</span><span class="p">[</span><span class="s2">&quot;unit_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rates</span>
+    <span class="n">rel</span> <span class="o">=</span> <span class="n">product</span><span class="p">([</span><span class="n">out</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">factor_cols</span><span class="p">])</span> <span class="k">if</span> <span class="n">factor_cols</span> <span class="k">else</span> <span class="mf">1.0</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">&quot;unit_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">base_rate</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">rel</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="n">out</span><span class="p">[</span><span class="s2">&quot;premium&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">&quot;unit_rate&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">out</span><span class="p">[</span><span class="n">count_col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span></div>
 
@@ -368,7 +403,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

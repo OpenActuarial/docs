@@ -320,6 +320,40 @@ share a seed by accident.</p>
 </pre></div>
 </div>
 </section>
+<section id="vectorization-contract">
+<h2>Vectorization contract<a class="headerlink" href="#vectorization-contract" title="Link to this heading">¶</a></h2>
+<p><strong>Scalar in, float out; column in, column out.</strong> Every public numeric
+argument accepts a scalar, a numpy array, or a pandas Series under one
+contract, uniform across the ecosystem:</p>
+<ul class="simple">
+<li><p>a scalar call returns a plain <code class="docutils literal notranslate"><span class="pre">float</span></code> — the historical behavior, exactly;</p></li>
+<li><p>a Series returns a Series on the <strong>same index</strong>; any other array-like
+returns a numpy array;</p></li>
+<li><p>scalars and length-<span class="math notranslate nohighlight">\(n\)</span> vectors mix freely by broadcasting, so one trend
+assumption prices against a column of per-group claims;</p></li>
+<li><p>validation is elementwise but <strong>all-or-nothing</strong>: one bad row fails the
+whole call, and the error names the first offending index label.</p></li>
+</ul>
+<p>Reductions must never flatten. A product over <span class="math notranslate nohighlight">\(k\)</span> factor columns reduces
+<em>across the factors</em> and keeps the rows —</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>product([f1, f2, f3])   ==  f1 * f2 * f3   elementwise, length n
+</pre></div>
+</div>
+<p>— never over all <span class="math notranslate nohighlight">\(k \times n\)</span> elements at once. The flattened product is the
+canonical silent-corruption bug of naive vectorization: it returns
+plausible-looking numbers with no exception. Pinned by tests against
+row-by-row scalar loops.</p>
+<p>Functions that reduce <strong>across multiple vector inputs</strong> (<code class="docutils literal notranslate"><span class="pre">product</span></code>, the
+build-up engine, <code class="docutils literal notranslate"><span class="pre">blend</span></code>, trend application) require those inputs to share
+one index and raise on a mismatch, rather than letting pandas alignment
+manufacture NaN. Elementwise arithmetic between two Series keeps normal
+pandas alignment — draw columns from one frame.</p>
+<p>Aggregating functions answer the grouped question with <code class="docutils literal notranslate"><span class="pre">by=</span></code>, not with a
+changed return type for vectors: <code class="docutils literal notranslate"><span class="pre">base_rate_from_experience(...,</span> <span class="pre">by=...)</span></code>
+is a DataFrame of per-segment base rates, <code class="docutils literal notranslate"><span class="pre">pool_claims(...,</span> <span class="pre">by=...)</span></code> pools
+a claim file per group, <code class="docutils literal notranslate"><span class="pre">gini_coefficient(...,</span> <span class="pre">by=...)</span></code> scores every
+segment. Scalar semantics (no <code class="docutils literal notranslate"><span class="pre">by</span></code>) are untouched.</p>
+</section>
 <section id="distribution-naming-and-parameterizations">
 <h2>Distribution naming and parameterizations<a class="headerlink" href="#distribution-naming-and-parameterizations" title="Link to this heading">¶</a></h2>
 <p>Continuous severities follow the Appendix A parameterizations of <em>Loss
@@ -590,6 +624,7 @@ and denominator adjustments and are deliberately out of scope.</p>
 <li><a class="reference internal" href="#">Conventions</a><ul>
 <li><a class="reference internal" href="#risk-measures-var-and-tvar">Risk measures: VaR and TVaR</a></li>
 <li><a class="reference internal" href="#randomness-and-reproducibility">Randomness and reproducibility</a></li>
+<li><a class="reference internal" href="#vectorization-contract">Vectorization contract</a></li>
 <li><a class="reference internal" href="#distribution-naming-and-parameterizations">Distribution naming and parameterizations</a></li>
 <li><a class="reference internal" href="#coverage-semantics">Coverage semantics</a></li>
 <li><a class="reference internal" href="#truncation-and-censoring">Truncation and censoring</a></li>
@@ -607,7 +642,7 @@ and denominator adjustments and are deliberately out of scope.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="_static/documentation_options.js?v=c0ed705d"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

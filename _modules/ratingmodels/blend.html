@@ -248,22 +248,25 @@
 <span class="sd">    \text{blended} = Z \cdot \text{experience} + (1 - Z)\cdot \text{manual}.</span>
 
 <span class="sd">This is the atomic credibility-weighting operation; it delegates to</span>
-<span class="sd">:func:`actuarialpy.credibility_weighted_estimate` so the primitive lives in one</span>
-<span class="sd">place across the ecosystem.</span>
+<span class="sd">:func:`actuarialpy.credibility_weighted_estimate` so the primitive lives in</span>
+<span class="sd">one place across the ecosystem. Elementwise under the vectorization</span>
+<span class="sd">contract: Series of experience values, manual values, and credibilities</span>
+<span class="sd">blend row-by-row into a Series.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">actuarialpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ap</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_unit_interval</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">common_index</span><span class="p">,</span> <span class="n">maybe_float</span><span class="p">,</span> <span class="n">require_unit_interval</span>
 
 
 <div class="viewcode-block" id="blend">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.blend">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">blend</span><span class="p">(</span><span class="n">experience</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">manual</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">credibility</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:math:`Z \cdot \text{experience} + (1-Z)\cdot \text{manual}`.&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">blend</span><span class="p">(</span><span class="n">experience</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">manual</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">credibility</span><span class="p">:</span> <span class="n">Numeric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;:math:`Z \cdot \text{experience} + (1-Z)\cdot \text{manual}`, elementwise.&quot;&quot;&quot;</span>
+    <span class="n">common_index</span><span class="p">([</span><span class="n">experience</span><span class="p">,</span> <span class="n">manual</span><span class="p">,</span> <span class="n">credibility</span><span class="p">])</span>
     <span class="n">z</span> <span class="o">=</span> <span class="n">require_unit_interval</span><span class="p">(</span><span class="n">credibility</span><span class="p">,</span> <span class="s2">&quot;credibility&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">ap</span><span class="o">.</span><span class="n">credibility_weighted_estimate</span><span class="p">(</span><span class="n">experience</span><span class="p">,</span> <span class="n">manual</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span><span class="n">ap</span><span class="o">.</span><span class="n">credibility_weighted_estimate</span><span class="p">(</span><span class="n">experience</span><span class="p">,</span> <span class="n">manual</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span></div>
 
 </pre></div>
         </article>
@@ -297,7 +300,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

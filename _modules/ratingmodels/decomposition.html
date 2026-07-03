@@ -257,38 +257,64 @@
 <span class="sd">If the supplied factors do not multiply to an independently computed total, a</span>
 <span class="sd">``residual`` factor is added so the decomposition is exact and the unexplained</span>
 <span class="sd">movement is explicit rather than hidden.</span>
+
+<span class="sd">Driver values follow the vectorization contract: pass columns (one value per</span>
+<span class="sd">case) and the decomposition is computed row-by-row. ``factors`` and</span>
+<span class="sd">``contributions`` then come back as DataFrames -- one row per case, one</span>
+<span class="sd">column per driver -- and :meth:`RateChangeDecomposition.to_frame` stacks them</span>
+<span class="sd">into a tidy ``(case, driver)`` long table.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">product</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Numeric</span><span class="p">,</span> <span class="n">common_index</span><span class="p">,</span> <span class="n">is_arraylike</span><span class="p">,</span> <span class="n">maybe_float</span><span class="p">,</span> <span class="n">product</span>
 
 
 <div class="viewcode-block" id="RateChangeDecomposition">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.RateChangeDecomposition">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">RateChangeDecomposition</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Result of :func:`decompose_rate_change`.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Result of :func:`decompose_rate_change`.</span>
 
-    <span class="n">total_factor</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">factors</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span>          <span class="c1"># multiplicative, incl. any residual</span>
-    <span class="n">contributions</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span>    <span class="c1"># additive percentage points, sum == total-1</span>
+<span class="sd">    For a scalar decomposition ``factors`` and ``contributions`` are Series</span>
+<span class="sd">    indexed by driver. For a vectorized one they are DataFrames (rows =</span>
+<span class="sd">    cases, columns = drivers) and ``total_factor`` is a Series/array.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">total_factor</span><span class="p">:</span> <span class="n">Numeric</span>
+    <span class="n">factors</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span>          <span class="c1"># multiplicative, incl. any residual</span>
+    <span class="n">contributions</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span>    <span class="c1"># additive percentage points, sum == total-1</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">total_change</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_factor</span> <span class="o">-</span> <span class="mf">1.0</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total_change</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Numeric</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">maybe_float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_factor</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">to_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;factor&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="o">.</span><span class="n">stack</span><span class="p">(),</span>
+                    <span class="s2">&quot;pct_point_contribution&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributions</span><span class="o">.</span><span class="n">stack</span><span class="p">(),</span>
+                <span class="p">},</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">set_names</span><span class="p">([</span><span class="s2">&quot;case&quot;</span><span class="p">,</span> <span class="s2">&quot;driver&quot;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">out</span>
         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
             <span class="p">{</span><span class="s2">&quot;factor&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">,</span> <span class="s2">&quot;pct_point_contribution&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">contributions</span><span class="p">}</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>  <span class="c1"># pragma: no cover - cosmetic</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;RateChangeDecomposition(n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;drivers=</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;RateChangeDecomposition(total_change=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">total_change</span><span class="si">:</span><span class="s2">+.4%</span><span class="si">}</span><span class="s2">, &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;drivers=</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">factors</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
@@ -296,38 +322,15 @@
 
 
 
-<div class="viewcode-block" id="decompose_rate_change">
-<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.decompose_rate_change">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">decompose_rate_change</span><span class="p">(</span>
-    <span class="n">factors</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
-    <span class="n">total_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_scalar_decompose</span><span class="p">(</span>
+    <span class="n">names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">total_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RateChangeDecomposition</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Attribute a rate change to multiplicative drivers.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    factors : mapping</span>
-<span class="sd">        Named driver factors (e.g. ``{&quot;trend&quot;: 1.075, &quot;experience&quot;: 0.96,</span>
-<span class="sd">        &quot;benefit&quot;: 1.02, &quot;demographic&quot;: 1.01}``). Each must be positive.</span>
-<span class="sd">    total_factor : float, optional</span>
-<span class="sd">        Independently computed total change factor (indicated / current). If</span>
-<span class="sd">        given and it differs from the product of ``factors``, a ``residual``</span>
-<span class="sd">        factor is appended so the decomposition reconciles exactly. If omitted,</span>
-<span class="sd">        the total is taken to be the product of the supplied factors.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">factors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-    <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">factors</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">vals</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;all factors must be positive&quot;</span><span class="p">)</span>
-
     <span class="n">fac</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
     <span class="n">prod</span> <span class="o">=</span> <span class="n">product</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">total_factor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">total</span> <span class="o">=</span> <span class="n">prod</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">total</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">total_factor</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">total</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;total_factor must be positive&quot;</span><span class="p">)</span>
         <span class="n">residual</span> <span class="o">=</span> <span class="n">total</span> <span class="o">/</span> <span class="n">prod</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">residual</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">):</span>
             <span class="n">fac</span><span class="p">[</span><span class="s2">&quot;residual&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">residual</span>
@@ -348,7 +351,81 @@
 
     <span class="k">return</span> <span class="n">RateChangeDecomposition</span><span class="p">(</span>
         <span class="n">total_factor</span><span class="o">=</span><span class="n">total</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="n">fseries</span><span class="p">,</span> <span class="n">contributions</span><span class="o">=</span><span class="n">contrib</span>
-    <span class="p">)</span></div>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_vector_decompose</span><span class="p">(</span>
+    <span class="n">names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">total_factor</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RateChangeDecomposition</span><span class="p">:</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">common_index</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">+</span> <span class="p">([</span><span class="n">total_factor</span><span class="p">]</span> <span class="k">if</span> <span class="n">total_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]))</span>
+    <span class="n">arrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span><span class="p">]</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">arrs</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">arrs</span><span class="p">])</span>  <span class="c1"># (k, n)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mat</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;all factors must be positive&quot;</span><span class="p">)</span>
+    <span class="n">case_index</span> <span class="o">=</span> <span class="n">idx</span> <span class="k">if</span> <span class="n">idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="n">prod</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mat</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">total_factor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="n">prod</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">total_factor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="n">n</span><span class="p">,))</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">total</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;total_factor must be positive&quot;</span><span class="p">)</span>
+        <span class="n">residual</span> <span class="o">=</span> <span class="n">total</span> <span class="o">/</span> <span class="n">prod</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">residual</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">):</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="n">names</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;residual&quot;</span><span class="p">]</span>
+            <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">mat</span><span class="p">,</span> <span class="n">residual</span><span class="p">])</span>
+
+    <span class="n">factors</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">mat</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">case_index</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">names</span><span class="p">)</span>
+
+    <span class="n">log_total</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">total</span><span class="p">)</span>
+    <span class="n">small</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">log_total</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-12</span>
+    <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">small</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">log_total</span><span class="p">)</span>
+    <span class="n">shares</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mat</span><span class="p">)</span> <span class="o">/</span> <span class="n">denom</span>            <span class="c1"># (k, n)</span>
+    <span class="n">contrib</span> <span class="o">=</span> <span class="n">shares</span> <span class="o">*</span> <span class="p">(</span><span class="n">total</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">contrib</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">small</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">contrib</span><span class="p">)</span>
+    <span class="n">contributions</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">contrib</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">case_index</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">names</span><span class="p">)</span>
+
+    <span class="n">total_out</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">total</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">case_index</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;total_factor&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">total</span>
+    <span class="k">return</span> <span class="n">RateChangeDecomposition</span><span class="p">(</span>
+        <span class="n">total_factor</span><span class="o">=</span><span class="n">total_out</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="n">factors</span><span class="p">,</span> <span class="n">contributions</span><span class="o">=</span><span class="n">contributions</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="decompose_rate_change">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.decompose_rate_change">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">decompose_rate_change</span><span class="p">(</span>
+    <span class="n">factors</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Numeric</span><span class="p">],</span>
+    <span class="n">total_factor</span><span class="p">:</span> <span class="n">Numeric</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RateChangeDecomposition</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Attribute a rate change to multiplicative drivers.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    factors : mapping</span>
+<span class="sd">        Named driver factors (e.g. ``{&quot;trend&quot;: 1.075, &quot;experience&quot;: 0.96,</span>
+<span class="sd">        &quot;benefit&quot;: 1.02, &quot;demographic&quot;: 1.01}``). Each must be positive.</span>
+<span class="sd">        Values may be scalars (one decomposition) or vectors under the</span>
+<span class="sd">        vectorization contract (one decomposition per row; scalars</span>
+<span class="sd">        broadcast).</span>
+<span class="sd">    total_factor : float or array-like, optional</span>
+<span class="sd">        Independently computed total change factor (indicated / current). If</span>
+<span class="sd">        given and it differs from the product of ``factors``, a ``residual``</span>
+<span class="sd">        factor is appended so the decomposition reconciles exactly. If omitted,</span>
+<span class="sd">        the total is taken to be the product of the supplied factors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">factors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">factors</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">is_arraylike</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span><span class="p">)</span> <span class="ow">or</span> <span class="n">is_arraylike</span><span class="p">(</span><span class="n">total_factor</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_vector_decompose</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">total_factor</span><span class="p">)</span>
+
+    <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">vals</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;all factors must be positive&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">total_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">float</span><span class="p">(</span><span class="n">total_factor</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;total_factor must be positive&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_scalar_decompose</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">total_factor</span><span class="p">)</span></div>
 
 </pre></div>
         </article>
@@ -382,7 +459,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=69ad043b"></script>
+</div><script src="../../_static/documentation_options.js?v=c0ed705d"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
