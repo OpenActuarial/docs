@@ -71,8 +71,7 @@ The arrows are the analytical sequence, not install requirements. `actuarialpy`
 is the shared core — credibility, trend, financial math, and exposure live there
 once — and `ratingmodels` builds directly on it. `lossmodels`, `extremeloss`, and
 `risksim` install independently (`extremeloss` can optionally integrate
-`lossmodels` for severity splicing). Dependencies stay light: numpy everywhere, pandas
-in the core and `ratingmodels`, scipy where the loss and tail work needs it.
+`lossmodels` for severity splicing).
 
 The full arc is runnable end to end — see the
 [worked example](worked-example.md).
