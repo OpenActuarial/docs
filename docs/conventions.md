@@ -71,15 +71,15 @@ crm.sample(10_000, rng=42)     # ... identical
 
 ## Distribution naming and parameterizations
 
-Continuous severities follow the *Loss Models* (FAM/ASTAM Appendix A)
-parameterizations — the forms on the SOA tables — and moments raise outside
-their region of existence rather than returning garbage. Frequencies follow
+Continuous severities follow the Appendix A parameterizations of *Loss
+Models: From Data to Decisions* (Klugman, Panjer & Willmot), and moments
+raise outside their region of existence rather than returning garbage. Frequencies follow
 the SciPy conventions instead: `NegativeBinomial(r, p)` is
-`scipy.stats.nbinom`, not the tables' $(r, \beta)$, with $\beta = (1-p)/p$.
+`scipy.stats.nbinom`, not *Loss Models*' $(r, \beta)$, with $\beta = (1-p)/p$.
 Every constructor's exact form and its numerically verified `scipy.stats`
 equivalent are tabulated on the
 [lossmodels page](lossmodels.md#distributions), including the two places the
-code deviates from Appendix A as of 0.6.0 (`Exponential(rate)`; Weibull's
+code deviates from Appendix A as of 0.6.1 (`Exponential(rate)`; Weibull's
 `(k, lam)` parameter names).
 
 One naming trap is worth stating plainly, because the literature itself is

@@ -12,8 +12,8 @@ severity model into the aggregate loss for a block.
 
 ## Distributions
 
-The continuous severity inventory covers the *Loss Models* (FAM/ASTAM
-Appendix A) families — gamma, lognormal, Weibull, the transformed-beta
+The continuous severity inventory covers the Appendix A families of *Loss
+Models: From Data to Decisions* (Klugman, Panjer & Willmot) — gamma, lognormal, Weibull, the transformed-beta
 family (Burr, inverse Burr, Pareto II/Lomax, loglogistic, paralogistic, …),
 inverse distributions, and the (Klugman) generalized Pareto — plus
 `SplicedSeverity` for body–tail constructions. Frequencies cover Poisson,
@@ -21,10 +21,10 @@ negative binomial, binomial, geometric, and logarithmic, with `ZeroTruncated`
 and `ZeroModified` wrappers for the (a, b, 1) class.
 
 Because the literature parameterizes these families several different ways,
-the table below is the authority: each constructor's exact form, each
-verified numerically against its `scipy.stats` equivalent (CDF/pmf agreement
-to $10^{-10}$). Two constructors do **not** use the Appendix A parameters as
-of 0.6.0 and are flagged.
+the table below is the authority: each constructor's exact form, each pinned
+against its `scipy.stats` equivalent by the package's conformance test suite
+(CDF/pmf agreement to $10^{-10}$). Two constructors do **not** use the
+Appendix A parameters as of 0.6.1 and are flagged.
 
 | Class | Form | `scipy.stats` equivalent | Notes |
 |---|---|---|---|
@@ -33,13 +33,13 @@ of 0.6.0 and are flagged.
 | `Lognormal(mu, sigma)` | $\log X \sim N(\mu, \sigma^2)$ | `lognorm(sigma, scale=e^{\mu})` | Appendix A; mind scipy's $(s, \mathrm{scale})$ form |
 | `Weibull(k, lam)` | $F(x) = 1 - e^{-(x/\mathrm{lam})^{k}}$ | `weibull_min(k, scale=lam)` | ⚠ Appendix A's family with renamed parameters: $k \leftrightarrow \tau$, $\mathrm{lam} \leftrightarrow \theta$ — **lam is the scale**, not a rate |
 | `Pareto(alpha, theta)` | Type I, $x \ge \theta$ | `pareto(alpha, scale=theta)` | tail-only law; see the naming trap in [Conventions](conventions.md#distribution-naming-and-parameterizations) |
-| `ParetoII(alpha, theta)` | Lomax, $x > 0$ | `lomax(alpha, scale=theta)` | the distribution the SOA tables call "Pareto" |
+| `ParetoII(alpha, theta)` | Lomax, $x > 0$ | `lomax(alpha, scale=theta)` | the distribution *Loss Models* calls "Pareto" |
 | `Loglogistic(gamma, theta)` | $F(x) = \dfrac{(x/\theta)^{\gamma}}{1 + (x/\theta)^{\gamma}}$ | `fisk(gamma, scale=theta)` | Appendix A |
 | `Burr(alpha, theta, gamma)` | Type XII (Singh–Maddala) | `burr12(gamma, alpha, scale=theta)` | Appendix A; scipy's $(c, d) = (\gamma, \alpha)$ |
 | `GeneralizedPareto(alpha, theta, tau)` | Klugman transformed-beta | `betaprime(tau, alpha, scale=theta)` | **not** the EVT GPD — see [Conventions](conventions.md#distribution-naming-and-parameterizations) |
 | `InverseGamma(alpha, theta)` | shape $\alpha$, scale $\theta$ | `invgamma(alpha, scale=theta)` | Appendix A |
 | `Poisson(lam)` | mean $\lambda$ | `poisson(lam)` | |
-| `NegativeBinomial(r, p)` | failures before the $r$-th success | `nbinom(r, p)` | scipy form, **not** the tables' $(r, \beta)$; $\beta = (1-p)/p$, $p = 1/(1+\beta)$ |
+| `NegativeBinomial(r, p)` | failures before the $r$-th success | `nbinom(r, p)` | scipy form, **not** *Loss Models*' $(r, \beta)$; $\beta = (1-p)/p$, $p = 1/(1+\beta)$ |
 | `Geometric(p)` | support $\{0, 1, \ldots\}$ | `nbinom(1, p)` | **not** `scipy.stats.geom`, which starts at 1 |
 | `Binomial(n, p)` | | `binom(n, p)` | |
 
