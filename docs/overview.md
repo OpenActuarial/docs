@@ -82,4 +82,4 @@ parameterizations are pinned against `scipy.stats` by conformance tests, the
 risk-measure estimators are asserted byte-identical across the three packages
 that implement them, the identities quoted on the conventions page are test
 assertions, every example script is executed by its package's test suite, and
-the [worked example](worked-example.md) is itself a regression test.
+the [worked examples](worked-example.md) are themselves regression tests.
