@@ -63,8 +63,7 @@ flowchart LR
     classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
 :::
 
-Dependencies stay light — numpy and pandas in the core and `ratingmodels`;
-`lossmodels` and `extremeloss` are numpy + scipy; `risksim` is numpy only. `extremeloss` pulls in matplotlib
+`extremeloss` pulls in matplotlib
 only through its optional `plot` extra (`pip install "extremeloss[plot]"`), for
 the diagnostic plots; the base install does not require it.
 

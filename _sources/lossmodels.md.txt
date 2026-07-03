@@ -2,7 +2,7 @@
 
 Loss-distribution modeling: fit severity and frequency distributions —
 including to claims data net of deductibles and limits — and combine them into
-an aggregate loss distribution. numpy and scipy only.
+an aggregate loss distribution.
 
 The package is organized into severity, frequency, aggregate, estimation,
 empirical, and coverage modules. Fitted models expose a consistent

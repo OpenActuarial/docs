@@ -2,8 +2,8 @@
 
 Extreme-value tail estimation for large claims: peaks-over-threshold with the
 generalized Pareto distribution (GPD), tail analytics, and large-claim loading.
-numpy and scipy only; matplotlib is optional via the `plot` extra, and
-`lossmodels` integration via the `splice` extra.
+Matplotlib is optional via the `plot` extra, and `lossmodels`
+integration via the `splice` extra.
 
 The package covers threshold selection, GPD estimation, and the analytics built
 on a fitted tail — return levels, exceedance probabilities, and excess-layer

@@ -310,8 +310,7 @@ internal dependencies.</p>
     RM --&gt;|requires| AP
     EL -.-&gt;|optional, via splice| LM
     classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
-    </pre><p>Dependencies stay light — numpy and pandas in the core and <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code>;
-<code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> and <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> are numpy + scipy; <code class="docutils literal notranslate"><span class="pre">risksim</span></code> is numpy only. <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> pulls in matplotlib
+    </pre><p><code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> pulls in matplotlib
 only through its optional <code class="docutils literal notranslate"><span class="pre">plot</span></code> extra (<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;extremeloss[plot]&quot;</span></code>), for
 the diagnostic plots; the base install does not require it.</p>
 </section>

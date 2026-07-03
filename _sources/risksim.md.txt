@@ -2,7 +2,7 @@
 
 Portfolio Monte Carlo simulation and risk measures: simulate aggregate outcomes
 across a portfolio of contracts and summarize the distribution with standard risk
-measures. numpy only.
+measures.
 
 The package builds a portfolio from contract definitions, simulates aggregate
 outcomes, and reports risk measures (such as value-at-risk and tail value-at-risk)

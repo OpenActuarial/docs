@@ -180,7 +180,7 @@ The per-exposure vocabulary is fixed across the reporting stack:
 identity
 
 $$
-\text{loss\_per\_exposure} \;=\; \text{frequency} \times \text{severity}
+\text{loss per exposure} \;=\; \text{frequency} \times \text{severity}
 $$
 
 holding row-by-row in every summary and pinned by tests. Rates are derived
@@ -189,14 +189,12 @@ same ratio-of-sums rule as the weighted rollups below.
 
 Trend decomposition reconciles exactly, with zero residual: the two-way
 split uses symmetric midpoint weights, the three-way `mix_by` split uses
-LMDI (order-free), and in both
+LMDI (order-free), and in both:
 
-$$
-\begin{aligned}
-\text{loss\_per\_exposure\_trend} &= \text{frequency\_trend} \times \text{severity\_trend} \;(\times\; \text{mix\_trend}) \\
-\text{loss\_per\_exposure\_change} &= \text{frequency\_effect} + \text{severity\_effect} \;(+\; \text{mix\_effect}).
-\end{aligned}
-$$
+```text
+loss_per_exposure_trend  == frequency_trend  * severity_trend    (* mix_trend)
+loss_per_exposure_change == frequency_effect + severity_effect   (+ mix_effect)
+```
 
 **Natural units in the core, display constants at the edge.** No function
 assumes what an exposure unit measures: nothing annualizes, nothing scales

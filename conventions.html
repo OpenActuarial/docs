@@ -439,7 +439,7 @@ identity</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[
-\text{loss\_per\_exposure} \;=\; \text{frequency} \times \text{severity}
+\text{loss per exposure} \;=\; \text{frequency} \times \text{severity}
 \]</div>
 </div>
 <p>holding row-by-row in every summary and pinned by tests. Rates are derived
@@ -447,15 +447,10 @@ identity</p>
 same ratio-of-sums rule as the weighted rollups below.</p>
 <p>Trend decomposition reconciles exactly, with zero residual: the two-way
 split uses symmetric midpoint weights, the three-way <code class="docutils literal notranslate"><span class="pre">mix_by</span></code> split uses
-LMDI (order-free), and in both</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[\begin{split}
-\begin{aligned}
-\text{loss\_per\_exposure\_trend} &amp;= \text{frequency\_trend} \times \text{severity\_trend} \;(\times\; \text{mix\_trend}) \\
-\text{loss\_per\_exposure\_change} &amp;= \text{frequency\_effect} + \text{severity\_effect} \;(+\; \text{mix\_effect}).
-\end{aligned}
-\end{split}\]</div>
+LMDI (order-free), and in both:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>loss_per_exposure_trend  == frequency_trend  * severity_trend    (* mix_trend)
+loss_per_exposure_change == frequency_effect + severity_effect   (+ mix_effect)
+</pre></div>
 </div>
 <p><strong>Natural units in the core, display constants at the edge.</strong> No function
 assumes what an exposure unit measures: nothing annualizes, nothing scales

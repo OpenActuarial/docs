@@ -4,7 +4,7 @@ Experience analysis on a single tidy table, plus the shared numerical core the
 rest of the ecosystem builds on. You build one DataFrame — claims/expense,
 revenue, exposure, by period — and `Experience` gives you views (`by`,
 `rolling`, `trend`, completion, seasonality, credibility, pooling) without
-re-pivoting. numpy and pandas only; no scipy.
+re-pivoting.
 
 ## Quickstart
 

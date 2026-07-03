@@ -242,13 +242,13 @@
           <h1>Source code for lossmodels.severity.transformed_beta</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Transformed Beta family of continuous severities.</span>
 
-<span class="sd">Klugman (Loss Models, Appendix A.2) parameterizations, as used on the SOA FAM /</span>
-<span class="sd">ASTAM tables. Every distribution carries a scale parameter ``theta`` and is backed</span>
-<span class="sd">by an exactly-equivalent SciPy distribution; the moment formulas below are the</span>
-<span class="sd">Klugman closed forms (so ``mean``/``variance`` match the exam tables exactly and</span>
-<span class="sd">raise when the moment does not exist).</span>
+<span class="sd">Parameterizations follow Appendix A.2 of *Loss Models: From Data to Decisions*</span>
+<span class="sd">(Klugman, Panjer &amp; Willmot). Every distribution carries a scale parameter</span>
+<span class="sd">``theta`` and is backed by an exactly-equivalent SciPy distribution; the moment</span>
+<span class="sd">formulas below are the Appendix A closed forms (so ``mean``/``variance`` match</span>
+<span class="sd">the book exactly and raise when the moment does not exist).</span>
 
-<span class="sd">Parameter -&gt; SciPy mapping (verified against the table E[X^k] formulas):</span>
+<span class="sd">Parameter -&gt; SciPy mapping (verified against the Appendix A E[X^k] formulas):</span>
 
 <span class="sd">    Burr(alpha, theta, gamma)            burr12(c=gamma, d=alpha, scale=theta)</span>
 <span class="sd">    InverseBurr(tau, theta, gamma)       burr(c=gamma, d=tau, scale=theta)</span>
@@ -496,7 +496,7 @@
 <div class="viewcode-block" id="ParetoII">
 <a class="viewcode-back" href="../../../lossmodels.html#lossmodels.ParetoII">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ParetoII</span><span class="p">(</span><span class="n">SeverityModel</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pareto (Type II, Lomax) severity -- the FAM/ASTAM two-parameter &quot;Pareto&quot;.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pareto (Type II, Lomax) severity -- the *Loss Models* two-parameter &quot;Pareto&quot;.</span>
 
 <span class="sd">    X ~ Pareto(alpha, theta), support x &gt; 0.</span>
 <span class="sd">        f(x) = alpha theta^alpha / (x + theta)^(alpha+1)</span>
@@ -505,7 +505,7 @@
 <span class="sd">        E[X] = theta / (alpha - 1),  alpha &gt; 1.</span>
 
 <span class="sd">    Note: this is distinct from :class:`lossmodels.Pareto`, which is the Pareto</span>
-<span class="sd">    Type I (single-parameter) distribution with support x &gt;= theta. The FAM table</span>
+<span class="sd">    Type I (single-parameter) distribution with support x &gt;= theta. Appendix A</span>
 <span class="sd">    lists this Type II / Lomax form under the name &quot;Pareto&quot;; the Type I appears</span>
 <span class="sd">    under &quot;Single-Parameter Pareto&quot;.</span>
 <span class="sd">    &quot;&quot;&quot;</span>

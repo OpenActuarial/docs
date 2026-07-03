@@ -254,7 +254,7 @@
 <h1>lossmodels<a class="headerlink" href="#lossmodels" title="Link to this heading">¶</a></h1>
 <p>Loss-distribution modeling: fit severity and frequency distributions —
 including to claims data net of deductibles and limits — and combine them into
-an aggregate loss distribution. numpy and scipy only.</p>
+an aggregate loss distribution.</p>
 <p>The package is organized into severity, frequency, aggregate, estimation,
 empirical, and coverage modules. Fitted models expose a consistent
 <code class="docutils literal notranslate"><span class="pre">pdf</span></code>/<code class="docutils literal notranslate"><span class="pre">cdf</span></code>/<code class="docutils literal notranslate"><span class="pre">sf</span></code>/<code class="docutils literal notranslate"><span class="pre">quantile</span></code>/<code class="docutils literal notranslate"><span class="pre">mean</span></code>/<code class="docutils literal notranslate"><span class="pre">sample</span></code> interface; the estimation layer
@@ -1006,7 +1006,7 @@ scalar <code class="docutils literal notranslate"><span class="pre">p</span></co
 <dt class="sig sig-object py" id="lossmodels.ParetoII">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ParetoII</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/lossmodels/severity/transformed_beta.html#ParetoII"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lossmodels.ParetoII" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#lossmodels.SeverityModel" title="lossmodels.severity.base.SeverityModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeverityModel</span></code></a></p>
-<p>Pareto (Type II, Lomax) severity – the FAM/ASTAM two-parameter “Pareto”.</p>
+<p>Pareto (Type II, Lomax) severity – the <em>Loss Models</em> two-parameter “Pareto”.</p>
 <dl class="simple">
 <dt>X ~ Pareto(alpha, theta), support x &gt; 0.</dt><dd><p>f(x) = alpha theta^alpha / (x + theta)^(alpha+1)
 F(x) = 1 - [theta / (x + theta)]^alpha
@@ -1015,7 +1015,7 @@ E[X] = theta / (alpha - 1),  alpha &gt; 1.</p>
 </dd>
 </dl>
 <p>Note: this is distinct from <a class="reference internal" href="#lossmodels.Pareto" title="lossmodels.Pareto"><code class="xref py py-class docutils literal notranslate"><span class="pre">lossmodels.Pareto</span></code></a>, which is the Pareto
-Type I (single-parameter) distribution with support x &gt;= theta. The FAM table
+Type I (single-parameter) distribution with support x &gt;= theta. Appendix A
 lists this Type II / Lomax form under the name “Pareto”; the Type I appears
 under “Single-Parameter Pareto”.</p>
 <dl class="py method">
@@ -1420,8 +1420,8 @@ E[X^k] = alpha theta^k / (alpha - k),  k &lt; alpha.</p>
 </dd>
 </dl>
 <p>This is the same distribution as <a class="reference internal" href="#lossmodels.Pareto" title="lossmodels.Pareto"><code class="xref py py-class docutils literal notranslate"><span class="pre">lossmodels.Pareto</span></code></a>; it is provided
-under the FAM/ASTAM name. Per Loss Models, only <code class="docutils literal notranslate"><span class="pre">alpha</span></code> is a true parameter
-– <code class="docutils literal notranslate"><span class="pre">theta</span></code> is the known lower truncation point set in advance.</p>
+under its <em>Loss Models</em> Appendix A name, where only <code class="docutils literal notranslate"><span class="pre">alpha</span></code> is a true
+parameter – <code class="docutils literal notranslate"><span class="pre">theta</span></code> is the known lower truncation point set in advance.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="lossmodels.SingleParameterPareto.mean">
 <span class="sig-name descname"><span class="pre">mean</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/lossmodels/severity/other_severity.html#SingleParameterPareto.mean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lossmodels.SingleParameterPareto.mean" title="Link to this definition">¶</a></dt>
@@ -2304,7 +2304,7 @@ and gamma from the interquartile ratio, q75/q25 = 9**(1/gamma).</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="lossmodels.fit_paretoII">
 <span class="sig-name descname"><span class="pre">fit_paretoII</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">truncation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">censored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#lossmodels.ParetoII" title="lossmodels.severity.transformed_beta.ParetoII"><span class="pre">ParetoII</span></a></span></span><a class="reference internal" href="_modules/lossmodels/estimation/mle.html#fit_paretoII"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lossmodels.fit_paretoII" title="Link to this definition">¶</a></dt>
-<dd><p>Fit a Pareto Type II (Lomax) severity – the FAM/ASTAM “Pareto” –
+<dd><p>Fit a Pareto Type II (Lomax) severity – the <em>Loss Models</em> “Pareto” –
 by numerical maximum likelihood, with optional left truncation and right
 censoring (deductibles and limits).</p>
 <p>Initialization uses the method of moments on the uncensored values when
