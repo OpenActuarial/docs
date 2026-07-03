@@ -202,6 +202,7 @@
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example.html">A worked example: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
@@ -264,6 +265,69 @@ simulation-backed quantities accept the shared <code class="docutils literal not
 <a class="reference internal" href="conventions.html"><span class="std std-doc">Conventions</span></a>.</p>
 <p>See the API reference below for the full surface; each object’s docstring carries
 its own usage.</p>
+<section id="threshold-selection">
+<h2>Threshold selection<a class="headerlink" href="#threshold-selection" title="Link to this heading">¶</a></h2>
+<p>Scan candidate thresholds before committing to one. <code class="docutils literal notranslate"><span class="pre">threshold_diagnostic_table</span></code>
+returns a <code class="docutils literal notranslate"><span class="pre">ThresholdScan</span></code> with the exceedance counts, GPD parameter estimates,
+and mean excesses at each candidate; <code class="docutils literal notranslate"><span class="pre">mean_excess</span></code> returns the same diagnostics
+for plotting (matplotlib via the <code class="docutils literal notranslate"><span class="pre">plot</span></code> extra):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">extremeloss</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xl</span>
+
+<span class="n">scan</span> <span class="o">=</span> <span class="n">xl</span><span class="o">.</span><span class="n">threshold_diagnostic_table</span><span class="p">(</span>
+    <span class="n">losses</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">losses</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.925</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.975</span><span class="p">])</span>
+<span class="p">)</span>
+<span class="n">scan</span><span class="o">.</span><span class="n">thresholds</span><span class="p">,</span> <span class="n">scan</span><span class="o">.</span><span class="n">n_exceedances</span><span class="p">,</span> <span class="n">scan</span><span class="o">.</span><span class="n">xi</span><span class="p">,</span> <span class="n">scan</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="n">scan</span><span class="o">.</span><span class="n">mean_excess</span>
+</pre></div>
+</div>
+<p>Take the lowest threshold above which the shape estimate <span class="math notranslate nohighlight">\(\hat\xi\)</span> is stable
+and the mean-excess function is roughly linear — the classic
+peaks-over-threshold trade between bias (threshold too low) and variance
+(too few exceedances).</p>
+</section>
+<section id="fitting-the-tail">
+<h2>Fitting the tail<a class="headerlink" href="#fitting-the-tail" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">fit_pot(data,</span> <span class="pre">threshold)</span></code> selects the exceedances of the threshold and fits
+the GPD to their <em>excesses</em>; <code class="docutils literal notranslate"><span class="pre">fit_gpd(excesses)</span></code> is the same fit when the
+excesses are already in hand:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fit</span> <span class="o">=</span> <span class="n">xl</span><span class="o">.</span><span class="n">fit_pot</span><span class="p">(</span><span class="n">losses</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">u</span><span class="p">)</span>
+<span class="n">fit</span><span class="o">.</span><span class="n">xi</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">exceedance_fraction</span>
+
+<span class="c1"># unconditional, ground-up tail metrics — the fit carries the exceedance rate</span>
+<span class="n">xl</span><span class="o">.</span><span class="n">gpd_var</span><span class="p">(</span><span class="mf">0.995</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">xi</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">exceedance_fraction</span><span class="p">)</span>
+<span class="n">xl</span><span class="o">.</span><span class="n">gpd_tvar</span><span class="p">(</span><span class="mf">0.995</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">xi</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="n">fit</span><span class="o">.</span><span class="n">exceedance_fraction</span><span class="p">)</span>
+<span class="n">xl</span><span class="o">.</span><span class="n">return_level</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">fit</span><span class="p">)</span>        <span class="c1"># the 1-in-200 claim == gpd_var(0.995, ...)</span>
+
+<span class="n">tail</span> <span class="o">=</span> <span class="n">xl</span><span class="o">.</span><span class="n">GPDTail</span><span class="o">.</span><span class="n">from_fit</span><span class="p">(</span><span class="n">fit</span><span class="p">)</span>  <span class="c1"># conditional law on [u, inf), for splicing</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">GPDFit</span></code> quotes <strong>unconditional</strong> quantities; <code class="docutils literal notranslate"><span class="pre">GPDTail</span></code> is the <strong>conditional</strong>
+excess law a splice consumes. The distinction, and the <span class="math notranslate nohighlight">\((\xi, \beta)\)</span>
+parameterization, are pinned in
+<a class="reference internal" href="conventions.html#tail-fitting-and-splicing"><span class="std std-ref">Conventions</span></a>. Sampling accepts the
+shared <code class="docutils literal notranslate"><span class="pre">rng</span></code> argument.</p>
+</section>
+<section id="splicing-onto-a-fitted-body">
+<h2>Splicing onto a fitted body<a class="headerlink" href="#splicing-onto-a-fitted-body" title="Link to this heading">¶</a></h2>
+<p>The handoff runs one direction: <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> fits the tail and returns a
+<code class="docutils literal notranslate"><span class="pre">lossmodels.SplicedSeverity</span></code>, so every downstream consumer holds the same
+severity class whether or not it carries an EVT tail:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sev</span> <span class="o">=</span> <span class="n">xl</span><span class="o">.</span><span class="n">splice_gpd_tail</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="n">fit</span><span class="p">)</span>               <span class="c1"># weight from the fit</span>
+<span class="n">sev</span> <span class="o">=</span> <span class="n">xl</span><span class="o">.</span><span class="n">fit_spliced_gpd</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="n">losses</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">u</span><span class="p">)</span>  <span class="c1"># weight from the data</span>
+</pre></div>
+</div>
+<p>Splicing is mass-matching, never density-continuity; pass <code class="docutils literal notranslate"><span class="pre">weight=</span></code> to
+override the empirical body mass.</p>
+</section>
+<section id="from-simulated-portfolios">
+<h2>From simulated portfolios<a class="headerlink" href="#from-simulated-portfolios" title="Link to this heading">¶</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">risksim.SimulationResult</span></code> feeds straight back into the tail toolkit:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">res</span> <span class="o">=</span> <span class="n">portfolio</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="mi">100_000</span><span class="p">,</span> <span class="n">contract</span><span class="o">=</span><span class="n">treaty</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>   <span class="c1"># risksim</span>
+<span class="n">xl</span><span class="o">.</span><span class="n">tail_summary_from_risksim</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+<span class="c1"># n / mean / std / min / max and VaR/TVaR at (0.95, 0.99, 0.995)</span>
+</pre></div>
+</div>
+</section>
 <section id="module-extremeloss">
 <span id="api-reference"></span><h2>API reference<a class="headerlink" href="#module-extremeloss" title="Link to this heading">¶</a></h2>
 <dl class="py class">
@@ -493,6 +557,10 @@ threshold. The mixing weight defaults to the body mass implied by the fit,
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">extremeloss</a><ul>
+<li><a class="reference internal" href="#threshold-selection">Threshold selection</a></li>
+<li><a class="reference internal" href="#fitting-the-tail">Fitting the tail</a></li>
+<li><a class="reference internal" href="#splicing-onto-a-fitted-body">Splicing onto a fitted body</a></li>
+<li><a class="reference internal" href="#from-simulated-portfolios">From simulated portfolios</a></li>
 <li><a class="reference internal" href="#module-extremeloss">API reference</a><ul>
 <li><a class="reference internal" href="#extremeloss.BootstrapResult"><code class="docutils literal notranslate"><span class="pre">BootstrapResult</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.GEVFit"><code class="docutils literal notranslate"><span class="pre">GEVFit</span></code></a></li>
@@ -526,10 +594,12 @@ threshold. The mixing weight defaults to the body mass implied by the fit,
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=0d62d47f"></script>
+</div><script src="_static/documentation_options.js?v=69ad043b"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
     <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </body>
 </html>

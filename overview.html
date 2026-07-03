@@ -202,6 +202,7 @@
   <ul class="current">
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example.html">A worked example: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
@@ -323,6 +324,12 @@ are thin, inspectable wrappers over those functions. Cross-package numerical
 conventions — the empirical VaR/TVaR estimators, the <code class="docutils literal notranslate"><span class="pre">rng</span></code> reproducibility
 contract, distribution naming, coverage semantics, and the truncation/censoring
 data layout — are collected on the <a class="reference internal" href="conventions.html"><span class="std std-doc">Conventions</span></a> page.</p>
+<p>These conventions are enforced, not aspirational. The distribution
+parameterizations are pinned against <code class="docutils literal notranslate"><span class="pre">scipy.stats</span></code> by conformance tests, the
+risk-measure estimators are asserted byte-identical across the three packages
+that implement them, the identities quoted on the conventions page are test
+assertions, every example script is executed by its package’s test suite, and
+the <a class="reference internal" href="worked-example.html"><span class="std std-doc">worked example</span></a> is itself a regression test.</p>
 </section>
 </section>
 
@@ -397,7 +404,7 @@ data layout — are collected on the <a class="reference internal" href="convent
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=0d62d47f"></script>
+</div><script src="_static/documentation_options.js?v=69ad043b"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

@@ -202,6 +202,7 @@
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example.html">A worked example: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">lossmodels</a></li>
@@ -261,18 +262,18 @@ fits and compares them; the aggregate layer convolves a frequency and a
 severity model into the aggregate loss for a block.</p>
 <section id="distributions">
 <h2>Distributions<a class="headerlink" href="#distributions" title="Link to this heading">¶</a></h2>
-<p>The continuous severity inventory covers the <em>Loss Models</em> (FAM/ASTAM
-Appendix A) families — gamma, lognormal, Weibull, the transformed-beta
+<p>The continuous severity inventory covers the Appendix A families of <em>Loss
+Models: From Data to Decisions</em> (Klugman, Panjer &amp; Willmot) — gamma, lognormal, Weibull, the transformed-beta
 family (Burr, inverse Burr, Pareto II/Lomax, loglogistic, paralogistic, …),
 inverse distributions, and the (Klugman) generalized Pareto — plus
 <code class="docutils literal notranslate"><span class="pre">SplicedSeverity</span></code> for body–tail constructions. Frequencies cover Poisson,
 negative binomial, binomial, geometric, and logarithmic, with <code class="docutils literal notranslate"><span class="pre">ZeroTruncated</span></code>
 and <code class="docutils literal notranslate"><span class="pre">ZeroModified</span></code> wrappers for the (a, b, 1) class.</p>
 <p>Because the literature parameterizes these families several different ways,
-the table below is the authority: each constructor’s exact form, each
-verified numerically against its <code class="docutils literal notranslate"><span class="pre">scipy.stats</span></code> equivalent (CDF/pmf agreement
-to <span class="math notranslate nohighlight">\(10^{-10}\)</span>). Two constructors do <strong>not</strong> use the Appendix A parameters as
-of 0.6.0 and are flagged.</p>
+the table below is the authority: each constructor’s exact form, each pinned
+against its <code class="docutils literal notranslate"><span class="pre">scipy.stats</span></code> equivalent by the package’s conformance test suite
+(CDF/pmf agreement to <span class="math notranslate nohighlight">\(10^{-10}\)</span>). Two constructors do <strong>not</strong> use the
+Appendix A parameters as of 0.6.1 and are flagged.</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -311,7 +312,7 @@ of 0.6.0 and are flagged.</p>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ParetoII(alpha,</span> <span class="pre">theta)</span></code></p></td>
 <td><p>Lomax, <span class="math notranslate nohighlight">\(x &gt; 0\)</span></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">lomax(alpha,</span> <span class="pre">scale=theta)</span></code></p></td>
-<td><p>the distribution the SOA tables call “Pareto”</p></td>
+<td><p>the distribution <em>Loss Models</em> calls “Pareto”</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Loglogistic(gamma,</span> <span class="pre">theta)</span></code></p></td>
 <td><p><span class="math notranslate nohighlight">\(F(x) = \dfrac{(x/\theta)^{\gamma}}{1 + (x/\theta)^{\gamma}}\)</span></p></td>
@@ -341,7 +342,7 @@ of 0.6.0 and are flagged.</p>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NegativeBinomial(r,</span> <span class="pre">p)</span></code></p></td>
 <td><p>failures before the <span class="math notranslate nohighlight">\(r\)</span>-th success</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">nbinom(r,</span> <span class="pre">p)</span></code></p></td>
-<td><p>scipy form, <strong>not</strong> the tables’ <span class="math notranslate nohighlight">\((r, \beta)\)</span>; <span class="math notranslate nohighlight">\(\beta = (1-p)/p\)</span>, <span class="math notranslate nohighlight">\(p = 1/(1+\beta)\)</span></p></td>
+<td><p>scipy form, <strong>not</strong> <em>Loss Models</em>’ <span class="math notranslate nohighlight">\((r, \beta)\)</span>; <span class="math notranslate nohighlight">\(\beta = (1-p)/p\)</span>, <span class="math notranslate nohighlight">\(p = 1/(1+\beta)\)</span></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Geometric(p)</span></code></p></td>
 <td><p>support <span class="math notranslate nohighlight">\(\{0, 1, \ldots\}\)</span></p></td>
@@ -2840,7 +2841,7 @@ the report.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=0d62d47f"></script>
+</div><script src="_static/documentation_options.js?v=69ad043b"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="actuarialpy" href="actuarialpy.html"><link rel="prev" title="Overview" href="overview.html">
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="A worked example: claims to capital" href="worked-example.html"><link rel="prev" title="Overview" href="overview.html">
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
         <title>Conventions - OpenActuarial</title>
@@ -202,6 +202,7 @@
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example.html">A worked example: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
@@ -319,15 +320,15 @@ share a seed by accident.</p>
 </section>
 <section id="distribution-naming-and-parameterizations">
 <h2>Distribution naming and parameterizations<a class="headerlink" href="#distribution-naming-and-parameterizations" title="Link to this heading">¶</a></h2>
-<p>Continuous severities follow the <em>Loss Models</em> (FAM/ASTAM Appendix A)
-parameterizations — the forms on the SOA tables — and moments raise outside
-their region of existence rather than returning garbage. Frequencies follow
+<p>Continuous severities follow the Appendix A parameterizations of <em>Loss
+Models: From Data to Decisions</em> (Klugman, Panjer &amp; Willmot), and moments
+raise outside their region of existence rather than returning garbage. Frequencies follow
 the SciPy conventions instead: <code class="docutils literal notranslate"><span class="pre">NegativeBinomial(r,</span> <span class="pre">p)</span></code> is
-<code class="docutils literal notranslate"><span class="pre">scipy.stats.nbinom</span></code>, not the tables’ <span class="math notranslate nohighlight">\((r, \beta)\)</span>, with <span class="math notranslate nohighlight">\(\beta = (1-p)/p\)</span>.
+<code class="docutils literal notranslate"><span class="pre">scipy.stats.nbinom</span></code>, not <em>Loss Models</em>’ <span class="math notranslate nohighlight">\((r, \beta)\)</span>, with <span class="math notranslate nohighlight">\(\beta = (1-p)/p\)</span>.
 Every constructor’s exact form and its numerically verified <code class="docutils literal notranslate"><span class="pre">scipy.stats</span></code>
 equivalent are tabulated on the
 <a class="reference internal" href="lossmodels.html#distributions"><span class="std std-ref">lossmodels page</span></a>, including the two places the
-code deviates from Appendix A as of 0.6.0 (<code class="docutils literal notranslate"><span class="pre">Exponential(rate)</span></code>; Weibull’s
+code deviates from Appendix A as of 0.6.1 (<code class="docutils literal notranslate"><span class="pre">Exponential(rate)</span></code>; Weibull’s
 <code class="docutils literal notranslate"><span class="pre">(k,</span> <span class="pre">lam)</span></code> parameter names).</p>
 <p>One naming trap is worth stating plainly, because the literature itself is
 inconsistent:</p>
@@ -539,12 +540,12 @@ and denominator adjustments and are deliberately out of scope.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="actuarialpy.html">
+          <a class="next-page" href="worked-example.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">actuarialpy</div>
+                <div class="title">A worked example: claims to capital</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -609,7 +610,7 @@ and denominator adjustments and are deliberately out of scope.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=0d62d47f"></script>
+</div><script src="_static/documentation_options.js?v=69ad043b"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

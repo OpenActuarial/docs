@@ -74,6 +74,9 @@ once — and `ratingmodels` builds directly on it. `lossmodels`, `extremeloss`, 
 `lossmodels` for severity splicing). Dependencies stay light: numpy everywhere, pandas
 in the core and `ratingmodels`, scipy where the loss and tail work needs it.
 
+The full arc is runnable end to end — see the
+[worked example](worked-example.md).
+
 ## A cross-package example
 
 Blend an experience rate with a manual rate and read the indicated change:
@@ -113,6 +116,7 @@ dependency.
 
 overview
 conventions
+worked-example
 actuarialpy
 ratingmodels
 lossmodels

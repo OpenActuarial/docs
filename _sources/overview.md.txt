@@ -77,3 +77,10 @@ are thin, inspectable wrappers over those functions. Cross-package numerical
 conventions — the empirical VaR/TVaR estimators, the `rng` reproducibility
 contract, distribution naming, coverage semantics, and the truncation/censoring
 data layout — are collected on the [Conventions](conventions.md) page.
+
+These conventions are enforced, not aspirational. The distribution
+parameterizations are pinned against `scipy.stats` by conformance tests, the
+risk-measure estimators are asserted byte-identical across the three packages
+that implement them, the identities quoted on the conventions page are test
+assertions, every example script is executed by its package's test suite, and
+the [worked example](worked-example.md) is itself a regression test.

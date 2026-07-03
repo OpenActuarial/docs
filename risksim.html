@@ -202,6 +202,7 @@
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example.html">A worked example: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
@@ -265,6 +266,55 @@ every simulation accepts the shared <code class="docutils literal notranslate"><
 <code class="docutils literal notranslate"><span class="pre">Generator</span></code>) for bit-reproducible runs — see <a class="reference internal" href="conventions.html"><span class="std std-doc">Conventions</span></a>.</p>
 <p>See the API reference below for the full surface; each object’s docstring carries
 its own usage.</p>
+<section id="portfolio-simulation">
+<h2>Portfolio simulation<a class="headerlink" href="#portfolio-simulation" title="Link to this heading">¶</a></h2>
+<p>A portfolio is a list of named items, each wrapping anything with a <code class="docutils literal notranslate"><span class="pre">.sample</span></code>
+method — a fitted <code class="docutils literal notranslate"><span class="pre">lossmodels.CollectiveRiskModel</span></code> drops straight in:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">risksim</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rs</span>
+
+<span class="n">port</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="n">Portfolio</span><span class="p">([</span>
+    <span class="n">rs</span><span class="o">.</span><span class="n">PortfolioItem</span><span class="p">(</span><span class="s2">&quot;commercial&quot;</span><span class="p">,</span> <span class="n">crm</span><span class="p">),</span>
+    <span class="n">rs</span><span class="o">.</span><span class="n">PortfolioItem</span><span class="p">(</span><span class="s2">&quot;specialty&quot;</span><span class="p">,</span> <span class="n">other_model</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mf">0.4</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">port</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="mi">100_000</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">res</span><span class="o">.</span><span class="n">gross_losses</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">component_losses</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">component_names</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">simulate</span></code> returns a <code class="docutils literal notranslate"><span class="pre">SimulationResult</span></code> carrying the gross, ceded, and
+retained loss vectors, the per-component draws, and — when a contract is
+applied — the per-layer recoveries. The <code class="docutils literal notranslate"><span class="pre">rng</span></code> argument (<code class="docutils literal notranslate"><span class="pre">None</span></code>, seed, or
+<code class="docutils literal notranslate"><span class="pre">Generator</span></code>) resolves to one generator threaded through the components, so the
+same seed reproduces every array bit for bit.</p>
+</section>
+<section id="contracts">
+<h2>Contracts<a class="headerlink" href="#contracts" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">AggregateLayer(attachment,</span> <span class="pre">limit,</span> <span class="pre">share)</span></code> follows the ecosystem coverage
+semantics: <code class="docutils literal notranslate"><span class="pre">limit</span></code> is the layer <strong>width</strong>, so the layer exhausts at
+<code class="docutils literal notranslate"><span class="pre">attachment</span> <span class="pre">+</span> <span class="pre">limit</span></code> (see
+<a class="reference internal" href="conventions.html#coverage-semantics"><span class="std std-ref">Conventions</span></a>). <code class="docutils literal notranslate"><span class="pre">ContractProgram</span></code> stacks
+layers, and <code class="docutils literal notranslate"><span class="pre">apply_contract</span></code> applies either to any loss vector, returning
+<code class="docutils literal notranslate"><span class="pre">(ceded,</span> <span class="pre">retained)</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">treaty</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="n">AggregateLayer</span><span class="p">(</span><span class="n">attachment</span><span class="o">=</span><span class="mi">3_200_000</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1_500_000</span><span class="p">,</span>
+                           <span class="n">name</span><span class="o">=</span><span class="s2">&quot;agg_stop_loss&quot;</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">port</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="mi">100_000</span><span class="p">,</span> <span class="n">contract</span><span class="o">=</span><span class="n">treaty</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">res</span><span class="o">.</span><span class="n">ceded_losses</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">retained_losses</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">layer_losses</span>
+
+<span class="n">ceded</span><span class="p">,</span> <span class="n">retained</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="n">apply_contract</span><span class="p">([</span><span class="mf">50.0</span><span class="p">,</span> <span class="mf">150.0</span><span class="p">,</span> <span class="mf">400.0</span><span class="p">],</span>
+                                    <span class="n">rs</span><span class="o">.</span><span class="n">AggregateLayer</span><span class="p">(</span><span class="n">attachment</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mf">200.0</span><span class="p">))</span>
+<span class="c1"># ceded    -&gt; [  0.,  50., 200.]</span>
+<span class="c1"># retained -&gt; [ 50., 100., 200.]</span>
+</pre></div>
+</div>
+</section>
+<section id="risk-measures">
+<h2>Risk measures<a class="headerlink" href="#risk-measures" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rs</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">gross_losses</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">)</span>
+<span class="n">rs</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">tvar</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">retained_losses</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These are the ecosystem-wide empirical estimators — see the intro above and
+<a class="reference internal" href="conventions.html#risk-measures-var-and-tvar"><span class="std std-ref">Conventions</span></a>.</p>
+</section>
 <section id="module-risksim">
 <span id="api-reference"></span><h2>API reference<a class="headerlink" href="#module-risksim" title="Link to this heading">¶</a></h2>
 <dl class="py class">
@@ -384,6 +434,9 @@ Otherwise, the primary <cite>losses</cite> view is gross loss.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">risksim</a><ul>
+<li><a class="reference internal" href="#portfolio-simulation">Portfolio simulation</a></li>
+<li><a class="reference internal" href="#contracts">Contracts</a></li>
+<li><a class="reference internal" href="#risk-measures">Risk measures</a></li>
 <li><a class="reference internal" href="#module-risksim">API reference</a><ul>
 <li><a class="reference internal" href="#risksim.AggregateLayer"><code class="docutils literal notranslate"><span class="pre">AggregateLayer</span></code></a><ul>
 <li><a class="reference internal" href="#risksim.AggregateLayer.attachment_probability"><code class="docutils literal notranslate"><span class="pre">attachment_probability()</span></code></a></li>
@@ -410,7 +463,7 @@ Otherwise, the primary <cite>losses</cite> view is gross loss.</p>
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=0d62d47f"></script>
+</div><script src="_static/documentation_options.js?v=69ad043b"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
