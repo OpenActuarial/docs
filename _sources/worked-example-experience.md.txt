@@ -1,4 +1,4 @@
-# A worked example: experience to a renewal rate
+# Example 1: experience to a renewal rate
 
 The first two boxes of the workflow, end to end: read a monthly experience
 panel with `actuarialpy` — frequency-severity, trend decomposition,

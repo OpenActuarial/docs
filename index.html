@@ -202,14 +202,21 @@
   <ul>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="worked-example.html">A worked example: claims to capital</a></li>
-<li class="toctree-l1"><a class="reference internal" href="worked-example-experience.html">A worked example: experience to a renewal rate</a></li>
-<li class="toctree-l1"><a class="reference internal" href="worked-example-coverage.html">A worked example: censored payments to coverage terms</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Packages</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extremeloss.html">extremeloss</a></li>
 <li class="toctree-l1"><a class="reference internal" href="risksim.html">risksim</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Worked examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-experience.html">Example 1: experience to a renewal rate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-book.html">Example 2: pricing a book, in columns</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example.html">Example 3: claims to capital</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-coverage.html">Example 4: censored payments to coverage terms</a></li>
 </ul>
 
 </div>
@@ -333,9 +340,10 @@ once — and <code class="docutils literal notranslate"><span class="pre">rating
 <code class="docutils literal notranslate"><span class="pre">risksim</span></code> install independently (<code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> can optionally integrate
 <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> for severity splicing).</p>
 <p>The full arc is runnable end to end — see the worked examples:
-<a class="reference internal" href="worked-example.html"><span class="std std-doc">claims to capital</span></a>,
-<a class="reference internal" href="worked-example-experience.html"><span class="std std-doc">experience to a renewal rate</span></a>, and
-<a class="reference internal" href="worked-example-coverage.html"><span class="std std-doc">censored payments to coverage terms</span></a>.</p>
+<a class="reference internal" href="worked-example-experience.html"><span class="std std-doc">Example 1: experience to a renewal rate</span></a>,
+<a class="reference internal" href="worked-example-book.html"><span class="std std-doc">Example 2: pricing a book, in columns</span></a>,
+<a class="reference internal" href="worked-example.html"><span class="std std-doc">Example 3: claims to capital</span></a>, and
+<a class="reference internal" href="worked-example-coverage.html"><span class="std std-doc">Example 4: censored payments to coverage terms</span></a>.</p>
 </section>
 <section id="a-cross-package-example">
 <h2>A cross-package example<a class="headerlink" href="#a-cross-package-example" title="Link to this heading">¶</a></h2>
@@ -359,6 +367,8 @@ once — and <code class="docutils literal notranslate"><span class="pre">rating
 <span class="n">indication</span><span class="o">.</span><span class="n">rate_change_decomposition</span><span class="p">()</span>    <span class="c1"># attribute the change to each driver</span>
 </pre></div>
 </div>
+<p>Every numeric argument above also accepts a column — the same call prices a
+whole book; see <a class="reference internal" href="worked-example-book.html"><span class="std std-doc">Example 2: pricing a book, in columns</span></a>.</p>
 </section>
 <section id="install">
 <h2>Install<a class="headerlink" href="#install" title="Link to this heading">¶</a></h2>
@@ -367,6 +377,10 @@ once — and <code class="docutils literal notranslate"><span class="pre">rating
 </div>
 <p>Each package installs independently; <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code> pulls in <code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> as a
 dependency.</p>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
 <div class="toctree-wrapper compound">
 </div>
 </section>
@@ -421,7 +435,9 @@ dependency.</p>
 <li><a class="reference internal" href="#the-ecosystem">The ecosystem</a></li>
 <li><a class="reference internal" href="#the-workflow">The workflow</a></li>
 <li><a class="reference internal" href="#a-cross-package-example">A cross-package example</a></li>
-<li><a class="reference internal" href="#install">Install</a></li>
+<li><a class="reference internal" href="#install">Install</a><ul>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

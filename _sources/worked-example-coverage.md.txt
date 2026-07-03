@@ -1,4 +1,4 @@
-# A worked example: censored payments to coverage terms
+# Example 4: censored payments to coverage terms
 
 Real claim extracts rarely show ground-up losses: anything below the
 deductible was never reported, and anything at the limit is capped. This

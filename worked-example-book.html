@@ -1,0 +1,543 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Example 3: claims to capital" href="worked-example.html"><link rel="prev" title="Example 1: experience to a renewal rate" href="worked-example-experience.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
+        <title>Example 2: pricing a book, in columns - OpenActuarial</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=1ce1b86a" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --color-brand-primary: #0b6bcb;
+  --color-brand-content: #0b6bcb;
+  --font-stack--monospace: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #4098e6;
+  --color-brand-content: #4098e6;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #4098e6;
+  --color-brand-content: #4098e6;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">OpenActuarial</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  <span class="sidebar-brand-text">OpenActuarial</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Packages</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="actuarialpy.html">actuarialpy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ratingmodels.html">ratingmodels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lossmodels.html">lossmodels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extremeloss.html">extremeloss</a></li>
+<li class="toctree-l1"><a class="reference internal" href="risksim.html">risksim</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Worked examples</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="worked-example-experience.html">Example 1: experience to a renewal rate</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Example 2: pricing a book, in columns</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example.html">Example 3: claims to capital</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-coverage.html">Example 4: censored payments to coverage terms</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/OpenActuarial/docs/blob/main/docs/worked-example-book.md?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/OpenActuarial/docs/edit/main/docs/worked-example-book.md" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section class="tex2jax_ignore mathjax_ignore" id="example-2-pricing-a-book-in-columns">
+<h1>Example 2: pricing a book, in columns<a class="headerlink" href="#example-2-pricing-a-book-in-columns" title="Link to this heading">¶</a></h1>
+<p>Everything in <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code> follows the
+<a class="reference internal" href="conventions.html#vectorization-contract"><span class="std std-ref">vectorization contract</span></a>: scalar in,
+float out; column in, column out. That makes column-wise the default way to
+run anything bigger than one case — the objects are the same ones the scalar
+API uses, their fields are just columns, and one call prices the book. This
+page rates a three-group block end to end without a single Python loop:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>claim file -&gt; grouped pooling -&gt; experience and manual rates
+-&gt; credibility -&gt; indication -&gt; per-case decomposition
+-&gt; capped renewals -&gt; pricing scenarios -&gt; book-level uplift
+</pre></div>
+</div>
+<p>Every number on this page is the output of this exact run, pinned by a
+regression test in the <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code> suite.</p>
+<section id="the-book">
+<h2>The book<a class="headerlink" href="#the-book" title="Link to this heading">¶</a></h2>
+<p>One row per group, plus a large-claim file and each group’s routine (bulk)
+claims:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ratingmodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rm</span>
+
+<span class="n">book</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;exposure&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">9_600.0</span><span class="p">,</span> <span class="mf">14_400.0</span><span class="p">,</span> <span class="mf">6_000.0</span><span class="p">],</span>     <span class="c1"># member-months here</span>
+        <span class="s2">&quot;current&quot;</span><span class="p">:</span>  <span class="p">[</span><span class="mf">545.0</span><span class="p">,</span> <span class="mf">560.0</span><span class="p">,</span> <span class="mf">530.0</span><span class="p">],</span>            <span class="c1"># charged today</span>
+        <span class="s2">&quot;base&quot;</span><span class="p">:</span>     <span class="p">[</span><span class="mf">420.0</span><span class="p">,</span> <span class="mf">435.0</span><span class="p">,</span> <span class="mf">410.0</span><span class="p">],</span>            <span class="c1"># manual base loss cost</span>
+        <span class="s2">&quot;area&quot;</span><span class="p">:</span>     <span class="p">[</span><span class="mf">1.05</span><span class="p">,</span> <span class="mf">0.98</span><span class="p">,</span> <span class="mf">1.12</span><span class="p">],</span>               <span class="c1"># manual relativities</span>
+        <span class="s2">&quot;industry&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.10</span><span class="p">,</span> <span class="mf">1.00</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">],</span>
+        <span class="s2">&quot;n_claims&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">820.0</span><span class="p">,</span> <span class="mf">1_450.0</span><span class="p">,</span> <span class="mf">260.0</span><span class="p">],</span>          <span class="c1"># credibility counts</span>
+    <span class="p">},</span>
+    <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="s2">&quot;G1&quot;</span><span class="p">,</span> <span class="s2">&quot;G2&quot;</span><span class="p">,</span> <span class="s2">&quot;G3&quot;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;group&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">large</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;group&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;G1&quot;</span><span class="p">,</span> <span class="s2">&quot;G1&quot;</span><span class="p">,</span> <span class="s2">&quot;G2&quot;</span><span class="p">,</span> <span class="s2">&quot;G3&quot;</span><span class="p">,</span> <span class="s2">&quot;G3&quot;</span><span class="p">],</span>
+                      <span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">390e3</span><span class="p">,</span> <span class="mf">310e3</span><span class="p">,</span> <span class="mf">420e3</span><span class="p">,</span> <span class="mf">610e3</span><span class="p">,</span> <span class="mf">260e3</span><span class="p">]})</span>
+<span class="n">bulk</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mf">3.65e6</span><span class="p">,</span> <span class="mf">5.88e6</span><span class="p">,</span> <span class="mf">2.03e6</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">book</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="pool-the-claim-file">
+<h2>Pool the claim file<a class="headerlink" href="#pool-the-claim-file" title="Link to this heading">¶</a></h2>
+<p>Grouped questions take <code class="docutils literal notranslate"><span class="pre">by=</span></code>. One pass over the claim file pools every
+group at once:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">_</span><span class="p">,</span> <span class="n">excess</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">pool_claims</span><span class="p">(</span><span class="n">large</span><span class="p">[</span><span class="s2">&quot;amount&quot;</span><span class="p">],</span> <span class="mi">250_000</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="n">large</span><span class="p">[</span><span class="s2">&quot;group&quot;</span><span class="p">])</span>
+<span class="n">incurred</span> <span class="o">=</span> <span class="n">bulk</span> <span class="o">+</span> <span class="n">large</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">)[</span><span class="s2">&quot;amount&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<span class="n">excess</span>      <span class="c1"># G1 200,000   G2 170,000   G3 370,000</span>
+<span class="n">incurred</span>    <span class="c1"># G1 4,350,000 G2 6,300,000 G3 2,900,000</span>
+</pre></div>
+</div>
+</section>
+<section id="experience-and-manual-rates">
+<h2>Experience and manual rates<a class="headerlink" href="#experience-and-manual-rates" title="Link to this heading">¶</a></h2>
+<p>The same constructors as the scalar workflow — the fields are columns now.
+Validation stays row-level: one bad row fails the call, and the error names
+the offending index label.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">retention</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RetentionLoad</span><span class="p">(</span><span class="n">fixed_expense</span><span class="o">=</span><span class="mf">12.0</span><span class="p">,</span> <span class="n">variable_expense_ratio</span><span class="o">=</span><span class="mf">0.11</span><span class="p">,</span>
+                             <span class="n">profit_margin</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">lae_ratio</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+
+<span class="n">experience</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ExperienceRate</span><span class="p">(</span>
+    <span class="n">incurred_claims</span><span class="o">=</span><span class="n">incurred</span><span class="p">,</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="n">book</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">],</span>
+    <span class="n">trend_annual</span><span class="o">=</span><span class="mf">0.07</span><span class="p">,</span> <span class="n">trend_years</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>          <span class="c1"># factor 1.1068, broadcast</span>
+    <span class="n">pooled_excess</span><span class="o">=</span><span class="n">excess</span><span class="p">,</span>
+    <span class="n">pooling_charge</span><span class="o">=</span><span class="mf">28.0</span><span class="p">,</span>
+    <span class="n">retention</span><span class="o">=</span><span class="n">retention</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">manual</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ManualRate</span><span class="p">(</span>
+    <span class="n">book</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">],</span>
+    <span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="n">book</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">],</span> <span class="s2">&quot;industry&quot;</span><span class="p">:</span> <span class="n">book</span><span class="p">[</span><span class="s2">&quot;industry&quot;</span><span class="p">]},</span>
+    <span class="n">retention</span><span class="o">=</span><span class="n">retention</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">limited_fluctuation_credibility</span><span class="p">(</span><span class="n">book</span><span class="p">[</span><span class="s2">&quot;n_claims&quot;</span><span class="p">],</span> <span class="n">n_full</span><span class="o">=</span><span class="mi">1_082</span><span class="p">)</span>
+
+<span class="n">experience</span><span class="o">.</span><span class="n">loss_cost</span><span class="p">()</span>   <span class="c1"># G1 506.47   G2 499.17   G3 494.71</span>
+<span class="n">manual</span><span class="o">.</span><span class="n">loss_cost</span><span class="p">()</span>       <span class="c1"># G1 485.10   G2 426.30   G3 436.24</span>
+<span class="n">z</span>                        <span class="c1"># G1 0.871    G2 1.000    G3 0.490</span>
+</pre></div>
+</div>
+</section>
+<section id="the-indication">
+<h2>The indication<a class="headerlink" href="#the-indication" title="Link to this heading">¶</a></h2>
+<p>Every derived quantity comes back as a Series on the book’s index, so the
+priced book is one <code class="docutils literal notranslate"><span class="pre">assign</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">indication</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RateIndication</span><span class="p">(</span>
+    <span class="n">experience_loss_cost</span><span class="o">=</span><span class="n">experience</span><span class="o">.</span><span class="n">loss_cost</span><span class="p">(),</span>
+    <span class="n">manual_loss_cost</span><span class="o">=</span><span class="n">manual</span><span class="o">.</span><span class="n">loss_cost</span><span class="p">(),</span>
+    <span class="n">credibility</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+    <span class="n">current_rate</span><span class="o">=</span><span class="n">book</span><span class="p">[</span><span class="s2">&quot;current&quot;</span><span class="p">],</span>
+    <span class="n">trend_total_factor</span><span class="o">=</span><span class="n">experience</span><span class="o">.</span><span class="n">trend_factor</span><span class="p">(),</span>
+    <span class="n">retention</span><span class="o">=</span><span class="n">retention</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">priced</span> <span class="o">=</span> <span class="n">book</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span>
+    <span class="n">blended</span><span class="o">=</span><span class="n">indication</span><span class="o">.</span><span class="n">blended_loss_cost</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+    <span class="n">indicated</span><span class="o">=</span><span class="n">indication</span><span class="o">.</span><span class="n">indicated_rate</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+    <span class="n">change</span><span class="o">=</span><span class="n">indication</span><span class="o">.</span><span class="n">indicated_rate_change</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="c1">#        exposure  current  blended  indicated  change</span>
+<span class="c1"># group</span>
+<span class="c1"># G1       9600.0    545.0   503.70     611.37  0.1218</span>
+<span class="c1"># G2      14400.0    560.0   499.17     605.99  0.0821</span>
+<span class="c1"># G3       6000.0    530.0   464.90     565.35  0.0667</span>
+</pre></div>
+</div>
+</section>
+<section id="why-each-rate-moved">
+<h2>Why each rate moved<a class="headerlink" href="#why-each-rate-moved" title="Link to this heading">¶</a></h2>
+<p>The decomposition runs per case; <code class="docutils literal notranslate"><span class="pre">to_frame()</span></code> stacks it into a tidy
+<code class="docutils literal notranslate"><span class="pre">(case,</span> <span class="pre">driver)</span></code> long table, and the percentage-point contributions sum to
+each row’s total change exactly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">d</span> <span class="o">=</span> <span class="n">indication</span><span class="o">.</span><span class="n">rate_change_decomposition</span><span class="p">()</span>
+<span class="n">d</span><span class="o">.</span><span class="n">to_frame</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;G1&quot;</span><span class="p">]</span>
+<span class="c1">#              factor  pct_point_contribution</span>
+<span class="c1"># driver</span>
+<span class="c1"># trend        1.1068                  0.1075</span>
+<span class="c1"># experience   1.0383                  0.0399</span>
+<span class="c1"># benefit      1.0000                  0.0000</span>
+<span class="c1"># demographic  1.0000                  0.0000</span>
+<span class="c1"># residual     0.9761                 -0.0257</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">contributions</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">total_factor</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="c1"># True</span>
+</pre></div>
+</div>
+</section>
+<section id="constrain-to-bookable-renewals">
+<h2>Constrain to bookable renewals<a class="headerlink" href="#constrain-to-bookable-renewals" title="Link to this heading">¶</a></h2>
+<p>Caps and floors may be per-row vectors. <code class="docutils literal notranslate"><span class="pre">capped</span></code> reflects only a binding
+cap or floor — G1’s 10% cap binds; G2 and G3 renew at the formula:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">renew</span><span class="p">(</span><span class="n">book</span><span class="p">[</span><span class="s2">&quot;current&quot;</span><span class="p">],</span> <span class="n">indication</span><span class="o">.</span><span class="n">indicated_rate</span><span class="p">(),</span>
+                  <span class="n">cap</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">book</span><span class="o">.</span><span class="n">index</span><span class="p">),</span>
+                  <span class="n">floor</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="n">action</span><span class="o">.</span><span class="n">to_frame</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="c1">#        current_rate  indicated_rate  proposed_rate  indicated_change  proposed_change  capped</span>
+<span class="c1"># group</span>
+<span class="c1"># G1            545.0        611.3669         599.50            0.1218           0.1000    True</span>
+<span class="c1"># G2            560.0        605.9872         605.99            0.0821           0.0821   False</span>
+<span class="c1"># G3            530.0        565.3475         565.35            0.0667           0.0667   False</span>
+</pre></div>
+</div>
+</section>
+<section id="the-book-as-one-evaluation">
+<h2>The book as one evaluation<a class="headerlink" href="#the-book-as-one-evaluation" title="Link to this heading">¶</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">PricingEvaluation</span></code> built from columns <em>is</em> the book. <code class="docutils literal notranslate"><span class="pre">scenario_frame</span></code>
+takes it directly, and actions can be a per-case vector, a mapping, or one
+number that broadcasts:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">evaluation</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">PricingEvaluation</span><span class="p">(</span>
+    <span class="n">loss_cost</span><span class="o">=</span><span class="n">indication</span><span class="o">.</span><span class="n">blended_loss_cost</span><span class="p">(),</span>
+    <span class="n">current_rate</span><span class="o">=</span><span class="n">book</span><span class="p">[</span><span class="s2">&quot;current&quot;</span><span class="p">],</span>
+    <span class="n">retention</span><span class="o">=</span><span class="n">retention</span><span class="p">,</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="n">book</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">],</span>
+    <span class="n">persistency</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.80</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">book</span><span class="o">.</span><span class="n">index</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">tidy</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">scenario_frame</span><span class="p">(</span><span class="n">evaluation</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;formula&quot;</span><span class="p">:</span> <span class="n">indication</span><span class="o">.</span><span class="n">indicated_rate_change</span><span class="p">(),</span>   <span class="c1"># per-case vector</span>
+    <span class="s2">&quot;issued&quot;</span><span class="p">:</span>  <span class="n">action</span><span class="o">.</span><span class="n">proposed_change</span><span class="p">,</span>               <span class="c1"># the capped actions</span>
+    <span class="s2">&quot;plan&quot;</span><span class="p">:</span>    <span class="mf">0.05</span><span class="p">,</span>                                 <span class="c1"># one number, broadcast</span>
+<span class="p">})</span>
+<span class="n">tidy</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s2">&quot;case&quot;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s2">&quot;scenario&quot;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s2">&quot;margin_ratio&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="c1"># scenario  formula  issued    plan</span>
+<span class="c1"># case</span>
+<span class="c1"># G1           0.03   0.013 -0.0288</span>
+<span class="c1"># G2           0.03   0.030  0.0037</span>
+<span class="c1"># G3           0.03   0.030  0.0163</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">formula</span></code> column is the algebra closing: at the indicated rate the
+margin ratio equals the retention’s <code class="docutils literal notranslate"><span class="pre">profit_margin</span></code> exactly (see
+<a class="reference internal" href="conventions.html#margin-and-denominators"><span class="std std-ref">margin and denominators</span></a>). The
+<code class="docutils literal notranslate"><span class="pre">issued</span></code> column prices the concession — G1’s cap costs 1.7 points of
+margin.</p>
+</section>
+<section id="one-number-for-the-meeting">
+<h2>One number for the meeting<a class="headerlink" href="#one-number-for-the-meeting" title="Link to this heading">¶</a></h2>
+<p>The closed-form uplift answers <em>“issued actions must be how much higher to
+hold the book’s 3% target?”</em> — persistency-and-exposure weighted, agreeing
+with the scalar mapping form to floating point:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rm</span><span class="o">.</span><span class="n">uplift_for_target_margin</span><span class="p">(</span><span class="n">evaluation</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">proposed_change</span><span class="p">,</span>
+                            <span class="n">target_margin</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+<span class="c1"># +0.6332%</span>
+</pre></div>
+</div>
+</section>
+<section id="the-receipts">
+<h2>The receipts<a class="headerlink" href="#the-receipts" title="Link to this heading">¶</a></h2>
+<p>The contract is pinned against row-by-row scalar loops throughout the test
+suite; on this page’s renewal, <code class="docutils literal notranslate"><span class="pre">max</span> <span class="pre">|vector</span> <span class="pre">−</span> <span class="pre">loop|</span></code> is exactly <code class="docutils literal notranslate"><span class="pre">0.0</span></code>. The
+same workflow ships as a runnable script in the repository,
+<a class="reference external" href="https://github.com/OpenActuarial/ratingmodels/blob/main/examples/vectorized_book.py"><code class="docutils literal notranslate"><span class="pre">examples/vectorized_book.py</span></code></a>,
+and the contract itself — return-type rules, broadcasting, labeled
+elementwise validation, index-alignment guards, <code class="docutils literal notranslate"><span class="pre">by=</span></code> — is specified in
+<a class="reference internal" href="conventions.html#vectorization-contract"><span class="std std-ref">conventions</span></a> and summarized in
+<a class="reference internal" href="ratingmodels.html#columns-in-columns-out"><span class="std std-ref">ratingmodels: columns in, columns out</span></a>.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="worked-example.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Example 3: claims to capital</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="worked-example-experience.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Example 1: experience to a renewal rate</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, OpenActuarial
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Example 2: pricing a book, in columns</a><ul>
+<li><a class="reference internal" href="#the-book">The book</a></li>
+<li><a class="reference internal" href="#pool-the-claim-file">Pool the claim file</a></li>
+<li><a class="reference internal" href="#experience-and-manual-rates">Experience and manual rates</a></li>
+<li><a class="reference internal" href="#the-indication">The indication</a></li>
+<li><a class="reference internal" href="#why-each-rate-moved">Why each rate moved</a></li>
+<li><a class="reference internal" href="#constrain-to-bookable-renewals">Constrain to bookable renewals</a></li>
+<li><a class="reference internal" href="#the-book-as-one-evaluation">The book as one evaluation</a></li>
+<li><a class="reference internal" href="#one-number-for-the-meeting">One number for the meeting</a></li>
+<li><a class="reference internal" href="#the-receipts">The receipts</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=c0ed705d"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    </body>
+</html>

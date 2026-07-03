@@ -67,6 +67,9 @@ rm.renew(book["current"], indication.indicated_rate(),
          cap=0.10, floor=0.0).to_frame()               # tidy renewal actions
 ```
 
+For this workflow end to end on a three-group book — pooling to book-level
+uplift — see [Example 2: pricing a book, in columns](worked-example-book.md).
+
 Validation stays row-level — one bad row fails the call and the error names
 the offending index label — and helpers that reduce *across* inputs
 (`product`, the build-up engine, `blend`, trend) raise on mismatched Series
