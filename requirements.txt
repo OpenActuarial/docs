@@ -5,11 +5,9 @@ myst-parser>=4.0
 sphinx-design>=0.6
 sphinxcontrib-mermaid>=1.0
 
-# Packages introspected by autodoc for the API reference.
-# Published on PyPI:
+# Packages introspected by autodoc for the API reference (all on PyPI).
+actuarialpy
+ratingmodels
 lossmodels
 extremeloss
 risksim
-# Not yet published — installed from source so the API reference renders:
-actuarialpy @ git+https://github.com/OpenActuarial/actuarialpy.git@main
-ratingmodels @ git+https://github.com/OpenActuarial/ratingmodels.git@main

@@ -1,4 +1,4 @@
-# A worked example: claims to capital
+# Example 3: claims to capital
 
 One block of business carried across the whole ecosystem: fit a severity body
 (`lossmodels`), diagnose and fit the tail (`extremeloss`), splice, convolve

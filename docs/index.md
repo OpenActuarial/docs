@@ -74,9 +74,10 @@ once — and `ratingmodels` builds directly on it. `lossmodels`, `extremeloss`, 
 `lossmodels` for severity splicing).
 
 The full arc is runnable end to end — see the worked examples:
-[claims to capital](worked-example.md),
-[experience to a renewal rate](worked-example-experience.md), and
-[censored payments to coverage terms](worked-example-coverage.md).
+[Example 1: experience to a renewal rate](worked-example-experience.md),
+[Example 2: pricing a book, in columns](worked-example-book.md),
+[Example 3: claims to capital](worked-example.md), and
+[Example 4: censored payments to coverage terms](worked-example-coverage.md).
 
 ## A cross-package example
 
@@ -102,6 +103,9 @@ indication.indicated_rate_change()        # blended, credibility-weighted change
 indication.rate_change_decomposition()    # attribute the change to each driver
 ```
 
+Every numeric argument above also accepts a column — the same call prices a
+whole book; see [Example 2: pricing a book, in columns](worked-example-book.md).
+
 ## Install
 
 ```bash
@@ -117,12 +121,27 @@ dependency.
 
 overview
 conventions
-worked-example
-worked-example-experience
-worked-example-coverage
+:::
+
+:::{toctree}
+:hidden:
+:caption: Packages
+:maxdepth: 1
+
 actuarialpy
 ratingmodels
 lossmodels
 extremeloss
 risksim
+:::
+
+:::{toctree}
+:hidden:
+:caption: Worked examples
+:maxdepth: 1
+
+worked-example-experience
+worked-example-book
+worked-example
+worked-example-coverage
 :::
