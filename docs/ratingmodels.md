@@ -2,11 +2,14 @@
 
 The pricing layer of the ecosystem: manual and experience rate construction,
 credibility blending, rate indication and rate-change decomposition, GLM
-relativity estimation, model evaluation (Gini and lift), and renewal
-constraints — an auditable build-up from base rate to filed rate. Depends on
-`actuarialpy` for its credibility and trend primitives. Everything is
-vectorized under one contract: the same call that rates one group rates a
-whole book of columns.
+relativity estimation with diagnostics, frequency–severity models,
+credibility-smoothed factors, out-of-sample validation (splits, calibration,
+actual-to-expected, Gini and lift), renewal constraints, and rate-dislocation
+reporting — an auditable path from base rate to filed rate, validated along
+the way. Depends on `actuarialpy` for its credibility and trend primitives
+and on `statsmodels` for GLM estimation.
+Everything is vectorized under one contract: the same call that rates one
+group rates a whole book of columns.
 
 ## Quickstart
 
@@ -108,10 +111,14 @@ Series on the shared index.
 
 `GLMRelativities` estimates rating factors jointly — correcting for the
 correlation between rating variables that one-way analysis cannot — with a
-log-link GLM fit by iteratively reweighted least squares. Poisson, gamma, and
-Tweedie variance functions; exposure as a log offset; prior weights;
-categorical predictors (base level = most populous, or set explicitly) and
-continuous covariates in the same linear predictor:
+log-link GLM. Estimation is delegated to `statsmodels.GLM`: a mature
+estimator owns the solver, convergence, covariance, and the fitted null
+model, while ratingmodels owns the actuarial layer — the design encoding
+and base-level semantics, coefficient-to-relativity conversion, prediction
+with unseen-level fallback, and the exhibits. Poisson, gamma, and Tweedie
+variance functions; exposure as a log offset for aggregate responses; prior
+weights; categorical predictors (base level = most populous, or set
+explicitly) and continuous covariates in the same linear predictor:
 
 ```python
 import ratingmodels as rm
@@ -129,35 +136,259 @@ model.relativities_["area"]     # multiplicative factors, base level = 1.0
 model.base_value_               # exp(intercept): the base rate
 model.summary()                 # coef, SE, z, relativity per term
 model.predict(new_df, exposure="member_months")
+model.to_factor_tables()        # {"area": FactorTable, ...} for the build-up
+model.results_                  # the fitted statsmodels results object
 ```
 
 Standard errors use the Pearson-estimated dispersion (quasi-likelihood — the
 robust default for pricing data, where overdispersion is the norm);
-`dispersion_`, `null_deviance_`, and a `converged_` flag are exposed
-alongside. Unseen levels at prediction time fall back to the base level.
+`dispersion_`, `null_deviance_`, `deviance_explained_`, and a `converged_`
+flag are exposed alongside. Unseen levels at prediction time fall back to the
+base level, and `to_factor_tables()` turns the fitted relativities into
+named `FactorTable` lookups with the same unknown-level behavior — the
+bridge from estimation into the build-up and renewal machinery. Anything the
+wrapper does not surface is one attribute away: `results_` is the fitted
+statsmodels object (`results_.get_influence()`,
+`results_.get_prediction(...)`, Wald tests, ...).
 
-## Model evaluation
+### Aggregate vs. rate responses
 
-A rating plan is judged on segmentation — how well predictions *order* risks.
-`gini_coefficient` is the exposure-weighted ordered-Lorenz Gini of pricing
-practice (normalized by the perfect model, so 1.0 means perfect segmentation
-and 0.0 none), and `lift_table` bands the book into equal-exposure groups by
-predicted risk:
+Exposure enters this model in one of two ways, and the difference matters
+for everything except Poisson. When the response is an **aggregate** —
+claim counts or total amounts — exposure is a log offset:
+`E[Y] = e·exp(Xβ)`, so pass `exposure="member_months"`. When the response
+is already a **rate** — pure premium, loss per unit, anything divided by
+exposure — do *not* pass `exposure`; pass it as `weights` instead, so the
+variance scales as `V(μ)/e`. The two parameterizations coincide only at
+variance power `p = 1`; for gamma and Tweedie, the weights form is the one
+consistent with a response averaged over `e` independent claims. It is
+exactly how the severity component of the
+[frequency–severity model](#frequencyseverity-models) is fit: response
+`amount/count`, weights `count`. `weights` are variance weights throughout
+(statsmodels `var_weights`): the variance of row *i* is `φ·V(μᵢ)/wᵢ`.
+
+### Diagnostics
+
+A model that produces relativities but cannot be interrogated is half a
+model. Every fitted GLM exposes its residuals and the uncertainty of every
+factor:
 
 ```python
-pred = model.predict(df, exposure="member_months")
+model.relativity_table(confidence_level=0.95)
+# (variable, level) -> coef, se, relativity, ci_low, ci_high, is_base
 
-rm.gini_coefficient(df["claims"], pred, exposure=df["member_months"])
-
-rm.lift_table(df["claims"], pred, exposure=df["member_months"], n_bands=10)
-# band | n | exposure | predicted_mean | actual_mean | lift
+model.residuals(df, kind="deviance")       # index-aligned Series
+model.residuals(df, kind="pearson")        # squares sum to pearson_chi2_
+model.residuals(df, kind="standardized")   # leverage-adjusted, ~N(0,1) scale
 ```
 
-A model that segments shows lift rising monotonically across bands; the
-Gini summarizes the same ordering in one number, comparable across books.
-Both take `by=` group labels to score every segment of a validation frame
-at once — a Series of Ginis, and per-group lift tables under a
-`(group, band)` MultiIndex.
+The relativity intervals are `exp(coef ± z·se)` on the quasi-likelihood
+standard errors — the base level is shown at 1.0 with no interval (it is the
+reference, fixed by construction, not estimated), and continuous covariates
+appear as per-unit factors. Column names for `residuals` default to those
+used at fit, so `model.residuals(validation_frame)` just works; plotting
+deviance or standardized residuals against fitted values and against each
+rating variable is the standard check that the variance function and link
+are adequate.
+
+The adapter is held to a contract: the test suite fits statsmodels
+*independently* — its own family objects, offset construction, and weights,
+on the exact design matrix `GLMRelativities` built — and asserts the
+marshaling conventions and the in-package evaluation math (residuals,
+relativity intervals, family deviance) agree across every family.
+
+There is deliberately no penalized (ridge/lasso) fit: shrinkage would
+invalidate exactly this covariance machinery. When thin levels need
+stabilizing, use [credibility smoothing](#credibility-smoothed-relativities)
+— the actuarial answer, with the uncertainty story intact. Should
+regularization at scale ever become a genuine requirement, `glum` is the
+designated engine for that job, behind this same API.
+
+## Frequency–severity models
+
+The standard pricing decomposition — `loss_per_exposure = frequency ×
+severity`, the ecosystem [convention](conventions.md) — fit as two log-link
+GLMs and composed into one pure-premium model:
+
+```python
+model = rm.FrequencySeverityModel().fit(
+    df,
+    claim_count="claim_count",
+    claim_amount="claim_amount",
+    exposure="exposure",
+    frequency_predictors=["area", "industry", "tier"],
+    severity_predictors=["industry", "tier"],   # severity thins out fast
+)
+
+model.frequency_prediction(df, exposure="exposure")   # expected counts
+model.severity_prediction(df)                         # expected cost per claim
+model.pure_premium_prediction(df, exposure="exposure")  # exactly their product
+
+model.combined_relativities()["industry"]
+# level -> frequency | severity | combined  (combined = product)
+model.base_value_        # pure premium per exposure unit at base levels
+model.to_factor_tables() # combined relativities as FactorTable lookups
+```
+
+Frequency (Poisson by default) fits on every record with exposure as a log
+offset; severity (Gamma by default) fits only on records with claims,
+weighted by claim count — the average of *k* claims carries *k* claims' worth
+of information. Because both links are logs, the pure-premium relativity of a
+level is the *product* of its frequency and severity relativities, and
+fitting the pieces separately shows *why* a level is expensive — more claims,
+larger claims, or both — which a single Tweedie fit cannot. Variables used by
+only one component pass through with the other's factor at 1.0. Each
+component is a full `GLMRelativities`, so every diagnostic above
+(`relativity_table`, `residuals`, `summary`) applies per part.
+
+Rows with positive amounts but zero counts raise (severity is undefined
+there); claims closed at zero amount are excluded from the severity fit with
+a warning and still count toward frequency.
+
+## Credibility-smoothed relativities
+
+Sparse levels produce unstable one-way relativities. The classical actuarial
+answer is neither dropping them nor generic regularization but credibility:
+shrink each level toward a complement, in proportion to the evidence behind
+it —
+
+```python
+rm.credibility_relativities(
+    df, factor="industry", response="claims", exposure="exposure",
+    method="buhlmann",          # Z estimated by empirical Bühlmann–Straub
+    prior=1.0,                  # or a mapping of current filed factors
+)
+# level -> n | exposure | response | observed | credibility | prior | relativity
+```
+
+`relativity = Z·observed + (1−Z)·prior`, per level. With
+`method="buhlmann"` (the default), `Z` comes from the empirical
+Bühlmann–Straub estimators across levels — the credibility math lives in
+`actuarialpy`, as everywhere in the ecosystem. With
+`method="limited_fluctuation"`, the square-root rule
+`Z = min(1, √(n/full_credibility))` applies against a full-credibility
+standard in response units (for claim counts, `full_credibility_standard`).
+A scalar prior of 1.0 shrinks toward "no effect"; passing the current filed
+factors as the prior shrinks toward the existing plan instead.
+
+The blunt companion for levels too thin to carry a column at all:
+
+```python
+recoded, summary = rm.collapse_sparse_levels(
+    df["industry"], exposure=df["exposure"], min_exposure=1_000,
+)
+df["industry_grouped"] = recoded    # thin levels -> "Other"
+```
+
+`summary` records which levels collapsed, so the same recode applies to
+future data.
+
+## Validation
+
+A pricing model should be judged on data it did not see, and the *shape* of
+the held-out data matters: rows of the same group are correlated, and the
+deployed model always predicts forward in time. The splits encode both
+facts, with no scikit-learn dependency:
+
+```python
+train, valid = rm.temporal_split(df, date="experience_month", cutoff="2025-01-01")
+train, valid = rm.group_split(df, group="group_id", test_fraction=0.25,
+                              weights="exposure", random_state=0)
+train, valid = rm.random_split(df, test_fraction=0.25, random_state=0)
+```
+
+`group_split` keeps every group whole on one side (scattering a group's rows
+across train and test leaks its risk level into validation); `temporal_split`
+cuts at a date for the honest out-of-time test. Each returns `(train, test)`
+with row order preserved, and raises rather than silently returning an empty
+side.
+
+### Ordering, level, and segments
+
+A rating plan is judged on segmentation — how well predictions *order* risks
+— and on calibration — whether they are *right on the level*. The four
+exhibits, all exposure-weighted:
+
+```python
+pred = model.predict(valid, exposure="exposure")
+
+rm.gini_coefficient(valid["claims"], pred, exposure=valid["exposure"])
+
+rm.lift_table(valid["claims"], pred, exposure=valid["exposure"], n_bands=10)
+# band | n | exposure | predicted_mean | actual_mean | lift
+
+rm.calibration_table(valid["claims"], pred, exposure=valid["exposure"])
+# band | n | exposure | predicted_mean | actual_mean | ae_ratio
+
+rm.actual_expected_table(valid["claims"], pred, exposure=valid["exposure"],
+                         by={"area": valid["area"], "tier": valid["tier"]})
+# (variable, level) | n | exposure | actual | expected | means | ae_ratio
+```
+
+A model that segments shows lift rising monotonically across bands; the Gini
+summarizes the same ordering in one number, comparable across books. A model
+that is calibrated shows `ae_ratio` near 1.0 in every calibration band —
+systematic drift is the signature of over-shrunk predictions — and in every
+segment of the A/E exhibit, which takes one variable, several at once
+(tidy `(variable, level)` output), or none for the overall row.
+`gini_coefficient`, `lift_table`, and `calibration_table` all take `by=`
+group labels to score every segment of a validation frame in one call.
+
+### Comparing candidates
+
+`compare_models` scores fitted GLMs side by side on one frame — pass the
+validation split for an honest comparison:
+
+```python
+rm.compare_models({"full": full_model, "no_industry": smaller_model},
+                  valid, response="claims", exposure="exposure")
+# family | n_params | converged | dispersion | deviance | null_deviance
+#   | deviance_explained | gini | ae_ratio | calibration_error
+```
+
+Deviance is family-specific (comparable within a family); `gini`,
+`ae_ratio`, and `calibration_error` compare across families. No AIC is
+reported — the standard errors are quasi-likelihood, so a true likelihood is
+not available.
+
+## Rate dislocation
+
+An average rate change hides everything operational — who takes a large
+increase, how much premium sits in each band, and what the constraints cost.
+Band the book by rate change:
+
+```python
+rm.rate_dislocation(
+    current_rate=df["current_rate"],
+    proposed_rate=df["proposed_rate"],
+    exposure=df["exposure"],
+    bands=[-0.10, -0.05, 0.0, 0.05, 0.10],
+)
+# band          | n | exposure | current_premium | proposed_premium
+#   | avg_change | exposure_share        (+ an "All" total row)
+```
+
+Bands are `(low, high]` with empty bands kept, so the exhibit shape is
+stable across runs; because the default edges include 0.0, increases and
+decreases are always separated. And quantify the gap between the indication
+and what was actually proposed — what capping left on the table, and the
+rate action still owed:
+
+```python
+rm.constraint_impact(
+    indicated_rate=df["indicated"],
+    proposed_rate=df["issued"],
+    exposure=df["exposure"],
+    current_rate=df["current_rate"],
+    by=df["segment"],           # which segments absorbed the capping
+)
+# premium_shortfall | premium_excess | n_below/above | exposure_below/above
+#   | indicated_change | realized_change | remaining_change
+```
+
+Both are pure comparisons of rate vectors, so any source of "current" and
+"proposed" works — a renewal run (`renew`), a re-rated plan, or scenario
+output.
 
 ## Pricing scenarios and margin
 
