@@ -22,8 +22,10 @@ builds on directly.
 :link-type: doc
 
 **Pricing.** Manual and experience rate build-up, credibility blending,
-rate indication and decomposition, GLM relativities and model evaluation,
-renewal constraints, and pricing scenarios with margin targets.
+rate indication and decomposition, GLM relativities with diagnostics,
+frequency–severity models, validation splits and tables, renewal
+constraints, dislocation reporting, and pricing scenarios with margin
+targets.
 :::
 
 :::{grid-item-card} lossmodels
@@ -112,8 +114,8 @@ whole book; see [Example 2: pricing a book, in columns](worked-example-book.md).
 pip install actuarialpy ratingmodels lossmodels extremeloss risksim
 ```
 
-Each package installs independently; `ratingmodels` pulls in `actuarialpy` as a
-dependency.
+Each package installs independently; `ratingmodels` pulls in `actuarialpy` and
+`statsmodels` as dependencies.
 
 :::{toctree}
 :hidden:

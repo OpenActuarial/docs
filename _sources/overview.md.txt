@@ -11,8 +11,10 @@ The OpenActuarial packages span a connected analytical workflow—from raw exper
   builds directly on these.
 - **ratingmodels** — the pricing layer: manual and experience rate build-up,
   credibility blending, rate indication and rate-change decomposition, GLM
-  relativities with model evaluation, renewal constraints, and pricing
-  scenarios with closed-form margin solves.
+  relativities with diagnostics and confidence intervals, frequency–severity
+  models, credibility-smoothed factors, validation splits and tables, renewal
+  constraints, rate-dislocation reporting, and pricing scenarios with
+  closed-form margin solves.
 - **lossmodels** — loss-distribution modeling: severity and frequency fitting
   (complete data or under deductibles and limits), model selection and
   diagnostics, and aggregate loss.
@@ -44,7 +46,8 @@ starts.
 
 Only one package requires another. `ratingmodels` depends on `actuarialpy` and
 delegates its credibility, trend, and time-value math to the core rather than
-re-implementing them. `extremeloss` can optionally pull in `lossmodels` through
+re-implementing them; it also depends on `statsmodels`, to which it delegates
+GLM estimation for the same reason. `extremeloss` can optionally pull in `lossmodels` through
 its `splice` extra for severity splicing. `lossmodels` and `risksim` have no
 internal dependencies.
 

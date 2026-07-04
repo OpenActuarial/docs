@@ -272,8 +272,10 @@ age bases, and the two-tier underwriting margin summary. <code class="docutils l
 builds directly on these.</p></li>
 <li><p><strong>ratingmodels</strong> — the pricing layer: manual and experience rate build-up,
 credibility blending, rate indication and rate-change decomposition, GLM
-relativities with model evaluation, renewal constraints, and pricing
-scenarios with closed-form margin solves.</p></li>
+relativities with diagnostics and confidence intervals, frequency–severity
+models, credibility-smoothed factors, validation splits and tables, renewal
+constraints, rate-dislocation reporting, and pricing scenarios with
+closed-form margin solves.</p></li>
 <li><p><strong>lossmodels</strong> — loss-distribution modeling: severity and frequency fitting
 (complete data or under deductibles and limits), model selection and
 diagnostics, and aggregate loss.</p></li>
@@ -303,7 +305,8 @@ starts.</p>
 <h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">¶</a></h2>
 <p>Only one package requires another. <code class="docutils literal notranslate"><span class="pre">ratingmodels</span></code> depends on <code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> and
 delegates its credibility, trend, and time-value math to the core rather than
-re-implementing them. <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> can optionally pull in <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> through
+re-implementing them; it also depends on <code class="docutils literal notranslate"><span class="pre">statsmodels</span></code>, to which it delegates
+GLM estimation for the same reason. <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> can optionally pull in <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> through
 its <code class="docutils literal notranslate"><span class="pre">splice</span></code> extra for severity splicing. <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> and <code class="docutils literal notranslate"><span class="pre">risksim</span></code> have no
 internal dependencies.</p>
 <pre  class="mermaid">

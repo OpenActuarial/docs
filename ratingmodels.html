@@ -263,11 +263,14 @@
 <h1>ratingmodels<a class="headerlink" href="#ratingmodels" title="Link to this heading">¶</a></h1>
 <p>The pricing layer of the ecosystem: manual and experience rate construction,
 credibility blending, rate indication and rate-change decomposition, GLM
-relativity estimation, model evaluation (Gini and lift), and renewal
-constraints — an auditable build-up from base rate to filed rate. Depends on
-<code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> for its credibility and trend primitives. Everything is
-vectorized under one contract: the same call that rates one group rates a
-whole book of columns.</p>
+relativity estimation with diagnostics, frequency–severity models,
+credibility-smoothed factors, out-of-sample validation (splits, calibration,
+actual-to-expected, Gini and lift), renewal constraints, and rate-dislocation
+reporting — an auditable path from base rate to filed rate, validated along
+the way. Depends on <code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code> for its credibility and trend primitives
+and on <code class="docutils literal notranslate"><span class="pre">statsmodels</span></code> for GLM estimation.
+Everything is vectorized under one contract: the same call that rates one
+group rates a whole book of columns.</p>
 <section id="quickstart">
 <h2>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading">¶</a></h2>
 <p>Blend an experience rate with a manual rate and read the indicated change:</p>
@@ -361,10 +364,14 @@ Series on the shared index.</p>
 <h2>GLM relativities<a class="headerlink" href="#glm-relativities" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">GLMRelativities</span></code> estimates rating factors jointly — correcting for the
 correlation between rating variables that one-way analysis cannot — with a
-log-link GLM fit by iteratively reweighted least squares. Poisson, gamma, and
-Tweedie variance functions; exposure as a log offset; prior weights;
-categorical predictors (base level = most populous, or set explicitly) and
-continuous covariates in the same linear predictor:</p>
+log-link GLM. Estimation is delegated to <code class="docutils literal notranslate"><span class="pre">statsmodels.GLM</span></code>: a mature
+estimator owns the solver, convergence, covariance, and the fitted null
+model, while ratingmodels owns the actuarial layer — the design encoding
+and base-level semantics, coefficient-to-relativity conversion, prediction
+with unseen-level fallback, and the exhibits. Poisson, gamma, and Tweedie
+variance functions; exposure as a log offset for aggregate responses; prior
+weights; categorical predictors (base level = most populous, or set
+explicitly) and continuous covariates in the same linear predictor:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ratingmodels</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rm</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">GLMRelativities</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;poisson&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
@@ -380,33 +387,236 @@ continuous covariates in the same linear predictor:</p>
 <span class="n">model</span><span class="o">.</span><span class="n">base_value_</span>               <span class="c1"># exp(intercept): the base rate</span>
 <span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>                 <span class="c1"># coef, SE, z, relativity per term</span>
 <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_df</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;member_months&quot;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">to_factor_tables</span><span class="p">()</span>        <span class="c1"># {&quot;area&quot;: FactorTable, ...} for the build-up</span>
+<span class="n">model</span><span class="o">.</span><span class="n">results_</span>                  <span class="c1"># the fitted statsmodels results object</span>
 </pre></div>
 </div>
 <p>Standard errors use the Pearson-estimated dispersion (quasi-likelihood — the
 robust default for pricing data, where overdispersion is the norm);
-<code class="docutils literal notranslate"><span class="pre">dispersion_</span></code>, <code class="docutils literal notranslate"><span class="pre">null_deviance_</span></code>, and a <code class="docutils literal notranslate"><span class="pre">converged_</span></code> flag are exposed
-alongside. Unseen levels at prediction time fall back to the base level.</p>
+<code class="docutils literal notranslate"><span class="pre">dispersion_</span></code>, <code class="docutils literal notranslate"><span class="pre">null_deviance_</span></code>, <code class="docutils literal notranslate"><span class="pre">deviance_explained_</span></code>, and a <code class="docutils literal notranslate"><span class="pre">converged_</span></code>
+flag are exposed alongside. Unseen levels at prediction time fall back to the
+base level, and <code class="docutils literal notranslate"><span class="pre">to_factor_tables()</span></code> turns the fitted relativities into
+named <code class="docutils literal notranslate"><span class="pre">FactorTable</span></code> lookups with the same unknown-level behavior — the
+bridge from estimation into the build-up and renewal machinery. Anything the
+wrapper does not surface is one attribute away: <code class="docutils literal notranslate"><span class="pre">results_</span></code> is the fitted
+statsmodels object (<code class="docutils literal notranslate"><span class="pre">results_.get_influence()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">results_.get_prediction(...)</span></code>, Wald tests, …).</p>
+<section id="aggregate-vs-rate-responses">
+<h3>Aggregate vs. rate responses<a class="headerlink" href="#aggregate-vs-rate-responses" title="Link to this heading">¶</a></h3>
+<p>Exposure enters this model in one of two ways, and the difference matters
+for everything except Poisson. When the response is an <strong>aggregate</strong> —
+claim counts or total amounts — exposure is a log offset:
+<code class="docutils literal notranslate"><span class="pre">E[Y]</span> <span class="pre">=</span> <span class="pre">e·exp(Xβ)</span></code>, so pass <code class="docutils literal notranslate"><span class="pre">exposure=&quot;member_months&quot;</span></code>. When the response
+is already a <strong>rate</strong> — pure premium, loss per unit, anything divided by
+exposure — do <em>not</em> pass <code class="docutils literal notranslate"><span class="pre">exposure</span></code>; pass it as <code class="docutils literal notranslate"><span class="pre">weights</span></code> instead, so the
+variance scales as <code class="docutils literal notranslate"><span class="pre">V(μ)/e</span></code>. The two parameterizations coincide only at
+variance power <code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">=</span> <span class="pre">1</span></code>; for gamma and Tweedie, the weights form is the one
+consistent with a response averaged over <code class="docutils literal notranslate"><span class="pre">e</span></code> independent claims. It is
+exactly how the severity component of the
+<a class="reference internal" href="#frequencyseverity-models">frequency–severity model</a> is fit: response
+<code class="docutils literal notranslate"><span class="pre">amount/count</span></code>, weights <code class="docutils literal notranslate"><span class="pre">count</span></code>. <code class="docutils literal notranslate"><span class="pre">weights</span></code> are variance weights throughout
+(statsmodels <code class="docutils literal notranslate"><span class="pre">var_weights</span></code>): the variance of row <em>i</em> is <code class="docutils literal notranslate"><span class="pre">φ·V(μᵢ)/wᵢ</span></code>.</p>
 </section>
-<section id="model-evaluation">
-<h2>Model evaluation<a class="headerlink" href="#model-evaluation" title="Link to this heading">¶</a></h2>
-<p>A rating plan is judged on segmentation — how well predictions <em>order</em> risks.
-<code class="docutils literal notranslate"><span class="pre">gini_coefficient</span></code> is the exposure-weighted ordered-Lorenz Gini of pricing
-practice (normalized by the perfect model, so 1.0 means perfect segmentation
-and 0.0 none), and <code class="docutils literal notranslate"><span class="pre">lift_table</span></code> bands the book into equal-exposure groups by
-predicted risk:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;member_months&quot;</span><span class="p">)</span>
+<section id="diagnostics">
+<h3>Diagnostics<a class="headerlink" href="#diagnostics" title="Link to this heading">¶</a></h3>
+<p>A model that produces relativities but cannot be interrogated is half a
+model. Every fitted GLM exposes its residuals and the uncertainty of every
+factor:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">relativity_table</span><span class="p">(</span><span class="n">confidence_level</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
+<span class="c1"># (variable, level) -&gt; coef, se, relativity, ci_low, ci_high, is_base</span>
 
-<span class="n">rm</span><span class="o">.</span><span class="n">gini_coefficient</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;claims&quot;</span><span class="p">],</span> <span class="n">pred</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;member_months&quot;</span><span class="p">])</span>
-
-<span class="n">rm</span><span class="o">.</span><span class="n">lift_table</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;claims&quot;</span><span class="p">],</span> <span class="n">pred</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;member_months&quot;</span><span class="p">],</span> <span class="n">n_bands</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<span class="c1"># band | n | exposure | predicted_mean | actual_mean | lift</span>
+<span class="n">model</span><span class="o">.</span><span class="n">residuals</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;deviance&quot;</span><span class="p">)</span>       <span class="c1"># index-aligned Series</span>
+<span class="n">model</span><span class="o">.</span><span class="n">residuals</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;pearson&quot;</span><span class="p">)</span>        <span class="c1"># squares sum to pearson_chi2_</span>
+<span class="n">model</span><span class="o">.</span><span class="n">residuals</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;standardized&quot;</span><span class="p">)</span>   <span class="c1"># leverage-adjusted, ~N(0,1) scale</span>
 </pre></div>
 </div>
-<p>A model that segments shows lift rising monotonically across bands; the
-Gini summarizes the same ordering in one number, comparable across books.
-Both take <code class="docutils literal notranslate"><span class="pre">by=</span></code> group labels to score every segment of a validation frame
-at once — a Series of Ginis, and per-group lift tables under a
-<code class="docutils literal notranslate"><span class="pre">(group,</span> <span class="pre">band)</span></code> MultiIndex.</p>
+<p>The relativity intervals are <code class="docutils literal notranslate"><span class="pre">exp(coef</span> <span class="pre">±</span> <span class="pre">z·se)</span></code> on the quasi-likelihood
+standard errors — the base level is shown at 1.0 with no interval (it is the
+reference, fixed by construction, not estimated), and continuous covariates
+appear as per-unit factors. Column names for <code class="docutils literal notranslate"><span class="pre">residuals</span></code> default to those
+used at fit, so <code class="docutils literal notranslate"><span class="pre">model.residuals(validation_frame)</span></code> just works; plotting
+deviance or standardized residuals against fitted values and against each
+rating variable is the standard check that the variance function and link
+are adequate.</p>
+<p>The adapter is held to a contract: the test suite fits statsmodels
+<em>independently</em> — its own family objects, offset construction, and weights,
+on the exact design matrix <code class="docutils literal notranslate"><span class="pre">GLMRelativities</span></code> built — and asserts the
+marshaling conventions and the in-package evaluation math (residuals,
+relativity intervals, family deviance) agree across every family.</p>
+<p>There is deliberately no penalized (ridge/lasso) fit: shrinkage would
+invalidate exactly this covariance machinery. When thin levels need
+stabilizing, use <a class="reference internal" href="#credibility-smoothed-relativities">credibility smoothing</a>
+— the actuarial answer, with the uncertainty story intact. Should
+regularization at scale ever become a genuine requirement, <code class="docutils literal notranslate"><span class="pre">glum</span></code> is the
+designated engine for that job, behind this same API.</p>
+</section>
+</section>
+<section id="frequencyseverity-models">
+<h2>Frequency–severity models<a class="headerlink" href="#frequencyseverity-models" title="Link to this heading">¶</a></h2>
+<p>The standard pricing decomposition — <code class="docutils literal notranslate"><span class="pre">loss_per_exposure</span> <span class="pre">=</span> <span class="pre">frequency</span> <span class="pre">×</span> <span class="pre">severity</span></code>, the ecosystem <a class="reference internal" href="conventions.html"><span class="std std-doc">convention</span></a> — fit as two log-link
+GLMs and composed into one pure-premium model:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">FrequencySeverityModel</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">,</span>
+    <span class="n">claim_count</span><span class="o">=</span><span class="s2">&quot;claim_count&quot;</span><span class="p">,</span>
+    <span class="n">claim_amount</span><span class="o">=</span><span class="s2">&quot;claim_amount&quot;</span><span class="p">,</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;exposure&quot;</span><span class="p">,</span>
+    <span class="n">frequency_predictors</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">,</span> <span class="s2">&quot;tier&quot;</span><span class="p">],</span>
+    <span class="n">severity_predictors</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;industry&quot;</span><span class="p">,</span> <span class="s2">&quot;tier&quot;</span><span class="p">],</span>   <span class="c1"># severity thins out fast</span>
+<span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">frequency_prediction</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;exposure&quot;</span><span class="p">)</span>   <span class="c1"># expected counts</span>
+<span class="n">model</span><span class="o">.</span><span class="n">severity_prediction</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>                         <span class="c1"># expected cost per claim</span>
+<span class="n">model</span><span class="o">.</span><span class="n">pure_premium_prediction</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;exposure&quot;</span><span class="p">)</span>  <span class="c1"># exactly their product</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">combined_relativities</span><span class="p">()[</span><span class="s2">&quot;industry&quot;</span><span class="p">]</span>
+<span class="c1"># level -&gt; frequency | severity | combined  (combined = product)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">base_value_</span>        <span class="c1"># pure premium per exposure unit at base levels</span>
+<span class="n">model</span><span class="o">.</span><span class="n">to_factor_tables</span><span class="p">()</span> <span class="c1"># combined relativities as FactorTable lookups</span>
+</pre></div>
+</div>
+<p>Frequency (Poisson by default) fits on every record with exposure as a log
+offset; severity (Gamma by default) fits only on records with claims,
+weighted by claim count — the average of <em>k</em> claims carries <em>k</em> claims’ worth
+of information. Because both links are logs, the pure-premium relativity of a
+level is the <em>product</em> of its frequency and severity relativities, and
+fitting the pieces separately shows <em>why</em> a level is expensive — more claims,
+larger claims, or both — which a single Tweedie fit cannot. Variables used by
+only one component pass through with the other’s factor at 1.0. Each
+component is a full <code class="docutils literal notranslate"><span class="pre">GLMRelativities</span></code>, so every diagnostic above
+(<code class="docutils literal notranslate"><span class="pre">relativity_table</span></code>, <code class="docutils literal notranslate"><span class="pre">residuals</span></code>, <code class="docutils literal notranslate"><span class="pre">summary</span></code>) applies per part.</p>
+<p>Rows with positive amounts but zero counts raise (severity is undefined
+there); claims closed at zero amount are excluded from the severity fit with
+a warning and still count toward frequency.</p>
+</section>
+<section id="credibility-smoothed-relativities">
+<h2>Credibility-smoothed relativities<a class="headerlink" href="#credibility-smoothed-relativities" title="Link to this heading">¶</a></h2>
+<p>Sparse levels produce unstable one-way relativities. The classical actuarial
+answer is neither dropping them nor generic regularization but credibility:
+shrink each level toward a complement, in proportion to the evidence behind
+it —</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rm</span><span class="o">.</span><span class="n">credibility_relativities</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="s2">&quot;industry&quot;</span><span class="p">,</span> <span class="n">response</span><span class="o">=</span><span class="s2">&quot;claims&quot;</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;exposure&quot;</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;buhlmann&quot;</span><span class="p">,</span>          <span class="c1"># Z estimated by empirical Bühlmann–Straub</span>
+    <span class="n">prior</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>                  <span class="c1"># or a mapping of current filed factors</span>
+<span class="p">)</span>
+<span class="c1"># level -&gt; n | exposure | response | observed | credibility | prior | relativity</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">relativity</span> <span class="pre">=</span> <span class="pre">Z·observed</span> <span class="pre">+</span> <span class="pre">(1−Z)·prior</span></code>, per level. With
+<code class="docutils literal notranslate"><span class="pre">method=&quot;buhlmann&quot;</span></code> (the default), <code class="docutils literal notranslate"><span class="pre">Z</span></code> comes from the empirical
+Bühlmann–Straub estimators across levels — the credibility math lives in
+<code class="docutils literal notranslate"><span class="pre">actuarialpy</span></code>, as everywhere in the ecosystem. With
+<code class="docutils literal notranslate"><span class="pre">method=&quot;limited_fluctuation&quot;</span></code>, the square-root rule
+<code class="docutils literal notranslate"><span class="pre">Z</span> <span class="pre">=</span> <span class="pre">min(1,</span> <span class="pre">√(n/full_credibility))</span></code> applies against a full-credibility
+standard in response units (for claim counts, <code class="docutils literal notranslate"><span class="pre">full_credibility_standard</span></code>).
+A scalar prior of 1.0 shrinks toward “no effect”; passing the current filed
+factors as the prior shrinks toward the existing plan instead.</p>
+<p>The blunt companion for levels too thin to carry a column at all:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">recoded</span><span class="p">,</span> <span class="n">summary</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">collapse_sparse_levels</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;industry&quot;</span><span class="p">],</span> <span class="n">exposure</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">],</span> <span class="n">min_exposure</span><span class="o">=</span><span class="mi">1_000</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s2">&quot;industry_grouped&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">recoded</span>    <span class="c1"># thin levels -&gt; &quot;Other&quot;</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">summary</span></code> records which levels collapsed, so the same recode applies to
+future data.</p>
+</section>
+<section id="validation">
+<h2>Validation<a class="headerlink" href="#validation" title="Link to this heading">¶</a></h2>
+<p>A pricing model should be judged on data it did not see, and the <em>shape</em> of
+the held-out data matters: rows of the same group are correlated, and the
+deployed model always predicts forward in time. The splits encode both
+facts, with no scikit-learn dependency:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">train</span><span class="p">,</span> <span class="n">valid</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">temporal_split</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s2">&quot;experience_month&quot;</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="s2">&quot;2025-01-01&quot;</span><span class="p">)</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">valid</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">group_split</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;group_id&quot;</span><span class="p">,</span> <span class="n">test_fraction</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
+                              <span class="n">weights</span><span class="o">=</span><span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">valid</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">random_split</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">test_fraction</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">group_split</span></code> keeps every group whole on one side (scattering a group’s rows
+across train and test leaks its risk level into validation); <code class="docutils literal notranslate"><span class="pre">temporal_split</span></code>
+cuts at a date for the honest out-of-time test. Each returns <code class="docutils literal notranslate"><span class="pre">(train,</span> <span class="pre">test)</span></code>
+with row order preserved, and raises rather than silently returning an empty
+side.</p>
+<section id="ordering-level-and-segments">
+<h3>Ordering, level, and segments<a class="headerlink" href="#ordering-level-and-segments" title="Link to this heading">¶</a></h3>
+<p>A rating plan is judged on segmentation — how well predictions <em>order</em> risks
+— and on calibration — whether they are <em>right on the level</em>. The four
+exhibits, all exposure-weighted:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">valid</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;exposure&quot;</span><span class="p">)</span>
+
+<span class="n">rm</span><span class="o">.</span><span class="n">gini_coefficient</span><span class="p">(</span><span class="n">valid</span><span class="p">[</span><span class="s2">&quot;claims&quot;</span><span class="p">],</span> <span class="n">pred</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">valid</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">])</span>
+
+<span class="n">rm</span><span class="o">.</span><span class="n">lift_table</span><span class="p">(</span><span class="n">valid</span><span class="p">[</span><span class="s2">&quot;claims&quot;</span><span class="p">],</span> <span class="n">pred</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">valid</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">],</span> <span class="n">n_bands</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="c1"># band | n | exposure | predicted_mean | actual_mean | lift</span>
+
+<span class="n">rm</span><span class="o">.</span><span class="n">calibration_table</span><span class="p">(</span><span class="n">valid</span><span class="p">[</span><span class="s2">&quot;claims&quot;</span><span class="p">],</span> <span class="n">pred</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">valid</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">])</span>
+<span class="c1"># band | n | exposure | predicted_mean | actual_mean | ae_ratio</span>
+
+<span class="n">rm</span><span class="o">.</span><span class="n">actual_expected_table</span><span class="p">(</span><span class="n">valid</span><span class="p">[</span><span class="s2">&quot;claims&quot;</span><span class="p">],</span> <span class="n">pred</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">valid</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">],</span>
+                         <span class="n">by</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="n">valid</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">],</span> <span class="s2">&quot;tier&quot;</span><span class="p">:</span> <span class="n">valid</span><span class="p">[</span><span class="s2">&quot;tier&quot;</span><span class="p">]})</span>
+<span class="c1"># (variable, level) | n | exposure | actual | expected | means | ae_ratio</span>
+</pre></div>
+</div>
+<p>A model that segments shows lift rising monotonically across bands; the Gini
+summarizes the same ordering in one number, comparable across books. A model
+that is calibrated shows <code class="docutils literal notranslate"><span class="pre">ae_ratio</span></code> near 1.0 in every calibration band —
+systematic drift is the signature of over-shrunk predictions — and in every
+segment of the A/E exhibit, which takes one variable, several at once
+(tidy <code class="docutils literal notranslate"><span class="pre">(variable,</span> <span class="pre">level)</span></code> output), or none for the overall row.
+<code class="docutils literal notranslate"><span class="pre">gini_coefficient</span></code>, <code class="docutils literal notranslate"><span class="pre">lift_table</span></code>, and <code class="docutils literal notranslate"><span class="pre">calibration_table</span></code> all take <code class="docutils literal notranslate"><span class="pre">by=</span></code>
+group labels to score every segment of a validation frame in one call.</p>
+</section>
+<section id="comparing-candidates">
+<h3>Comparing candidates<a class="headerlink" href="#comparing-candidates" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">compare_models</span></code> scores fitted GLMs side by side on one frame — pass the
+validation split for an honest comparison:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rm</span><span class="o">.</span><span class="n">compare_models</span><span class="p">({</span><span class="s2">&quot;full&quot;</span><span class="p">:</span> <span class="n">full_model</span><span class="p">,</span> <span class="s2">&quot;no_industry&quot;</span><span class="p">:</span> <span class="n">smaller_model</span><span class="p">},</span>
+                  <span class="n">valid</span><span class="p">,</span> <span class="n">response</span><span class="o">=</span><span class="s2">&quot;claims&quot;</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;exposure&quot;</span><span class="p">)</span>
+<span class="c1"># family | n_params | converged | dispersion | deviance | null_deviance</span>
+<span class="c1">#   | deviance_explained | gini | ae_ratio | calibration_error</span>
+</pre></div>
+</div>
+<p>Deviance is family-specific (comparable within a family); <code class="docutils literal notranslate"><span class="pre">gini</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ae_ratio</span></code>, and <code class="docutils literal notranslate"><span class="pre">calibration_error</span></code> compare across families. No AIC is
+reported — the standard errors are quasi-likelihood, so a true likelihood is
+not available.</p>
+</section>
+</section>
+<section id="rate-dislocation">
+<h2>Rate dislocation<a class="headerlink" href="#rate-dislocation" title="Link to this heading">¶</a></h2>
+<p>An average rate change hides everything operational — who takes a large
+increase, how much premium sits in each band, and what the constraints cost.
+Band the book by rate change:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rm</span><span class="o">.</span><span class="n">rate_dislocation</span><span class="p">(</span>
+    <span class="n">current_rate</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;current_rate&quot;</span><span class="p">],</span>
+    <span class="n">proposed_rate</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;proposed_rate&quot;</span><span class="p">],</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">],</span>
+    <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">0.10</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.10</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="c1"># band          | n | exposure | current_premium | proposed_premium</span>
+<span class="c1">#   | avg_change | exposure_share        (+ an &quot;All&quot; total row)</span>
+</pre></div>
+</div>
+<p>Bands are <code class="docutils literal notranslate"><span class="pre">(low,</span> <span class="pre">high]</span></code> with empty bands kept, so the exhibit shape is
+stable across runs; because the default edges include 0.0, increases and
+decreases are always separated. And quantify the gap between the indication
+and what was actually proposed — what capping left on the table, and the
+rate action still owed:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rm</span><span class="o">.</span><span class="n">constraint_impact</span><span class="p">(</span>
+    <span class="n">indicated_rate</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;indicated&quot;</span><span class="p">],</span>
+    <span class="n">proposed_rate</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;issued&quot;</span><span class="p">],</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">],</span>
+    <span class="n">current_rate</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;current_rate&quot;</span><span class="p">],</span>
+    <span class="n">by</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;segment&quot;</span><span class="p">],</span>           <span class="c1"># which segments absorbed the capping</span>
+<span class="p">)</span>
+<span class="c1"># premium_shortfall | premium_excess | n_below/above | exposure_below/above</span>
+<span class="c1">#   | indicated_change | realized_change | remaining_change</span>
+</pre></div>
+</div>
+<p>Both are pure comparisons of rate vectors, so any source of “current” and
+“proposed” works — a renewal run (<code class="docutils literal notranslate"><span class="pre">renew</span></code>), a re-rated plan, or scenario
+output.</p>
 </section>
 <section id="pricing-scenarios-and-margin">
 <h2>Pricing scenarios and margin<a class="headerlink" href="#pricing-scenarios-and-margin" title="Link to this heading">¶</a></h2>
@@ -627,14 +837,14 @@ member-month); <code class="docutils literal notranslate"><span class="pre">expo
 <dt class="sig sig-object py" id="ratingmodels.GLMRelativities">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GLMRelativities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">family</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'poisson'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_power</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>GLM (log-link) relativity estimator fit by IRLS.</p>
+<p>GLM (log-link) relativity estimator, fit via statsmodels.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>family</strong> (<em>{&quot;poisson&quot;</em><em>, </em><em>&quot;gamma&quot;</em><em>, </em><em>&quot;tweedie&quot;}</em>) – Response distribution. <code class="docutils literal notranslate"><span class="pre">&quot;tweedie&quot;</span></code> requires <code class="docutils literal notranslate"><span class="pre">var_power</span></code> in (1, 2).</p></li>
 <li><p><strong>var_power</strong> (<em>float</em><em>, </em><em>optional</em>) – Tweedie variance power <span class="math notranslate nohighlight">\(p\)</span> in <span class="math notranslate nohighlight">\(V(\mu)=\mu^p\)</span>.</p></li>
-<li><p><strong>max_iter</strong> (<em>int</em>) – Maximum IRLS iterations.</p></li>
-<li><p><strong>tol</strong> (<em>float</em>) – Convergence tolerance on the relative change in deviance.</p></li>
+<li><p><strong>max_iter</strong> (<em>int</em>) – Maximum solver iterations (passed to <code class="docutils literal notranslate"><span class="pre">statsmodels</span></code>).</p></li>
+<li><p><strong>tol</strong> (<em>float</em>) – Solver convergence tolerance (passed to <code class="docutils literal notranslate"><span class="pre">statsmodels</span></code>).</p></li>
 </ul>
 </dd>
 </dl>
@@ -672,9 +882,21 @@ member-month); <code class="docutils literal notranslate"><span class="pre">expo
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.results_">
+<span class="sig-name descname"><span class="pre">results_</span></span><a class="headerlink" href="#ratingmodels.GLMRelativities.results_" title="Link to this definition">¶</a></dt>
+<dd><p>The underlying fitted results object – the common actuarial outputs
+live on this class, but nothing statistical is walled off.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>statsmodels GLMResults</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="ratingmodels.GLMRelativities.n_iter_">
 <span class="sig-name descname"><span class="pre">n_iter_</span></span><a class="headerlink" href="#ratingmodels.GLMRelativities.n_iter_" title="Link to this definition">¶</a></dt>
-<dd><p>IRLS iterations used.</p>
+<dd><p>Solver iterations used.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><em>int</em></p>
@@ -693,15 +915,35 @@ member-month); <code class="docutils literal notranslate"><span class="pre">expo
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.deviance_explained_">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">deviance_explained_</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#ratingmodels.GLMRelativities.deviance_explained_" title="Link to this definition">¶</a></dt>
+<dd><p>Proportion of null deviance explained, <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">-</span> <span class="pre">deviance/null_deviance</span></code>.</p>
+<p>The GLM analogue of <span class="math notranslate nohighlight">\(R^2\)</span>: 0 means the predictors add nothing
+over the intercept(+offset)-only model, 1 means a saturated fit.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="ratingmodels.GLMRelativities.fit">
 <span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">object</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuous</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.relativity.GLMRelativities"><span class="pre">GLMRelativities</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.fit" title="Link to this definition">¶</a></dt>
 <dd><p>Fit relativities for <code class="docutils literal notranslate"><span class="pre">predictors</span></code> against <code class="docutils literal notranslate"><span class="pre">response</span></code>.</p>
-<p><code class="docutils literal notranslate"><span class="pre">exposure</span></code> enters as a log offset (the natural choice for counts and
-pure premium). An explicit <code class="docutils literal notranslate"><span class="pre">offset</span></code> column (already on the log scale)
-and prior <code class="docutils literal notranslate"><span class="pre">weights</span></code> may also be supplied. <code class="docutils literal notranslate"><span class="pre">base_levels</span></code> maps a
-predictor to its reference level (relativity 1.0); unspecified
-predictors use their most populous level as the base.</p>
+<p><strong>Aggregate vs. rate responses.</strong> <code class="docutils literal notranslate"><span class="pre">exposure</span></code> enters as a log
+offset, which is correct when the response is an <em>aggregate</em> – claim
+counts or total amounts, <span class="math notranslate nohighlight">\(E[Y] = e\,\exp(X\beta)\)</span>. When the
+response is already a <em>rate</em> (divided by exposure: pure premium,
+loss per unit), do <strong>not</strong> pass <code class="docutils literal notranslate"><span class="pre">exposure</span></code>; pass it as
+<code class="docutils literal notranslate"><span class="pre">weights</span></code> instead, so the variance scales as
+<span class="math notranslate nohighlight">\(V(\mu)/e\)</span>. The two parameterizations coincide only for
+Poisson (<span class="math notranslate nohighlight">\(p=1\)</span>); for Gamma and Tweedie the weights form is the
+one consistent with a response averaged over <span class="math notranslate nohighlight">\(e\)</span> independent
+claims (it is exactly how the severity model inside
+<a class="reference internal" href="#ratingmodels.FrequencySeverityModel" title="ratingmodels.FrequencySeverityModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">FrequencySeverityModel</span></code></a> is fit).</p>
+<p>An explicit <code class="docutils literal notranslate"><span class="pre">offset</span></code> column (already on the log scale) may also be
+supplied. <code class="docutils literal notranslate"><span class="pre">weights</span></code> are <em>variance</em> weights (statsmodels
+<code class="docutils literal notranslate"><span class="pre">var_weights</span></code>): the variance of row <span class="math notranslate nohighlight">\(i\)</span> is
+<span class="math notranslate nohighlight">\(\phi V(\mu_i)/w_i\)</span>. <code class="docutils literal notranslate"><span class="pre">base_levels</span></code> maps a predictor to its
+reference level (relativity 1.0); unspecified predictors use their
+most populous level as the base.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -714,6 +956,66 @@ column already on the log scale.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.relativity_table">
+<span class="sig-name descname"><span class="pre">relativity_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">confidence_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.95</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.relativity_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.relativity_table" title="Link to this definition">¶</a></dt>
+<dd><p>Every fitted relativity with its confidence interval, in one table.</p>
+<p>The interval is computed on the coefficient scale and exponentiated:
+<span class="math notranslate nohighlight">\(\exp(\hat\beta \pm z_{\alpha}\,\mathrm{se})\)</span>, using the
+quasi-likelihood standard errors (Pearson dispersion). Base levels
+appear with relativity 1.0 and no interval – the reference is fixed
+by construction, not estimated. Continuous covariates appear under
+level <code class="docutils literal notranslate"><span class="pre">&quot;(per</span> <span class="pre">+1)&quot;</span></code>: the multiplicative effect of a one-unit
+increase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Indexed by <code class="docutils literal notranslate"><span class="pre">(variable,</span> <span class="pre">level)</span></code> with columns <code class="docutils literal notranslate"><span class="pre">coef</span></code>, <code class="docutils literal notranslate"><span class="pre">se</span></code>,
+<code class="docutils literal notranslate"><span class="pre">relativity</span></code>, <code class="docutils literal notranslate"><span class="pre">ci_low</span></code>, <code class="docutils literal notranslate"><span class="pre">ci_high</span></code>, <code class="docutils literal notranslate"><span class="pre">is_base</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.residuals">
+<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'deviance'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">_UNSET</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">_UNSET</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">_UNSET</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.residuals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.residuals" title="Link to this definition">¶</a></dt>
+<dd><p>Per-row residuals on <code class="docutils literal notranslate"><span class="pre">data</span></code>, as a Series aligned to its index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataFrame</em>) – Rows to evaluate – typically the training frame, but any frame
+with the model’s columns works (e.g. a validation split).</p></li>
+<li><p><strong>kind</strong> (<em>{&quot;deviance&quot;</em><em>, </em><em>&quot;pearson&quot;</em><em>, </em><em>&quot;standardized&quot;</em><em>, </em><em>&quot;response&quot;}</em>) – <ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;response&quot;</span></code> – raw <span class="math notranslate nohighlight">\(y - \hat\mu\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;pearson&quot;</span></code> – <span class="math notranslate nohighlight">\((y-\hat\mu)\sqrt{w}/\sqrt{V(\hat\mu)}\)</span>;
+the squared Pearson residuals sum to <code class="docutils literal notranslate"><span class="pre">pearson_chi2_</span></code> on the
+training data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;deviance&quot;</span></code> – <span class="math notranslate nohighlight">\(\mathrm{sign}(y-\hat\mu)\sqrt{w\,d_i}\)</span>;
+the squared deviance residuals sum to <code class="docutils literal notranslate"><span class="pre">deviance_</span></code> on the
+training data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;standardized&quot;</span></code> – Pearson scaled by
+<span class="math notranslate nohighlight">\(\sqrt{\hat\phi\,(1-h_i)}\)</span> with <span class="math notranslate nohighlight">\(h_i\)</span> the IRLS hat
+value, so values beyond <span class="math notranslate nohighlight">\(\pm 2\)</span> flag unusual rows on a
+common scale. Leverage is exact on the training data (on new
+data <span class="math notranslate nohighlight">\(h_i\)</span> is the same formula, not a true leverage).</p></li>
+</ul>
+</p></li>
+<li><p><strong>response</strong> (<em>str</em><em>, </em><em>optional</em>) – Column names; each defaults to the column used in <a class="reference internal" href="#ratingmodels.GLMRelativities.fit" title="ratingmodels.GLMRelativities.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>.</p></li>
+<li><p><strong>exposure</strong> (<em>str</em><em>, </em><em>optional</em>) – Column names; each defaults to the column used in <a class="reference internal" href="#ratingmodels.GLMRelativities.fit" title="ratingmodels.GLMRelativities.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>.</p></li>
+<li><p><strong>offset</strong> (<em>str</em><em>, </em><em>optional</em>) – Column names; each defaults to the column used in <a class="reference internal" href="#ratingmodels.GLMRelativities.fit" title="ratingmodels.GLMRelativities.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>.</p></li>
+<li><p><strong>weights</strong> (<em>str</em><em>, </em><em>optional</em>) – Column names; each defaults to the column used in <a class="reference internal" href="#ratingmodels.GLMRelativities.fit" title="ratingmodels.GLMRelativities.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Plotting deviance or standardized residuals against fitted values and
+against each rating variable is the standard check that the variance
+function and link are adequate; structure in these plots means the
+relativities are absorbing the wrong shape.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="ratingmodels.GLMRelativities.summary">
 <span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.summary" title="Link to this definition">¶</a></dt>
 <dd><p>Coefficient table: estimate, quasi-likelihood SE, z, relativity.</p>
@@ -722,6 +1024,244 @@ column already on the log scale.</p>
 where overdispersion is the norm.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.to_factor_tables">
+<span class="sig-name descname"><span class="pre">to_factor_tables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.to_factor_tables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.to_factor_tables" title="Link to this definition">¶</a></dt>
+<dd><p>The fitted categorical relativities as <a class="reference internal" href="#ratingmodels.FactorTable" title="ratingmodels.FactorTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">FactorTable</span></code></a> objects.</p>
+<p>The bridge from estimation to application: each rating variable
+becomes a named lookup that plugs directly into the build-up and
+renewal machinery, with <code class="docutils literal notranslate"><span class="pre">default=1.0</span></code> for unknown levels –
+matching how <a class="reference internal" href="#ratingmodels.GLMRelativities.predict" title="ratingmodels.GLMRelativities.predict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predict()</span></code></a> treats levels unseen at fit time.
+Continuous covariates have no level-&gt;factor form and are not
+included; read their per-unit effect from <a class="reference internal" href="#ratingmodels.GLMRelativities.relativity_table" title="ratingmodels.GLMRelativities.relativity_table"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relativity_table()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>One table per categorical predictor, keyed by variable name.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>dict</em> of str -&gt; FactorTable</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.FrequencySeverityModel">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FrequencySeverityModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequency:</span> <span class="pre">~ratingmodels.relativity.GLMRelativities</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">severity:</span> <span class="pre">~ratingmodels.relativity.GLMRelativities</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/freqsev.html#FrequencySeverityModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FrequencySeverityModel" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A pure-premium model composed of a frequency GLM and a severity GLM.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>frequency</strong> (<a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.GLMRelativities"><em>GLMRelativities</em></a><em>, </em><em>optional</em>) – Unfitted component models. Default <code class="docutils literal notranslate"><span class="pre">family=&quot;poisson&quot;</span></code> for frequency
+and <code class="docutils literal notranslate"><span class="pre">family=&quot;gamma&quot;</span></code> for severity – the classical pairing.</p></li>
+<li><p><strong>severity</strong> (<a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.GLMRelativities"><em>GLMRelativities</em></a><em>, </em><em>optional</em>) – Unfitted component models. Default <code class="docutils literal notranslate"><span class="pre">family=&quot;poisson&quot;</span></code> for frequency
+and <code class="docutils literal notranslate"><span class="pre">family=&quot;gamma&quot;</span></code> for severity – the classical pairing.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">frequency,</span> <span class="pre">severity</span></span></dt>
+<dd><p>The fitted component models (all their diagnostics –
+<code class="docutils literal notranslate"><span class="pre">relativity_table</span></code>, <code class="docutils literal notranslate"><span class="pre">residuals</span></code>, <code class="docutils literal notranslate"><span class="pre">summary</span></code> – apply per part).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.GLMRelativities"><em>GLMRelativities</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ratingmodels.FrequencySeverityModel.base_value_">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_value_</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#ratingmodels.FrequencySeverityModel.base_value_" title="Link to this definition">¶</a></dt>
+<dd><p>Pure premium per exposure unit at base levels.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.FrequencySeverityModel.combined_relativities">
+<span class="sig-name descname"><span class="pre">combined_relativities</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/ratingmodels/freqsev.html#FrequencySeverityModel.combined_relativities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FrequencySeverityModel.combined_relativities" title="Link to this definition">¶</a></dt>
+<dd><p>Per-variable pure-premium relativities: frequency x severity.</p>
+<p>Variables appearing in only one component contribute that component’s
+relativities unchanged (the other’s factor is 1.0); levels missing
+from a component take that component’s base, 1.0 – matching how its
+<code class="docutils literal notranslate"><span class="pre">predict</span></code> treats unseen levels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Per variable, indexed by level, with columns <code class="docutils literal notranslate"><span class="pre">frequency</span></code>,
+<code class="docutils literal notranslate"><span class="pre">severity</span></code>, <code class="docutils literal notranslate"><span class="pre">combined</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>dict</em> of str -&gt; pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.FrequencySeverityModel.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">claim_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">claim_amount</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency_predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">severity_predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency_continuous</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">severity_continuous</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">object</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.FrequencySeverityModel" title="ratingmodels.freqsev.FrequencySeverityModel"><span class="pre">FrequencySeverityModel</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/freqsev.html#FrequencySeverityModel.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FrequencySeverityModel.fit" title="Link to this definition">¶</a></dt>
+<dd><p>Fit both components from one claims frame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataFrame</em>) – One row per risk/cell with total <code class="docutils literal notranslate"><span class="pre">claim_count</span></code> and total
+<code class="docutils literal notranslate"><span class="pre">claim_amount</span></code> over the period.</p></li>
+<li><p><strong>claim_count</strong> (<em>str</em>) – Count and aggregate amount columns.</p></li>
+<li><p><strong>claim_amount</strong> (<em>str</em>) – Count and aggregate amount columns.</p></li>
+<li><p><strong>exposure</strong> (<em>str</em><em>, </em><em>optional</em>) – Exposure column; enters the frequency model as a log offset.</p></li>
+<li><p><strong>frequency_predictors</strong> (<em>sequence</em><em> of </em><em>str</em>) – Categorical rating variables per component. Severity defaults to
+the frequency list – pass an explicit (possibly shorter) list
+when severity supports fewer variables, which is common: severity
+fits on claims only and thins out fast.</p></li>
+<li><p><strong>severity_predictors</strong> (<em>sequence</em><em> of </em><em>str</em>) – Categorical rating variables per component. Severity defaults to
+the frequency list – pass an explicit (possibly shorter) list
+when severity supports fewer variables, which is common: severity
+fits on claims only and thins out fast.</p></li>
+<li><p><strong>frequency_continuous</strong> (<em>sequence</em><em> of </em><em>str</em>) – Continuous covariates per component (severity defaults to the
+frequency list).</p></li>
+<li><p><strong>severity_continuous</strong> (<em>sequence</em><em> of </em><em>str</em>) – Continuous covariates per component (severity defaults to the
+frequency list).</p></li>
+<li><p><strong>base_levels</strong> (<em>mapping</em><em>, </em><em>optional</em>) – Predictor -&gt; reference level, shared by both components.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Severity is fit on rows with <code class="docutils literal notranslate"><span class="pre">claim_count</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> <strong>and</strong>
+<code class="docutils literal notranslate"><span class="pre">claim_amount</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, with response <code class="docutils literal notranslate"><span class="pre">claim_amount</span> <span class="pre">/</span> <span class="pre">claim_count</span></code>
+and prior weight <code class="docutils literal notranslate"><span class="pre">claim_count</span></code>. Rows with claims closed at zero
+amount still count toward frequency; if there are many of them,
+consider whether a zero-mass component belongs in the model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.FrequencySeverityModel.frequency_prediction">
+<span class="sig-name descname"><span class="pre">frequency_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/ratingmodels/freqsev.html#FrequencySeverityModel.frequency_prediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FrequencySeverityModel.frequency_prediction" title="Link to this definition">¶</a></dt>
+<dd><p>Expected claim counts (with <code class="docutils literal notranslate"><span class="pre">exposure</span></code>) or claim rate per unit.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.FrequencySeverityModel.pure_premium_prediction">
+<span class="sig-name descname"><span class="pre">pure_premium_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/ratingmodels/freqsev.html#FrequencySeverityModel.pure_premium_prediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FrequencySeverityModel.pure_premium_prediction" title="Link to this definition">¶</a></dt>
+<dd><p>Expected loss: total (with <code class="docutils literal notranslate"><span class="pre">exposure</span></code>) or per exposure unit.</p>
+<p>Exactly <code class="docutils literal notranslate"><span class="pre">frequency_prediction(data,</span> <span class="pre">exposure)</span> <span class="pre">*</span>
+<span class="pre">severity_prediction(data)</span></code> – the frequency x severity identity.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.FrequencySeverityModel.severity_prediction">
+<span class="sig-name descname"><span class="pre">severity_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/ratingmodels/freqsev.html#FrequencySeverityModel.severity_prediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FrequencySeverityModel.severity_prediction" title="Link to this definition">¶</a></dt>
+<dd><p>Expected cost per claim.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.FrequencySeverityModel.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/freqsev.html#FrequencySeverityModel.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FrequencySeverityModel.summary" title="Link to this definition">¶</a></dt>
+<dd><p>Both component coefficient tables, stacked under a model key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.FrequencySeverityModel.to_factor_tables">
+<span class="sig-name descname"><span class="pre">to_factor_tables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/ratingmodels/freqsev.html#FrequencySeverityModel.to_factor_tables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FrequencySeverityModel.to_factor_tables" title="Link to this definition">¶</a></dt>
+<dd><p>Combined pure-premium relativities as <a class="reference internal" href="#ratingmodels.FactorTable" title="ratingmodels.FactorTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">FactorTable</span></code></a> objects.</p>
+<p>One table per variable, built from the <code class="docutils literal notranslate"><span class="pre">combined</span></code> column of
+<a class="reference internal" href="#ratingmodels.FrequencySeverityModel.combined_relativities" title="ratingmodels.FrequencySeverityModel.combined_relativities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">combined_relativities()</span></code></a> (frequency x severity) with
+<code class="docutils literal notranslate"><span class="pre">default=1.0</span></code> for unknown levels – the pure-premium plan you
+would actually apply, ready for the build-up and renewal machinery.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.credibility_relativities">
+<span class="sig-name descname"><span class="pre">credibility_relativities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'buhlmann'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_credibility</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#credibility_relativities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.credibility_relativities" title="Link to this definition">¶</a></dt>
+<dd><p>One-way relativities shrunk toward a prior by credibility, per level.</p>
+<p>Sparse levels produce unstable observed relativities; the classical
+actuarial answer is not to drop them or regularize generically but to
+credibility-weight them against a complement:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\text{relativity}_\ell = Z_\ell \cdot \text{observed}_\ell
++ (1 - Z_\ell) \cdot \text{prior}_\ell .\]</div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataFrame</em>) – One row per observation.</p></li>
+<li><p><strong>factor</strong> (<em>str</em>) – The rating variable to smooth and the response column.</p></li>
+<li><p><strong>response</strong> (<em>str</em>) – The rating variable to smooth and the response column.</p></li>
+<li><p><strong>exposure</strong> (<em>str</em><em>, </em><em>optional</em>) – Exposure column. Level weights and the observed relativities are
+exposure-weighted when given; otherwise each row has weight 1.</p></li>
+<li><p><strong>prior</strong> (<em>float</em><em>, </em><em>mapping</em><em>, or </em><em>Series</em>) – The complement of credibility <em>on the relativity scale</em>. The default
+1.0 shrinks toward “no effect”; a mapping/Series (e.g. the current
+filed factors) shrinks each level toward its existing relativity.
+Levels missing from a mapping fall back to 1.0.</p></li>
+<li><p><strong>method</strong> (<em>{&quot;buhlmann&quot;</em><em>, </em><em>&quot;limited_fluctuation&quot;}</em>) – <p>How <span class="math notranslate nohighlight">\(Z_\ell\)</span> is estimated:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;buhlmann&quot;</span></code> (default) – empirical Bühlmann-Straub across the
+levels of <code class="docutils literal notranslate"><span class="pre">factor</span></code> (each row is one observation of its level),
+via <a class="reference internal" href="#ratingmodels.buhlmann_straub" title="ratingmodels.buhlmann_straub"><code class="xref py py-func docutils literal notranslate"><span class="pre">ratingmodels.buhlmann_straub()</span></code></a> /
+<a class="reference internal" href="actuarialpy.html#actuarialpy.BuhlmannStraub" title="actuarialpy.BuhlmannStraub"><code class="xref py py-class docutils literal notranslate"><span class="pre">actuarialpy.BuhlmannStraub</span></code></a>. Greatest-accuracy credibility:
+<span class="math notranslate nohighlight">\(Z = w/(w + k)\)</span> with <span class="math notranslate nohighlight">\(k\)</span> estimated from the data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;limited_fluctuation&quot;</span></code> – the square-root rule
+<span class="math notranslate nohighlight">\(Z = \min(1, \sqrt{n_\ell / n_{\text{full}}})\)</span> where
+<span class="math notranslate nohighlight">\(n_\ell\)</span> is the level’s total <code class="docutils literal notranslate"><span class="pre">response</span></code> and
+<code class="docutils literal notranslate"><span class="pre">full_credibility</span></code> is the full-credibility standard in the same
+units (for claim counts, e.g.
+<a class="reference internal" href="#ratingmodels.full_credibility_standard" title="ratingmodels.full_credibility_standard"><code class="xref py py-func docutils literal notranslate"><span class="pre">ratingmodels.full_credibility_standard()</span></code></a>).</p></li>
+</ul>
+</p></li>
+<li><p><strong>full_credibility</strong> (<em>float</em><em>, </em><em>optional</em>) – Required when <code class="docutils literal notranslate"><span class="pre">method=&quot;limited_fluctuation&quot;</span></code>.</p></li>
+<li><p><strong>base_level</strong> (<em>optional</em>) – When given, the <code class="docutils literal notranslate"><span class="pre">observed</span></code> and <code class="docutils literal notranslate"><span class="pre">relativity</span></code> columns are each
+rebased so this level equals 1.0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Indexed by level with columns <code class="docutils literal notranslate"><span class="pre">n</span></code>, <code class="docutils literal notranslate"><span class="pre">exposure</span></code>, <code class="docutils literal notranslate"><span class="pre">response</span></code>,
+<code class="docutils literal notranslate"><span class="pre">observed</span></code>, <code class="docutils literal notranslate"><span class="pre">credibility</span></code>, <code class="docutils literal notranslate"><span class="pre">prior</span></code>, <code class="docutils literal notranslate"><span class="pre">relativity</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>With the default scalar prior of 1.0, the Bühlmann-Straub form is exactly
+the credibility-weighted mean divided by the collective mean: shrinking
+the relativity toward 1 and shrinking the level mean toward the overall
+mean are the same operation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.collapse_sparse_levels">
+<span class="sig-name descname"><span class="pre">collapse_sparse_levels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">levels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Other'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/relativity.html#collapse_sparse_levels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.collapse_sparse_levels" title="Link to this definition">¶</a></dt>
+<dd><p>Recode levels below an exposure or count threshold into one bucket.</p>
+<p>The blunt companion to <a class="reference internal" href="#ratingmodels.credibility_relativities" title="ratingmodels.credibility_relativities"><code class="xref py py-func docutils literal notranslate"><span class="pre">credibility_relativities()</span></code></a>: rather than
+shrinking a thin level’s relativity, fold the level into <code class="docutils literal notranslate"><span class="pre">other_label</span></code>
+before fitting, so the design matrix never carries columns the data
+cannot support.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>levels</strong> (<em>array-like</em>) – The categorical column (Series in, Series out on the same index).</p></li>
+<li><p><strong>exposure</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Aligned exposure; level totals are sums of this when given, row
+counts otherwise.</p></li>
+<li><p><strong>min_exposure</strong> (<em>float / int</em><em>, </em><em>optional</em>) – Keep a level only if its total exposure is at least <code class="docutils literal notranslate"><span class="pre">min_exposure</span></code>
+and its row count at least <code class="docutils literal notranslate"><span class="pre">min_n</span></code>. At least one must be given.</p></li>
+<li><p><strong>min_n</strong> (<em>float / int</em><em>, </em><em>optional</em>) – Keep a level only if its total exposure is at least <code class="docutils literal notranslate"><span class="pre">min_exposure</span></code>
+and its row count at least <code class="docutils literal notranslate"><span class="pre">min_n</span></code>. At least one must be given.</p></li>
+<li><p><strong>other_label</strong> – Label assigned to collapsed levels. Must not already be a kept level.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">recoded</span></code> – the recoded labels (Series if <code class="docutils literal notranslate"><span class="pre">levels</span></code> was a Series,
+else an ndarray). <code class="docutils literal notranslate"><span class="pre">summary</span></code> – a DataFrame indexed by original
+level with columns <code class="docutils literal notranslate"><span class="pre">n</span></code>, <code class="docutils literal notranslate"><span class="pre">exposure</span></code>, <code class="docutils literal notranslate"><span class="pre">collapsed</span></code>; apply the same
+recode to future data by mapping levels where <code class="docutils literal notranslate"><span class="pre">collapsed</span></code> is True.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(recoded, summary)</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -763,6 +1303,172 @@ the result carries a <code class="docutils literal notranslate"><span class="pre
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.calibration_table">
+<span class="sig-name descname"><span class="pre">calibration_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predicted</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_bands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">by</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/evaluation.html#calibration_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.calibration_table" title="Link to this definition">¶</a></dt>
+<dd><p>Calibration across the prediction range: actual vs. predicted by band.</p>
+<p>The companion to <a class="reference internal" href="#ratingmodels.lift_table" title="ratingmodels.lift_table"><code class="xref py py-func docutils literal notranslate"><span class="pre">lift_table()</span></code></a>: lift asks whether predictions <em>order</em>
+risks; calibration asks whether they are <em>right on the level</em>. Records are
+banded into <code class="docutils literal notranslate"><span class="pre">n_bands</span></code> groups of (approximately) equal exposure by
+predicted value, and each band reports per-unit actual and predicted means
+(band totals over band exposure) and their ratio – so <code class="docutils literal notranslate"><span class="pre">actual</span></code> and
+<code class="docutils literal notranslate"><span class="pre">predicted</span></code> are treated symmetrically and should both be on the <em>total</em>
+scale, as from <code class="docutils literal notranslate"><span class="pre">model.predict(df,</span> <span class="pre">exposure=...)</span></code>. A well-calibrated
+model has <code class="docutils literal notranslate"><span class="pre">ae_ratio</span></code> near 1.0 in every band; a systematic drift (low
+bands above 1, high bands below) is the classic signature of over-shrunk
+predictions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Indexed 1..n_bands with columns <code class="docutils literal notranslate"><span class="pre">n</span></code>, <code class="docutils literal notranslate"><span class="pre">exposure</span></code>,
+<code class="docutils literal notranslate"><span class="pre">predicted_mean</span></code>, <code class="docutils literal notranslate"><span class="pre">actual_mean</span></code>, <code class="docutils literal notranslate"><span class="pre">ae_ratio</span></code>. With <code class="docutils literal notranslate"><span class="pre">by</span></code>
+(group labels aligned with <code class="docutils literal notranslate"><span class="pre">actual</span></code>), one table per group under a
+<code class="docutils literal notranslate"><span class="pre">(group,</span> <span class="pre">band)</span></code> MultiIndex.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.actual_expected_table">
+<span class="sig-name descname"><span class="pre">actual_expected_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">by</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_total</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/evaluation.html#actual_expected_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.actual_expected_table" title="Link to this definition">¶</a></dt>
+<dd><p>Actual-to-expected exhibit: totals, means, and A/E ratio by segment.</p>
+<p>The workhorse validation exhibit: for each segment, the total actual,
+total expected, their exposure-weighted means, and the A/E ratio. An A/E
+near 1.0 in every segment of a variable means the model has captured that
+variable’s effect; a pattern across levels means residual signal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual</strong> (<em>array-like</em>) – Observed outcomes and model expectations, row-aligned. <code class="docutils literal notranslate"><span class="pre">expected</span></code>
+should be on the same total scale as <code class="docutils literal notranslate"><span class="pre">actual</span></code> (e.g. include
+exposure), as from <code class="docutils literal notranslate"><span class="pre">model.predict(df,</span> <span class="pre">exposure=...)</span></code>.</p></li>
+<li><p><strong>expected</strong> (<em>array-like</em>) – Observed outcomes and model expectations, row-aligned. <code class="docutils literal notranslate"><span class="pre">expected</span></code>
+should be on the same total scale as <code class="docutils literal notranslate"><span class="pre">actual</span></code> (e.g. include
+exposure), as from <code class="docutils literal notranslate"><span class="pre">model.predict(df,</span> <span class="pre">exposure=...)</span></code>.</p></li>
+<li><p><strong>exposure</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Weights for the mean columns. Row counts when omitted.</p></li>
+<li><p><strong>by</strong> (<em>array-like</em><em>, </em><em>mapping</em><em>, or </em><em>DataFrame</em><em>, </em><em>optional</em>) – <ul>
+<li><p>omitted – a single overall row.</p></li>
+<li><p>array of labels – one row per level.</p></li>
+<li><p>mapping/DataFrame of <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">-&gt;</span> <span class="pre">labels</span></code> – one block per variable,
+stacked tidily under a <code class="docutils literal notranslate"><span class="pre">(variable,</span> <span class="pre">level)</span></code> MultiIndex; one call
+audits every rating variable of a validation frame.</p></li>
+</ul>
+</p></li>
+<li><p><strong>include_total</strong> (<em>bool</em>) – Append an overall row (labelled <code class="docutils literal notranslate"><span class="pre">&quot;All&quot;</span></code>). Default True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Columns <code class="docutils literal notranslate"><span class="pre">n</span></code>, <code class="docutils literal notranslate"><span class="pre">exposure</span></code>, <code class="docutils literal notranslate"><span class="pre">actual</span></code>, <code class="docutils literal notranslate"><span class="pre">expected</span></code>,
+<code class="docutils literal notranslate"><span class="pre">actual_mean</span></code>, <code class="docutils literal notranslate"><span class="pre">expected_mean</span></code>, <code class="docutils literal notranslate"><span class="pre">ae_ratio</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.compare_models">
+<span class="sig-name descname"><span class="pre">compare_models</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_bands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/evaluation.html#compare_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.compare_models" title="Link to this definition">¶</a></dt>
+<dd><p>Side-by-side scorecard for fitted GLMs on one evaluation frame.</p>
+<p>Every model is scored on the <em>same</em> data – pass a held-out validation
+frame (see <a class="reference internal" href="#ratingmodels.temporal_split" title="ratingmodels.temporal_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">ratingmodels.temporal_split()</span></code></a> /
+<a class="reference internal" href="#ratingmodels.group_split" title="ratingmodels.group_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">ratingmodels.group_split()</span></code></a>) for an honest comparison, or the
+training frame for an in-sample one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>models</strong> (<em>mapping</em><em> or </em><em>sequence</em>) – <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">-&gt;</span> <span class="pre">fitted</span> <span class="pre">GLMRelativities</span></code> (or a sequence, auto-named
+<code class="docutils literal notranslate"><span class="pre">model_1</span></code>, <code class="docutils literal notranslate"><span class="pre">model_2</span></code>, …). Each model must expose the fitted
+interface (<code class="docutils literal notranslate"><span class="pre">predict</span></code>, family deviance); i.e. any
+<a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.GLMRelativities"><code class="xref py py-class docutils literal notranslate"><span class="pre">GLMRelativities</span></code></a>-compatible object.</p></li>
+<li><p><strong>data</strong> (<em>DataFrame / str</em>) – Evaluation frame and its column names, as in <code class="docutils literal notranslate"><span class="pre">GLMRelativities.fit</span></code>.</p></li>
+<li><p><strong>response</strong> (<em>DataFrame / str</em>) – Evaluation frame and its column names, as in <code class="docutils literal notranslate"><span class="pre">GLMRelativities.fit</span></code>.</p></li>
+<li><p><strong>exposure</strong> (<em>DataFrame / str</em>) – Evaluation frame and its column names, as in <code class="docutils literal notranslate"><span class="pre">GLMRelativities.fit</span></code>.</p></li>
+<li><p><strong>offset</strong> (<em>DataFrame / str</em>) – Evaluation frame and its column names, as in <code class="docutils literal notranslate"><span class="pre">GLMRelativities.fit</span></code>.</p></li>
+<li><p><strong>weights</strong> (<em>DataFrame / str</em>) – Evaluation frame and its column names, as in <code class="docutils literal notranslate"><span class="pre">GLMRelativities.fit</span></code>.</p></li>
+<li><p><strong>n_bands</strong> (<em>int</em>) – Bands for the calibration-error summary.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>One row per model: <code class="docutils literal notranslate"><span class="pre">family</span></code>, <code class="docutils literal notranslate"><span class="pre">n_params</span></code>, <code class="docutils literal notranslate"><span class="pre">converged</span></code>,
+<code class="docutils literal notranslate"><span class="pre">dispersion</span></code> (training), then evaluation-frame metrics
+<code class="docutils literal notranslate"><span class="pre">deviance</span></code>, <code class="docutils literal notranslate"><span class="pre">null_deviance</span></code>, <code class="docutils literal notranslate"><span class="pre">deviance_explained</span></code>, <code class="docutils literal notranslate"><span class="pre">gini</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ae_ratio</span></code>, and <code class="docutils literal notranslate"><span class="pre">calibration_error</span></code> (the exposure-weighted mean
+absolute deviation of band-level A/E from 1.0).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Deviance is family-specific: it is comparable between models of the same
+family, while <code class="docutils literal notranslate"><span class="pre">gini</span></code>, <code class="docutils literal notranslate"><span class="pre">ae_ratio</span></code>, and <code class="docutils literal notranslate"><span class="pre">calibration_error</span></code> are
+comparable across families. No AIC is reported – the standard errors are
+quasi-likelihood, so a true likelihood is not available.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.random_split">
+<span class="sig-name descname"><span class="pre">random_split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_fraction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">DataFrame</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ratingmodels/splits.html#random_split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.random_split" title="Link to this definition">¶</a></dt>
+<dd><p>Rows-at-random split into <code class="docutils literal notranslate"><span class="pre">(train,</span> <span class="pre">test)</span></code>.</p>
+<p>Appropriate only when rows are independent; with repeated observations of
+the same policy or group, use <a class="reference internal" href="#ratingmodels.group_split" title="ratingmodels.group_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">group_split()</span></code></a> instead.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataFrame</em>)</p></li>
+<li><p><strong>test_fraction</strong> (<em>float</em>) – Target share of <em>rows</em> in the test side.</p></li>
+<li><p><strong>random_state</strong> (<em>optional</em>) – Seed or Generator for <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.random.default_rng()</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.group_split">
+<span class="sig-name descname"><span class="pre">group_split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_fraction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">DataFrame</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ratingmodels/splits.html#group_split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.group_split" title="Link to this definition">¶</a></dt>
+<dd><p>Group-preserving random split: every group lands whole on one side.</p>
+<p>Groups are shuffled and assigned to the test side until it holds at least
+<code class="docutils literal notranslate"><span class="pre">test_fraction</span></code> of the total weight, so the realized share slightly
+overshoots the target by up to one group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataFrame</em>)</p></li>
+<li><p><strong>group</strong> (<em>str</em>) – Column identifying the unit that must not straddle the split
+(policy, employer group, account, …).</p></li>
+<li><p><strong>test_fraction</strong> (<em>float</em>) – Target share of total weight in the test side.</p></li>
+<li><p><strong>weights</strong> (<em>str</em><em>, </em><em>optional</em>) – Column whose per-group totals define “share” – typically exposure or
+premium. Rows count equally when omitted.</p></li>
+<li><p><strong>random_state</strong> (<em>optional</em>) – Seed or Generator for <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.random.default_rng()</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.temporal_split">
+<span class="sig-name descname"><span class="pre">temporal_split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">DataFrame</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">DataFrame</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ratingmodels/splits.html#temporal_split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.temporal_split" title="Link to this definition">¶</a></dt>
+<dd><p>Out-of-time split at <code class="docutils literal notranslate"><span class="pre">cutoff</span></code>: train strictly before, test at/after.</p>
+<p>The honest validation shape for a model that will predict forward in
+time. <code class="docutils literal notranslate"><span class="pre">train</span></code> holds rows with <code class="docutils literal notranslate"><span class="pre">data[date]</span> <span class="pre">&lt;</span> <span class="pre">cutoff</span></code> and <code class="docutils literal notranslate"><span class="pre">test</span></code>
+the rest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataFrame</em>)</p></li>
+<li><p><strong>date</strong> (<em>str</em>) – Column to cut on. Datetime-like columns coerce <code class="docutils literal notranslate"><span class="pre">cutoff</span></code> through
+<code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code> (so <code class="docutils literal notranslate"><span class="pre">&quot;2025-01-01&quot;</span></code> works); other ordered
+columns (period strings, year integers) compare as-is.</p></li>
+<li><p><strong>cutoff</strong> – The boundary value; the first value belonging to the test side.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -1323,6 +2029,72 @@ cases, columns = drivers) and <code class="docutils literal notranslate"><span c
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.rate_dislocation">
+<span class="sig-name descname"><span class="pre">rate_dislocation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proposed_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bands</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(-0.10,</span> <span class="pre">-0.05,</span> <span class="pre">0.0,</span> <span class="pre">0.05,</span> <span class="pre">0.10)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_total</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/dislocation.html#rate_dislocation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.rate_dislocation" title="Link to this definition">¶</a></dt>
+<dd><p>Band the book by rate change and report premium in each band.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>current_rate</strong> (<em>array-like</em>) – Per-case rates; the change is <code class="docutils literal notranslate"><span class="pre">proposed/current</span> <span class="pre">-</span> <span class="pre">1</span></code>.</p></li>
+<li><p><strong>proposed_rate</strong> (<em>array-like</em>) – Per-case rates; the change is <code class="docutils literal notranslate"><span class="pre">proposed/current</span> <span class="pre">-</span> <span class="pre">1</span></code>.</p></li>
+<li><p><strong>exposure</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Units each rate applies to, so <code class="docutils literal notranslate"><span class="pre">rate</span> <span class="pre">*</span> <span class="pre">exposure</span></code> is premium.
+Premium equals rate (and counts weight equally) when omitted.</p></li>
+<li><p><strong>bands</strong> (<em>sequence</em><em> of </em><em>float</em>) – Interior band edges as decimal changes, e.g. <code class="docutils literal notranslate"><span class="pre">-0.05</span></code> for -5%.
+Edges are extended with <code class="docutils literal notranslate"><span class="pre">-inf</span></code>/<code class="docutils literal notranslate"><span class="pre">+inf</span></code>, so <code class="docutils literal notranslate"><span class="pre">k</span></code> edges give
+<code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">+</span> <span class="pre">1</span></code> bands; a band’s interval is half-open, <code class="docutils literal notranslate"><span class="pre">(low,</span> <span class="pre">high]</span></code>.
+The default edges include 0.0, so increases and decreases are
+always separated.</p></li>
+<li><p><strong>include_total</strong> (<em>bool</em>) – Append an <code class="docutils literal notranslate"><span class="pre">&quot;All&quot;</span></code> row. Default True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>One row per band (empty bands kept, so the exhibit shape is stable)
+with columns <code class="docutils literal notranslate"><span class="pre">n</span></code>, <code class="docutils literal notranslate"><span class="pre">exposure</span></code>, <code class="docutils literal notranslate"><span class="pre">current_premium</span></code>,
+<code class="docutils literal notranslate"><span class="pre">proposed_premium</span></code>, <code class="docutils literal notranslate"><span class="pre">avg_change</span></code> (premium-weighted:
+proposed/current - 1), <code class="docutils literal notranslate"><span class="pre">exposure_share</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.constraint_impact">
+<span class="sig-name descname"><span class="pre">constraint_impact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indicated_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proposed_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">by</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/dislocation.html#constraint_impact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.constraint_impact" title="Link to this definition">¶</a></dt>
+<dd><p>What the gap between indicated and proposed rates costs.</p>
+<p>Caps, floors, and concessions move issued rates off the indication; this
+quantifies the move in premium terms – the shortfall left on the table
+where proposed sits below indicated, the excess where it sits above, and
+the further average change still needed to reach the indication.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>indicated_rate</strong> (<em>array-like</em>) – The formula answer and the rate actually proposed/issued.</p></li>
+<li><p><strong>proposed_rate</strong> (<em>array-like</em>) – The formula answer and the rate actually proposed/issued.</p></li>
+<li><p><strong>exposure</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Units per case; premium is <code class="docutils literal notranslate"><span class="pre">rate</span> <span class="pre">*</span> <span class="pre">exposure</span></code>. Omitted = 1 per case.</p></li>
+<li><p><strong>current_rate</strong> (<em>array-like</em><em>, </em><em>optional</em>) – When given, <code class="docutils literal notranslate"><span class="pre">indicated_change</span></code> and <code class="docutils literal notranslate"><span class="pre">realized_change</span></code> (both
+premium-weighted against current) are also reported.</p></li>
+<li><p><strong>by</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Group labels; returns one row per group (a DataFrame) instead of a
+Series – which segments absorbed the capping is usually the
+actionable question.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Metrics: <code class="docutils literal notranslate"><span class="pre">n</span></code>, <code class="docutils literal notranslate"><span class="pre">exposure</span></code>, <code class="docutils literal notranslate"><span class="pre">n_below</span></code> / <code class="docutils literal notranslate"><span class="pre">exposure_below</span></code> /
+<code class="docutils literal notranslate"><span class="pre">premium_shortfall</span></code> (proposed &lt; indicated), <code class="docutils literal notranslate"><span class="pre">n_above</span></code> /
+<code class="docutils literal notranslate"><span class="pre">exposure_above</span></code> / <code class="docutils literal notranslate"><span class="pre">premium_excess</span></code> (proposed &gt; indicated),
+<code class="docutils literal notranslate"><span class="pre">indicated_premium</span></code>, <code class="docutils literal notranslate"><span class="pre">proposed_premium</span></code>, <code class="docutils literal notranslate"><span class="pre">remaining_change</span></code>
+(indicated/proposed - 1, the future rate action still owed), and –
+with <code class="docutils literal notranslate"><span class="pre">current_rate</span></code> – <code class="docutils literal notranslate"><span class="pre">indicated_change</span></code> and <code class="docutils literal notranslate"><span class="pre">realized_change</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.Series or pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ratingmodels.renew">
 <span class="sig-name descname"><span class="pre">renew</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indicated_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">floor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.RenewalAction" title="ratingmodels.renewal.RenewalAction"><span class="pre">RenewalAction</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/renewal.html#renew"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.renew" title="Link to this definition">¶</a></dt>
 <dd><p>Apply caps/floors (and optional rounding) to an indicated rate.</p>
@@ -1575,8 +2347,19 @@ every resulting premium is positive) is validated with explicit errors.</p>
 <li><a class="reference internal" href="#quickstart">Quickstart</a></li>
 <li><a class="reference internal" href="#columns-in-columns-out">Columns in, columns out</a></li>
 <li><a class="reference internal" href="#the-build-up-engine">The build-up engine</a></li>
-<li><a class="reference internal" href="#glm-relativities">GLM relativities</a></li>
-<li><a class="reference internal" href="#model-evaluation">Model evaluation</a></li>
+<li><a class="reference internal" href="#glm-relativities">GLM relativities</a><ul>
+<li><a class="reference internal" href="#aggregate-vs-rate-responses">Aggregate vs. rate responses</a></li>
+<li><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#frequencyseverity-models">Frequency–severity models</a></li>
+<li><a class="reference internal" href="#credibility-smoothed-relativities">Credibility-smoothed relativities</a></li>
+<li><a class="reference internal" href="#validation">Validation</a><ul>
+<li><a class="reference internal" href="#ordering-level-and-segments">Ordering, level, and segments</a></li>
+<li><a class="reference internal" href="#comparing-candidates">Comparing candidates</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rate-dislocation">Rate dislocation</a></li>
 <li><a class="reference internal" href="#pricing-scenarios-and-margin">Pricing scenarios and margin</a></li>
 <li><a class="reference internal" href="#module-ratingmodels">API reference</a><ul>
 <li><a class="reference internal" href="#ratingmodels.full_credibility_standard"><code class="docutils literal notranslate"><span class="pre">full_credibility_standard()</span></code></a></li>
@@ -1601,15 +2384,39 @@ every resulting premium is positive) is validated with explicit errors.</p>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.coefficients_"><code class="docutils literal notranslate"><span class="pre">coefficients_</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.relativities_"><code class="docutils literal notranslate"><span class="pre">relativities_</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.base_value_"><code class="docutils literal notranslate"><span class="pre">base_value_</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.results_"><code class="docutils literal notranslate"><span class="pre">results_</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.n_iter_"><code class="docutils literal notranslate"><span class="pre">n_iter_</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.deviance_"><code class="docutils literal notranslate"><span class="pre">deviance_</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.deviance_explained_"><code class="docutils literal notranslate"><span class="pre">deviance_explained_</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.fit"><code class="docutils literal notranslate"><span class="pre">fit()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.predict"><code class="docutils literal notranslate"><span class="pre">predict()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.relativity_table"><code class="docutils literal notranslate"><span class="pre">relativity_table()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.residuals"><code class="docutils literal notranslate"><span class="pre">residuals()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.summary"><code class="docutils literal notranslate"><span class="pre">summary()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.to_factor_tables"><code class="docutils literal notranslate"><span class="pre">to_factor_tables()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#ratingmodels.FrequencySeverityModel"><code class="docutils literal notranslate"><span class="pre">FrequencySeverityModel</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.FrequencySeverityModel.base_value_"><code class="docutils literal notranslate"><span class="pre">base_value_</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.FrequencySeverityModel.combined_relativities"><code class="docutils literal notranslate"><span class="pre">combined_relativities()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.FrequencySeverityModel.fit"><code class="docutils literal notranslate"><span class="pre">fit()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.FrequencySeverityModel.frequency_prediction"><code class="docutils literal notranslate"><span class="pre">frequency_prediction()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.FrequencySeverityModel.pure_premium_prediction"><code class="docutils literal notranslate"><span class="pre">pure_premium_prediction()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.FrequencySeverityModel.severity_prediction"><code class="docutils literal notranslate"><span class="pre">severity_prediction()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.FrequencySeverityModel.summary"><code class="docutils literal notranslate"><span class="pre">summary()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.FrequencySeverityModel.to_factor_tables"><code class="docutils literal notranslate"><span class="pre">to_factor_tables()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.credibility_relativities"><code class="docutils literal notranslate"><span class="pre">credibility_relativities()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.collapse_sparse_levels"><code class="docutils literal notranslate"><span class="pre">collapse_sparse_levels()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.gini_coefficient"><code class="docutils literal notranslate"><span class="pre">gini_coefficient()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.lift_table"><code class="docutils literal notranslate"><span class="pre">lift_table()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.calibration_table"><code class="docutils literal notranslate"><span class="pre">calibration_table()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.actual_expected_table"><code class="docutils literal notranslate"><span class="pre">actual_expected_table()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.compare_models"><code class="docutils literal notranslate"><span class="pre">compare_models()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.random_split"><code class="docutils literal notranslate"><span class="pre">random_split()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.group_split"><code class="docutils literal notranslate"><span class="pre">group_split()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.temporal_split"><code class="docutils literal notranslate"><span class="pre">temporal_split()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.ManualRate"><code class="docutils literal notranslate"><span class="pre">ManualRate</span></code></a><ul>
 <li><a class="reference internal" href="#ratingmodels.ManualRate.breakdown"><code class="docutils literal notranslate"><span class="pre">breakdown()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.ManualRate.loss_cost"><code class="docutils literal notranslate"><span class="pre">loss_cost()</span></code></a></li>
@@ -1675,6 +2482,8 @@ every resulting premium is positive) is validated with explicit errors.</p>
 <li><a class="reference internal" href="#ratingmodels.band"><code class="docutils literal notranslate"><span class="pre">band()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.round_rate"><code class="docutils literal notranslate"><span class="pre">round_rate()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.corridor"><code class="docutils literal notranslate"><span class="pre">corridor()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.rate_dislocation"><code class="docutils literal notranslate"><span class="pre">rate_dislocation()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.constraint_impact"><code class="docutils literal notranslate"><span class="pre">constraint_impact()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.renew"><code class="docutils literal notranslate"><span class="pre">renew()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.RenewalAction"><code class="docutils literal notranslate"><span class="pre">RenewalAction</span></code></a><ul>
 <li><a class="reference internal" href="#ratingmodels.RenewalAction.to_frame"><code class="docutils literal notranslate"><span class="pre">to_frame()</span></code></a></li>

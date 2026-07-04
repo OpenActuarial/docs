@@ -261,29 +261,36 @@
 <span class="sd">  (:class:`GLMRelativities`), which corrects for correlation between rating</span>
 <span class="sd">  variables that one-way analysis cannot.</span>
 
-<span class="sd">The GLM is fit by iteratively reweighted least squares (IRLS). With a log</span>
-<span class="sd">link, :math:`\eta = X\beta + \text{offset}`, the working response and weights</span>
-<span class="sd">are</span>
+<span class="sd">The model is a log-link GLM, :math:`\eta = X\beta + \text{offset}` with</span>
+<span class="sd">variance function :math:`V(\mu) = \mu^p`: Poisson (:math:`p=1`), Gamma</span>
+<span class="sd">(:math:`p=2`), or Tweedie (:math:`1 &lt; p &lt; 2`). A level&#39;s relativity is</span>
+<span class="sd">:math:`\exp(\beta)` relative to the base (reference) level, whose relativity</span>
+<span class="sd">is 1.</span>
 
-<span class="sd">.. math::</span>
-<span class="sd">    z = \eta + (y - \mu)\,g&#39;(\mu), \qquad</span>
-<span class="sd">    w = \frac{w_{\text{prior}}}{V(\mu)\,g&#39;(\mu)^2},</span>
-
-<span class="sd">and :math:`\beta \leftarrow (X^\top W X)^{-1} X^\top W z` until convergence.</span>
-<span class="sd">For the log link :math:`g&#39;(\mu) = 1/\mu` and the variance function is</span>
-<span class="sd">:math:`V(\mu) = \mu^p`: Poisson (:math:`p=1`), Gamma (:math:`p=2`), or</span>
-<span class="sd">Tweedie (:math:`1 &lt; p &lt; 2`). A level&#39;s relativity is :math:`\exp(\beta)`</span>
-<span class="sd">relative to the base (reference) level, whose relativity is 1.</span>
+<span class="sd">Estimation is delegated to :class:`statsmodels.api.GLM` -- solver,</span>
+<span class="sd">convergence, covariance, and the fitted null model are statsmodels&#39;</span>
+<span class="sd">responsibility, with the dispersion estimated from the Pearson chi-square</span>
+<span class="sd">(quasi-likelihood) for every family. ``ratingmodels`` owns the actuarial</span>
+<span class="sd">layer around it: the design encoding and base-level semantics, the</span>
+<span class="sd">coefficient-to-relativity conversion, prediction with unseen-level fallback,</span>
+<span class="sd">residuals on arbitrary frames, and the exhibits. The fitted statsmodels</span>
+<span class="sd">results object is exposed as ``results_`` for anything beyond that</span>
+<span class="sd">(``results_.get_influence()``, ``results_.get_prediction(...)``, Wald</span>
+<span class="sd">tests, ...).</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">NormalDist</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1">#: Sentinel distinguishing &quot;not passed&quot; from an explicit None in diagnostics.</span>
+<span class="n">_UNSET</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
 
 
 <span class="c1"># --------------------------------------------------------------------------- #</span>
@@ -381,7 +388,7 @@
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.GLMRelativities">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">GLMRelativities</span><span class="p">:</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;GLM (log-link) relativity estimator fit by IRLS.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;GLM (log-link) relativity estimator, fit via statsmodels.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -390,9 +397,9 @@
 <span class="sd">    var_power : float, optional</span>
 <span class="sd">        Tweedie variance power :math:`p` in :math:`V(\mu)=\mu^p`.</span>
 <span class="sd">    max_iter : int</span>
-<span class="sd">        Maximum IRLS iterations.</span>
+<span class="sd">        Maximum solver iterations (passed to ``statsmodels``).</span>
 <span class="sd">    tol : float</span>
-<span class="sd">        Convergence tolerance on the relative change in deviance.</span>
+<span class="sd">        Solver convergence tolerance (passed to ``statsmodels``).</span>
 
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
@@ -402,8 +409,11 @@
 <span class="sd">        Per-variable multiplicative relativities (base level = 1.0).</span>
 <span class="sd">    base_value_ : float</span>
 <span class="sd">        :math:`\exp(\text{intercept})`, the fitted base level.</span>
+<span class="sd">    results_ : statsmodels GLMResults</span>
+<span class="sd">        The underlying fitted results object -- the common actuarial outputs</span>
+<span class="sd">        live on this class, but nothing statistical is walled off.</span>
 <span class="sd">    n_iter_ : int</span>
-<span class="sd">        IRLS iterations used.</span>
+<span class="sd">        Solver iterations used.</span>
 <span class="sd">    deviance_ : float</span>
 <span class="sd">        Final deviance. These attributes are populated by :meth:`fit`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -424,6 +434,7 @@
     <span class="n">dispersion_</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">se_</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">cov_params_</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">results_</span><span class="p">:</span> <span class="nb">object</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">_design_info_</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="c1"># ----- internals ----- #</span>
@@ -436,6 +447,16 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tweedie requires var_power in (1, 2)&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var_power</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown family </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">family</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sm_family</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sm</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The statsmodels family object for this model (always log link).&quot;&quot;&quot;</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_power</span><span class="p">()</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">families</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="n">Log</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">p</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sm</span><span class="o">.</span><span class="n">families</span><span class="o">.</span><span class="n">Poisson</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">p</span> <span class="o">-</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sm</span><span class="o">.</span><span class="n">families</span><span class="o">.</span><span class="n">Gamma</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sm</span><span class="o">.</span><span class="n">families</span><span class="o">.</span><span class="n">Tweedie</span><span class="p">(</span><span class="n">link</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">var_power</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">eql</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_build_design</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">predictors</span><span class="p">,</span> <span class="n">base_levels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">continuous</span><span class="o">=</span><span class="p">()):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;One-hot encode predictors (dropping the base level); add intercept.</span>
@@ -490,13 +511,25 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GLMRelativities&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Fit relativities for ``predictors`` against ``response``.</span>
 
-<span class="sd">        ``exposure`` enters as a log offset (the natural choice for counts and</span>
-<span class="sd">        pure premium). An explicit ``offset`` column (already on the log scale)</span>
-<span class="sd">        and prior ``weights`` may also be supplied. ``base_levels`` maps a</span>
-<span class="sd">        predictor to its reference level (relativity 1.0); unspecified</span>
-<span class="sd">        predictors use their most populous level as the base.</span>
+<span class="sd">        **Aggregate vs. rate responses.** ``exposure`` enters as a log</span>
+<span class="sd">        offset, which is correct when the response is an *aggregate* -- claim</span>
+<span class="sd">        counts or total amounts, :math:`E[Y] = e\,\exp(X\beta)`. When the</span>
+<span class="sd">        response is already a *rate* (divided by exposure: pure premium,</span>
+<span class="sd">        loss per unit), do **not** pass ``exposure``; pass it as</span>
+<span class="sd">        ``weights`` instead, so the variance scales as</span>
+<span class="sd">        :math:`V(\mu)/e`. The two parameterizations coincide only for</span>
+<span class="sd">        Poisson (:math:`p=1`); for Gamma and Tweedie the weights form is the</span>
+<span class="sd">        one consistent with a response averaged over :math:`e` independent</span>
+<span class="sd">        claims (it is exactly how the severity model inside</span>
+<span class="sd">        :class:`~ratingmodels.FrequencySeverityModel` is fit).</span>
+
+<span class="sd">        An explicit ``offset`` column (already on the log scale) may also be</span>
+<span class="sd">        supplied. ``weights`` are *variance* weights (statsmodels</span>
+<span class="sd">        ``var_weights``): the variance of row :math:`i` is</span>
+<span class="sd">        :math:`\phi V(\mu_i)/w_i`. ``base_levels`` maps a predictor to its</span>
+<span class="sd">        reference level (relativity 1.0); unspecified predictors use their</span>
+<span class="sd">        most populous level as the base.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_power</span><span class="p">()</span>
         <span class="n">X_df</span><span class="p">,</span> <span class="n">base_levels_used</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_design</span><span class="p">(</span>
             <span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">predictors</span><span class="p">),</span> <span class="n">base_levels</span><span class="p">,</span> <span class="n">continuous</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">continuous</span><span class="p">)</span>
         <span class="p">)</span>
@@ -521,77 +554,69 @@
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">prior_w</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;weights must be non-negative&quot;</span><span class="p">)</span>
 
-        <span class="c1"># initialise mu near the data, away from zero</span>
-        <span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.1</span> <span class="o">+</span> <span class="mf">1e-3</span><span class="p">)</span>
-        <span class="n">eta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span>
-        <span class="n">beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">p_dim</span><span class="p">)</span>
-        <span class="n">dev_old</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+        <span class="c1"># ----- estimation: delegated to statsmodels ----- #</span>
+        <span class="c1"># ratingmodels owns the actuarial layer -- design encoding, base</span>
+        <span class="c1"># levels, relativity assembly, prediction with unseen-level fallback,</span>
+        <span class="c1"># and family deviance for scoring arbitrary frames. statsmodels owns</span>
+        <span class="c1"># the numerics: solver, convergence, covariance, and the fitted null</span>
+        <span class="c1"># model. Imported here so `import ratingmodels` stays fast for the</span>
+        <span class="c1"># (large) part of the package that never fits a GLM.</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">statsmodels.api</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sm</span>
 
-        <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="c1"># log link: g&#39;(mu) = 1/mu  -&gt;  z = eta + (y - mu)/mu</span>
-            <span class="n">z</span> <span class="o">=</span> <span class="n">eta</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">/</span> <span class="n">mu</span> <span class="o">-</span> <span class="n">eta_offset</span>
-            <span class="c1"># w = prior_w / (V(mu) * g&#39;(mu)^2) = prior_w * mu^2 / mu^p</span>
-            <span class="n">w</span> <span class="o">=</span> <span class="n">prior_w</span> <span class="o">*</span> <span class="n">mu</span> <span class="o">**</span> <span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
-            <span class="n">WX</span> <span class="o">=</span> <span class="n">X</span> <span class="o">*</span> <span class="n">w</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
-            <span class="n">xtwx</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">WX</span>
-            <span class="n">xtwz</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="p">(</span><span class="n">w</span> <span class="o">*</span> <span class="n">z</span><span class="p">)</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">xtwx</span><span class="p">,</span> <span class="n">xtwz</span><span class="p">)</span>
-            <span class="k">except</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">:</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-                    <span class="s2">&quot;design matrix is rank deficient (aliased levels); &quot;</span>
-                    <span class="s2">&quot;using a least-squares solution&quot;</span><span class="p">,</span>
-                    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">xtwx</span><span class="p">,</span> <span class="n">xtwz</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">eta</span> <span class="o">=</span> <span class="n">X</span> <span class="o">@</span> <span class="n">beta</span> <span class="o">+</span> <span class="n">eta_offset</span>
-            <span class="n">eta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">eta</span><span class="p">,</span> <span class="o">-</span><span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>  <span class="c1"># guard against overflow</span>
-            <span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span>
+        <span class="n">rank_deficient</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">matrix_rank</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">p_dim</span>
+        <span class="k">if</span> <span class="n">rank_deficient</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;design matrix is rank deficient (aliased levels); &quot;</span>
+                <span class="s2">&quot;coefficient standard errors are unavailable&quot;</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
 
-            <span class="n">dev</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deviance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">prior_w</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
-            <span class="k">if</span> <span class="p">(</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span>
-                <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">dev_old</span><span class="p">)</span>
-                <span class="ow">and</span> <span class="nb">abs</span><span class="p">(</span><span class="n">dev</span> <span class="o">-</span> <span class="n">dev_old</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tol</span> <span class="o">*</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">dev_old</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">)</span>
-            <span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">n_iter_</span> <span class="o">=</span> <span class="n">it</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">converged_</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="k">break</span>
-            <span class="n">dev_old</span> <span class="o">=</span> <span class="n">dev</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">n_iter_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">converged_</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">GLM</span><span class="p">(</span>
+            <span class="n">y</span><span class="p">,</span> <span class="n">X_df</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sm_family</span><span class="p">(</span><span class="n">sm</span><span class="p">),</span>
+            <span class="n">offset</span><span class="o">=</span><span class="n">eta_offset</span><span class="p">,</span> <span class="n">var_weights</span><span class="o">=</span><span class="n">prior_w</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">maxiter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s2">&quot;X2&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_</span> <span class="o">=</span> <span class="n">res</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">coefficients_</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">beta</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">X_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">deviance_</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dev_old</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">dev</span><span class="p">)</span> <span class="k">else</span> <span class="n">dev</span><span class="p">)</span>
+        <span class="n">hist</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="s2">&quot;fit_history&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">n_iter</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;iteration&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">hist</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;deviance&quot;</span><span class="p">,</span> <span class="p">[])))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_iter_</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n_iter</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># statsmodels flags a *perfect* fit (saturated model, deviance ~ 0)</span>
+        <span class="c1"># as unconverged with a PerfectSeparationWarning; an exactly solved</span>
+        <span class="c1"># problem is converged in any sense that matters here</span>
+        <span class="n">perfect</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">deviance</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">float</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">deviance</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tol</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">null_deviance</span><span class="p">),</span> <span class="mf">1.0</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">converged_</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="s2">&quot;converged&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span> <span class="ow">or</span> <span class="n">perfect</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">coefficients_</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">X_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coefficients_</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deviance_</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">deviance</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base_value_</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">beta</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
 
-        <span class="c1"># ----- inference: Pearson dispersion and quasi-likelihood covariance -----</span>
-        <span class="n">pearson</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">prior_w</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">mu</span><span class="o">**</span><span class="n">p</span><span class="p">))</span>
-        <span class="n">dof</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">p_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pearson_chi2_</span> <span class="o">=</span> <span class="n">pearson</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dispersion_</span> <span class="o">=</span> <span class="n">pearson</span> <span class="o">/</span> <span class="n">dof</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispersion_</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">xtwx</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cov_params_</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">cov</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">X_df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">X_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">se_</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cov</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)),</span> <span class="n">index</span><span class="o">=</span><span class="n">X_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">:</span>
+        <span class="c1"># quasi-likelihood convention throughout: scale=&quot;X2&quot; estimates the</span>
+        <span class="c1"># dispersion from the Pearson chi-square for every family</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pearson_chi2_</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">pearson_chi2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispersion_</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
+        <span class="c1"># the fitted intercept(+offset)-only model, correct for every family</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">null_deviance_</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">null_deviance</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">rank_deficient</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cov_params_</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">se_</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="c1"># ----- null deviance: intercept (+ offset) only -----</span>
-        <span class="n">mu0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">prior_w</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">prior_w</span><span class="p">),</span> <span class="mf">1e-12</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">offset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># weighted-mean rate on the offset scale</span>
-            <span class="n">rate0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">prior_w</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">prior_w</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">eta_offset</span><span class="p">))</span>
-            <span class="n">mu0</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">rate0</span><span class="p">,</span> <span class="mf">1e-12</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">eta_offset</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">null_deviance_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deviance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu0</span><span class="p">,</span> <span class="n">prior_w</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">cov_params</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cov_params_</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">cov</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">X_df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">X_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">se_</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cov</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)),</span> <span class="n">index</span><span class="o">=</span><span class="n">X_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_design_info_</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;predictors&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">predictors</span><span class="p">),</span>
             <span class="s2">&quot;base_levels&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">base_levels_used</span><span class="p">),</span>
             <span class="s2">&quot;continuous&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">continuous</span><span class="p">),</span>
             <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">X_df</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span>
+            <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="n">response</span><span class="p">,</span>
+            <span class="s2">&quot;exposure&quot;</span><span class="p">:</span> <span class="n">exposure</span><span class="p">,</span>
+            <span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="n">offset</span><span class="p">,</span>
+            <span class="s2">&quot;weights&quot;</span><span class="p">:</span> <span class="n">weights</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># assemble relativities per variable (base level = 1.0)</span>
@@ -609,21 +634,30 @@
 
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_deviance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Tweedie deviance (covers Poisson p=1 and Gamma p=2 in the limit).&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_unit_deviance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Per-observation Tweedie deviance :math:`d_i` (before prior weights).</span>
+
+<span class="sd">        Covers Poisson (p=1) and Gamma (p=2) in the limit. The model deviance</span>
+<span class="sd">        is ``sum(w * d)`` and the deviance residual is ``sign(y-mu)*sqrt(w*d)``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-12</span>
         <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">p</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">:</span>  <span class="c1"># Poisson</span>
             <span class="n">term</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">y</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="n">y</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span> <span class="o">/</span> <span class="n">mu</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span>
-            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">w</span> <span class="o">*</span> <span class="n">term</span><span class="p">))</span>
+            <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">term</span>
         <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">p</span> <span class="o">-</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span><span class="p">:</span>  <span class="c1"># Gamma</span>
             <span class="n">term</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="n">y</span> <span class="o">+</span> <span class="n">eps</span><span class="p">)</span> <span class="o">/</span> <span class="n">mu</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">/</span> <span class="n">mu</span>
-            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">w</span> <span class="o">*</span> <span class="n">term</span><span class="p">))</span>
+            <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">term</span>
         <span class="c1"># general Tweedie, 1 &lt; p &lt; 2</span>
         <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">y</span> <span class="o">**</span> <span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">/</span> <span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">p</span><span class="p">)),</span> <span class="mf">0.0</span><span class="p">)</span>
         <span class="n">b</span> <span class="o">=</span> <span class="n">y</span> <span class="o">*</span> <span class="n">mu</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
         <span class="n">c</span> <span class="o">=</span> <span class="n">mu</span> <span class="o">**</span> <span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">w</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">b</span> <span class="o">+</span> <span class="n">c</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">b</span> <span class="o">+</span> <span class="n">c</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_deviance</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Tweedie deviance (covers Poisson p=1 and Gamma p=2 in the limit).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">w</span> <span class="o">*</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_unit_deviance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">p</span><span class="p">)))</span>
 
 <div class="viewcode-block" id="GLMRelativities.predict">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.GLMRelativities.predict">[docs]</a>
@@ -661,6 +695,206 @@
         <span class="k">return</span> <span class="n">mu</span></div>
 
 
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deviance_explained_</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Proportion of null deviance explained, ``1 - deviance/null_deviance``.</span>
+
+<span class="sd">        The GLM analogue of :math:`R^2`: 0 means the predictors add nothing</span>
+<span class="sd">        over the intercept(+offset)-only model, 1 means a saturated fit.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">null_deviance_</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_deviance_</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">deviance_</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_deviance_</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_design_matrix_from_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rebuild the design matrix for ``data`` in the *fitted* column order.</span>
+
+<span class="sd">        Unlike :meth:`_build_design` this never re-derives levels from the</span>
+<span class="sd">        data, so it is safe on validation slices whose level sets differ from</span>
+<span class="sd">        the training frame; unseen levels get all-zero indicators (the base).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_design_info_</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">])),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;Intercept&quot;</span><span class="p">:</span>
+                <span class="n">cols</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="k">elif</span> <span class="s2">&quot;::&quot;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+                <span class="n">var</span><span class="p">,</span> <span class="n">lvl</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;::&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">cols</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">==</span> <span class="n">lvl</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># continuous covariate</span>
+                <span class="n">cols</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cols</span>
+
+<div class="viewcode-block" id="GLMRelativities.residuals">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.GLMRelativities.residuals">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">residuals</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;deviance&quot;</span><span class="p">,</span>
+        <span class="n">response</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exposure</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">offset</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">weights</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Per-row residuals on ``data``, as a Series aligned to its index.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : DataFrame</span>
+<span class="sd">            Rows to evaluate -- typically the training frame, but any frame</span>
+<span class="sd">            with the model&#39;s columns works (e.g. a validation split).</span>
+<span class="sd">        kind : {&quot;deviance&quot;, &quot;pearson&quot;, &quot;standardized&quot;, &quot;response&quot;}</span>
+<span class="sd">            * ``&quot;response&quot;`` -- raw :math:`y - \hat\mu`.</span>
+<span class="sd">            * ``&quot;pearson&quot;`` -- :math:`(y-\hat\mu)\sqrt{w}/\sqrt{V(\hat\mu)}`;</span>
+<span class="sd">              the squared Pearson residuals sum to ``pearson_chi2_`` on the</span>
+<span class="sd">              training data.</span>
+<span class="sd">            * ``&quot;deviance&quot;`` -- :math:`\mathrm{sign}(y-\hat\mu)\sqrt{w\,d_i}`;</span>
+<span class="sd">              the squared deviance residuals sum to ``deviance_`` on the</span>
+<span class="sd">              training data.</span>
+<span class="sd">            * ``&quot;standardized&quot;`` -- Pearson scaled by</span>
+<span class="sd">              :math:`\sqrt{\hat\phi\,(1-h_i)}` with :math:`h_i` the IRLS hat</span>
+<span class="sd">              value, so values beyond :math:`\pm 2` flag unusual rows on a</span>
+<span class="sd">              common scale. Leverage is exact on the training data (on new</span>
+<span class="sd">              data :math:`h_i` is the same formula, not a true leverage).</span>
+<span class="sd">        response, exposure, offset, weights : str, optional</span>
+<span class="sd">            Column names; each defaults to the column used in :meth:`fit`.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Plotting deviance or standardized residuals against fitted values and</span>
+<span class="sd">        against each rating variable is the standard check that the variance</span>
+<span class="sd">        function and link are adequate; structure in these plots means the</span>
+<span class="sd">        relativities are absorbing the wrong shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coefficients_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;model is not fit&quot;</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_design_info_</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;response&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">response</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">response</span>
+        <span class="n">exposure</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="n">_UNSET</span> <span class="k">else</span> <span class="n">exposure</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">offset</span> <span class="ow">is</span> <span class="n">_UNSET</span> <span class="k">else</span> <span class="n">offset</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;weights&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="n">_UNSET</span> <span class="k">else</span> <span class="n">weights</span>
+
+        <span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">response</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+        <span class="n">prior_w</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">weights</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_power</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;response&quot;</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">mu</span>
+        <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;pearson&quot;</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">prior_w</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">mu</span><span class="o">**</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;deviance&quot;</span><span class="p">:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unit_deviance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">prior_w</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;standardized&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_params_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">&quot;standardized residuals need the coefficient covariance, &quot;</span>
+                    <span class="s2">&quot;which is unavailable for this fit (rank-deficient design)&quot;</span>
+                <span class="p">)</span>
+            <span class="n">pearson</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">prior_w</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">mu</span><span class="o">**</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_design_matrix_from_info</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">w_irls</span> <span class="o">=</span> <span class="n">prior_w</span> <span class="o">*</span> <span class="n">mu</span> <span class="o">**</span> <span class="p">(</span><span class="mi">2</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
+            <span class="n">xtwx_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_params_</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dispersion_</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">w_irls</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,jk,ik-&gt;i&quot;</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">xtwx_inv</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="mf">1e-10</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">pearson</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dispersion_</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">h</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;unknown residual kind </span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">; &quot;</span>
+                <span class="s2">&quot;expected &#39;deviance&#39;, &#39;pearson&#39;, &#39;standardized&#39;, or &#39;response&#39;&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">_residual&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GLMRelativities.relativity_table">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.GLMRelativities.relativity_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">relativity_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">confidence_level</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Every fitted relativity with its confidence interval, in one table.</span>
+
+<span class="sd">        The interval is computed on the coefficient scale and exponentiated:</span>
+<span class="sd">        :math:`\exp(\hat\beta \pm z_{\alpha}\,\mathrm{se})`, using the</span>
+<span class="sd">        quasi-likelihood standard errors (Pearson dispersion). Base levels</span>
+<span class="sd">        appear with relativity 1.0 and no interval -- the reference is fixed</span>
+<span class="sd">        by construction, not estimated. Continuous covariates appear under</span>
+<span class="sd">        level ``&quot;(per +1)&quot;``: the multiplicative effect of a one-unit</span>
+<span class="sd">        increase.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame</span>
+<span class="sd">            Indexed by ``(variable, level)`` with columns ``coef``, ``se``,</span>
+<span class="sd">            ``relativity``, ``ci_low``, ``ci_high``, ``is_base``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coefficients_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;model is not fit&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">confidence_level</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;confidence_level must be in (0, 1)&quot;</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">NormalDist</span><span class="p">()</span><span class="o">.</span><span class="n">inv_cdf</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">+</span> <span class="n">confidence_level</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_design_info_</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;predictors&quot;</span><span class="p">]:</span>
+            <span class="n">base</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;base_levels&quot;</span><span class="p">][</span><span class="n">var</span><span class="p">]</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">var</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">coef</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">coefficients_</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">::&quot;</span><span class="p">):</span>
+                    <span class="n">lvl</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;::&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">se</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">se_</span><span class="p">[</span><span class="n">name</span><span class="p">])</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">se_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                    <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">coef</span> <span class="o">-</span> <span class="n">z</span> <span class="o">*</span> <span class="n">se</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">coef</span> <span class="o">+</span> <span class="n">z</span> <span class="o">*</span> <span class="n">se</span><span class="p">))</span>
+                        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">se</span><span class="p">)</span>
+                        <span class="k">else</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">lvl</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">coef</span><span class="p">),</span> <span class="n">se</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">coef</span><span class="p">)),</span> <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                    <span class="p">)</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;continuous&quot;</span><span class="p">]:</span>
+            <span class="n">coef</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coefficients_</span><span class="p">[</span><span class="n">var</span><span class="p">])</span>
+            <span class="n">se</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">se_</span><span class="p">[</span><span class="n">var</span><span class="p">])</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">se_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">coef</span> <span class="o">-</span> <span class="n">z</span> <span class="o">*</span> <span class="n">se</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">coef</span> <span class="o">+</span> <span class="n">z</span> <span class="o">*</span> <span class="n">se</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">se</span><span class="p">)</span>
+                <span class="k">else</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">var</span><span class="p">,</span> <span class="s2">&quot;(per +1)&quot;</span><span class="p">,</span> <span class="n">coef</span><span class="p">,</span> <span class="n">se</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">coef</span><span class="p">)),</span> <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">rows</span><span class="p">,</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">&quot;variable&quot;</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">,</span> <span class="s2">&quot;coef&quot;</span><span class="p">,</span> <span class="s2">&quot;se&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;relativity&quot;</span><span class="p">,</span> <span class="s2">&quot;ci_low&quot;</span><span class="p">,</span> <span class="s2">&quot;ci_high&quot;</span><span class="p">,</span> <span class="s2">&quot;is_base&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s2">&quot;variable&quot;</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="GLMRelativities.to_factor_tables">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.GLMRelativities.to_factor_tables">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_factor_tables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The fitted categorical relativities as :class:`FactorTable` objects.</span>
+
+<span class="sd">        The bridge from estimation to application: each rating variable</span>
+<span class="sd">        becomes a named lookup that plugs directly into the build-up and</span>
+<span class="sd">        renewal machinery, with ``default=1.0`` for unknown levels --</span>
+<span class="sd">        matching how :meth:`predict` treats levels unseen at fit time.</span>
+<span class="sd">        Continuous covariates have no level-&gt;factor form and are not</span>
+<span class="sd">        included; read their per-unit effect from :meth:`relativity_table`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict of str -&gt; FactorTable</span>
+<span class="sd">            One table per categorical predictor, keyed by variable name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coefficients_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;model is not fit&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">var</span><span class="p">:</span> <span class="n">FactorTable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">var</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">rels</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">rels</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">relativities_</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span></div>
+
+
 <div class="viewcode-block" id="GLMRelativities.summary">
 <a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.GLMRelativities.summary">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
@@ -680,6 +914,262 @@
         <span class="n">out</span><span class="p">[</span><span class="s2">&quot;relativity&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s2">&quot;coef&quot;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">out</span></div>
 </div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Credibility-smoothed relativities and sparse-level handling</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<div class="viewcode-block" id="credibility_relativities">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.credibility_relativities">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">credibility_relativities</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">factor</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">response</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">exposure</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">prior</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;buhlmann&quot;</span><span class="p">,</span>
+    <span class="n">full_credibility</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">base_level</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;One-way relativities shrunk toward a prior by credibility, per level.</span>
+
+<span class="sd">    Sparse levels produce unstable observed relativities; the classical</span>
+<span class="sd">    actuarial answer is not to drop them or regularize generically but to</span>
+<span class="sd">    credibility-weight them against a complement:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \text{relativity}_\ell = Z_\ell \cdot \text{observed}_\ell</span>
+<span class="sd">        + (1 - Z_\ell) \cdot \text{prior}_\ell .</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : DataFrame</span>
+<span class="sd">        One row per observation.</span>
+<span class="sd">    factor, response : str</span>
+<span class="sd">        The rating variable to smooth and the response column.</span>
+<span class="sd">    exposure : str, optional</span>
+<span class="sd">        Exposure column. Level weights and the observed relativities are</span>
+<span class="sd">        exposure-weighted when given; otherwise each row has weight 1.</span>
+<span class="sd">    prior : float, mapping, or Series</span>
+<span class="sd">        The complement of credibility *on the relativity scale*. The default</span>
+<span class="sd">        1.0 shrinks toward &quot;no effect&quot;; a mapping/Series (e.g. the current</span>
+<span class="sd">        filed factors) shrinks each level toward its existing relativity.</span>
+<span class="sd">        Levels missing from a mapping fall back to 1.0.</span>
+<span class="sd">    method : {&quot;buhlmann&quot;, &quot;limited_fluctuation&quot;}</span>
+<span class="sd">        How :math:`Z_\ell` is estimated:</span>
+
+<span class="sd">        * ``&quot;buhlmann&quot;`` (default) -- empirical Bühlmann-Straub across the</span>
+<span class="sd">          levels of ``factor`` (each row is one observation of its level),</span>
+<span class="sd">          via :func:`ratingmodels.buhlmann_straub` /</span>
+<span class="sd">          :class:`actuarialpy.BuhlmannStraub`. Greatest-accuracy credibility:</span>
+<span class="sd">          :math:`Z = w/(w + k)` with :math:`k` estimated from the data.</span>
+<span class="sd">        * ``&quot;limited_fluctuation&quot;`` -- the square-root rule</span>
+<span class="sd">          :math:`Z = \min(1, \sqrt{n_\ell / n_{\text{full}}})` where</span>
+<span class="sd">          :math:`n_\ell` is the level&#39;s total ``response`` and</span>
+<span class="sd">          ``full_credibility`` is the full-credibility standard in the same</span>
+<span class="sd">          units (for claim counts, e.g.</span>
+<span class="sd">          :func:`ratingmodels.full_credibility_standard`).</span>
+<span class="sd">    full_credibility : float, optional</span>
+<span class="sd">        Required when ``method=&quot;limited_fluctuation&quot;``.</span>
+<span class="sd">    base_level : optional</span>
+<span class="sd">        When given, the ``observed`` and ``relativity`` columns are each</span>
+<span class="sd">        rebased so this level equals 1.0.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Indexed by level with columns ``n``, ``exposure``, ``response``,</span>
+<span class="sd">        ``observed``, ``credibility``, ``prior``, ``relativity``.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    With the default scalar prior of 1.0, the Bühlmann-Straub form is exactly</span>
+<span class="sd">    the credibility-weighted mean divided by the collective mean: shrinking</span>
+<span class="sd">    the relativity toward 1 and shrinking the level mean toward the overall</span>
+<span class="sd">    mean are the same operation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.credibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">buhlmann_straub</span><span class="p">,</span> <span class="n">limited_fluctuation_credibility</span>
+
+    <span class="k">if</span> <span class="n">factor</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;factor column </span><span class="si">{</span><span class="n">factor</span><span class="si">!r}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+    <span class="n">grp</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">factor</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;n&quot;</span><span class="p">)</span>
+    <span class="n">resp_sum</span> <span class="o">=</span> <span class="n">grp</span><span class="p">[</span><span class="n">response</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">expo_sum</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;exposure&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">expo_sum</span> <span class="o">=</span> <span class="n">grp</span><span class="p">[</span><span class="n">exposure</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;exposure&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">expo_sum</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">bad</span> <span class="o">=</span> <span class="n">expo_sum</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">expo_sum</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;level </span><span class="si">{</span><span class="n">bad</span><span class="si">!r}</span><span class="s2"> has non-positive total exposure&quot;</span><span class="p">)</span>
+
+    <span class="n">level_mean</span> <span class="o">=</span> <span class="n">resp_sum</span> <span class="o">/</span> <span class="n">expo_sum</span>
+    <span class="n">overall_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">resp_sum</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">expo_sum</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">overall_mean</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;overall mean response must be positive&quot;</span><span class="p">)</span>
+    <span class="n">observed</span> <span class="o">=</span> <span class="p">(</span><span class="n">level_mean</span> <span class="o">/</span> <span class="n">overall_mean</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;observed&quot;</span><span class="p">)</span>
+
+    <span class="n">meth</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">meth</span> <span class="o">==</span> <span class="s2">&quot;buhlmann&quot;</span><span class="p">:</span>
+        <span class="n">work</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;_level_&quot;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">factor</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+                <span class="s2">&quot;_period_&quot;</span><span class="p">:</span> <span class="n">grp</span><span class="o">.</span><span class="n">cumcount</span><span class="p">()</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+                <span class="s2">&quot;_weight_&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="n">data</span><span class="p">[</span><span class="n">exposure</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+                <span class="p">),</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">work</span><span class="p">[</span><span class="s2">&quot;_value_&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">response</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">/</span> <span class="n">work</span><span class="p">[</span><span class="s2">&quot;_weight_&quot;</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">bs</span> <span class="o">=</span> <span class="n">buhlmann_straub</span><span class="p">(</span>
+                <span class="n">work</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s2">&quot;_level_&quot;</span><span class="p">,</span> <span class="n">period</span><span class="o">=</span><span class="s2">&quot;_period_&quot;</span><span class="p">,</span>
+                <span class="n">value</span><span class="o">=</span><span class="s2">&quot;_value_&quot;</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;_weight_&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># pragma: no cover - message pass-through</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Bühlmann-Straub estimation failed (levels may have too few &quot;</span>
+                <span class="s2">&quot;observations to estimate the within-level variance); &quot;</span>
+                <span class="s2">&quot;consider method=&#39;limited_fluctuation&#39;&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">bs</span><span class="o">.</span><span class="n">k</span><span class="p">)</span> <span class="ow">or</span> <span class="n">bs</span><span class="o">.</span><span class="n">k</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Bühlmann-Straub produced a non-finite credibility constant; &quot;</span>
+                <span class="s2">&quot;consider method=&#39;limited_fluctuation&#39;&quot;</span>
+            <span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">bs</span><span class="o">.</span><span class="n">credibility</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">observed</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">meth</span> <span class="o">==</span> <span class="s2">&quot;limited_fluctuation&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">full_credibility</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">full_credibility</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;method=&#39;limited_fluctuation&#39; requires a positive &quot;</span>
+                <span class="s2">&quot;full_credibility standard in response units&quot;</span>
+            <span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">limited_fluctuation_credibility</span><span class="p">(</span><span class="n">resp_sum</span><span class="p">,</span> <span class="n">full_credibility</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;unknown method </span><span class="si">{</span><span class="n">method</span><span class="si">!r}</span><span class="s2">; expected &#39;buhlmann&#39; or &#39;limited_fluctuation&#39;&quot;</span>
+        <span class="p">)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">observed</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+        <span class="n">prior_s</span> <span class="o">=</span> <span class="n">prior</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">observed</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="n">prior_s</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
+            <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">prior</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lvl</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span> <span class="k">for</span> <span class="n">lvl</span> <span class="ow">in</span> <span class="n">observed</span><span class="o">.</span><span class="n">index</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="n">observed</span><span class="o">.</span><span class="n">index</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">prior_s</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">prior</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">observed</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="n">relativity</span> <span class="o">=</span> <span class="n">z</span> <span class="o">*</span> <span class="n">observed</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">z</span><span class="p">)</span> <span class="o">*</span> <span class="n">prior_s</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;n&quot;</span><span class="p">:</span> <span class="n">n</span><span class="p">,</span>
+            <span class="s2">&quot;exposure&quot;</span><span class="p">:</span> <span class="n">expo_sum</span><span class="p">,</span>
+            <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="n">resp_sum</span><span class="p">,</span>
+            <span class="s2">&quot;observed&quot;</span><span class="p">:</span> <span class="n">observed</span><span class="p">,</span>
+            <span class="s2">&quot;credibility&quot;</span><span class="p">:</span> <span class="n">z</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;credibility&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;prior&quot;</span><span class="p">:</span> <span class="n">prior_s</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;prior&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;relativity&quot;</span><span class="p">:</span> <span class="n">relativity</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">&quot;relativity&quot;</span><span class="p">),</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">factor</span>
+    <span class="k">if</span> <span class="n">base_level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">base_level</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;base level </span><span class="si">{</span><span class="n">base_level</span><span class="si">!r}</span><span class="s2"> not found among levels&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;observed&quot;</span><span class="p">,</span> <span class="s2">&quot;relativity&quot;</span><span class="p">):</span>
+            <span class="n">base_val</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">base_level</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">base_val</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;base level </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> must be positive to rebase&quot;</span><span class="p">)</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">/</span> <span class="n">base_val</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="collapse_sparse_levels">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.collapse_sparse_levels">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">collapse_sparse_levels</span><span class="p">(</span>
+    <span class="n">levels</span><span class="p">,</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_exposure</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">other_label</span><span class="o">=</span><span class="s2">&quot;Other&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Recode levels below an exposure or count threshold into one bucket.</span>
+
+<span class="sd">    The blunt companion to :func:`credibility_relativities`: rather than</span>
+<span class="sd">    shrinking a thin level&#39;s relativity, fold the level into ``other_label``</span>
+<span class="sd">    before fitting, so the design matrix never carries columns the data</span>
+<span class="sd">    cannot support.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    levels : array-like</span>
+<span class="sd">        The categorical column (Series in, Series out on the same index).</span>
+<span class="sd">    exposure : array-like, optional</span>
+<span class="sd">        Aligned exposure; level totals are sums of this when given, row</span>
+<span class="sd">        counts otherwise.</span>
+<span class="sd">    min_exposure, min_n : float / int, optional</span>
+<span class="sd">        Keep a level only if its total exposure is at least ``min_exposure``</span>
+<span class="sd">        and its row count at least ``min_n``. At least one must be given.</span>
+<span class="sd">    other_label</span>
+<span class="sd">        Label assigned to collapsed levels. Must not already be a kept level.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    (recoded, summary)</span>
+<span class="sd">        ``recoded`` -- the recoded labels (Series if ``levels`` was a Series,</span>
+<span class="sd">        else an ndarray). ``summary`` -- a DataFrame indexed by original</span>
+<span class="sd">        level with columns ``n``, ``exposure``, ``collapsed``; apply the same</span>
+<span class="sd">        recode to future data by mapping levels where ``collapsed`` is True.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">min_exposure</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">min_n</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;give min_exposure and/or min_n&quot;</span><span class="p">)</span>
+    <span class="n">is_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">levels</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span>
+    <span class="n">lab</span> <span class="o">=</span> <span class="n">levels</span> <span class="k">if</span> <span class="n">is_series</span> <span class="k">else</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">levels</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lab</span><span class="p">)),</span> <span class="n">index</span><span class="o">=</span><span class="n">lab</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">exposure</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">lab</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">lab</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exposure must match levels in length&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">w</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exposure must be nonnegative&quot;</span><span class="p">)</span>
+
+    <span class="n">frame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;_lvl_&quot;</span><span class="p">:</span> <span class="n">lab</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span> <span class="s2">&quot;_w_&quot;</span><span class="p">:</span> <span class="n">w</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()})</span>
+    <span class="n">agg</span> <span class="o">=</span> <span class="n">frame</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;_lvl_&quot;</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="s2">&quot;_w_&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">agg</span><span class="p">([</span><span class="s2">&quot;size&quot;</span><span class="p">,</span> <span class="s2">&quot;sum&quot;</span><span class="p">])</span>
+    <span class="n">agg</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;n&quot;</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">]</span>
+    <span class="n">keep</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">agg</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">min_exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">keep</span> <span class="o">&amp;=</span> <span class="n">agg</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">min_exposure</span>
+    <span class="k">if</span> <span class="n">min_n</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">keep</span> <span class="o">&amp;=</span> <span class="n">agg</span><span class="p">[</span><span class="s2">&quot;n&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">min_n</span>
+    <span class="n">agg</span><span class="p">[</span><span class="s2">&quot;collapsed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">~</span><span class="n">keep</span>
+    <span class="n">agg</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">agg</span><span class="p">[</span><span class="s2">&quot;collapsed&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;threshold collapses every level; nothing would remain&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">other_label</span> <span class="ow">in</span> <span class="n">agg</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">~</span><span class="n">agg</span><span class="p">[</span><span class="s2">&quot;collapsed&quot;</span><span class="p">]]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;other_label </span><span class="si">{</span><span class="n">other_label</span><span class="si">!r}</span><span class="s2"> is already a kept level; choose another&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">collapsed_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">agg</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">agg</span><span class="p">[</span><span class="s2">&quot;collapsed&quot;</span><span class="p">]])</span>
+    <span class="n">recoded_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">other_label</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">collapsed_set</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">lab</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">is_series</span><span class="p">:</span>
+        <span class="n">recoded</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">recoded_values</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">levels</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">levels</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">recoded</span> <span class="o">=</span> <span class="n">recoded_values</span>
+    <span class="k">return</span> <span class="n">recoded</span><span class="p">,</span> <span class="n">agg</span></div>
 
 </pre></div>
         </article>

@@ -264,10 +264,18 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gini_coefficient&quot;</span><span class="p">,</span> <span class="s2">&quot;lift_table&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;gini_coefficient&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lift_table&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;calibration_table&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;actual_expected_table&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;compare_models&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_as_arrays</span><span class="p">(</span><span class="n">actual</span><span class="p">,</span> <span class="n">predicted</span><span class="p">,</span> <span class="n">exposure</span><span class="p">):</span>
@@ -426,6 +434,273 @@
         <span class="n">rows</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;band&quot;</span><span class="p">,</span> <span class="s2">&quot;n&quot;</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="s2">&quot;predicted_mean&quot;</span><span class="p">,</span> <span class="s2">&quot;actual_mean&quot;</span><span class="p">,</span> <span class="s2">&quot;lift&quot;</span><span class="p">]</span>
     <span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;band&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="calibration_table">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.calibration_table">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calibration_table</span><span class="p">(</span>
+    <span class="n">actual</span><span class="p">,</span>
+    <span class="n">predicted</span><span class="p">,</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_bands</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calibration across the prediction range: actual vs. predicted by band.</span>
+
+<span class="sd">    The companion to :func:`lift_table`: lift asks whether predictions *order*</span>
+<span class="sd">    risks; calibration asks whether they are *right on the level*. Records are</span>
+<span class="sd">    banded into ``n_bands`` groups of (approximately) equal exposure by</span>
+<span class="sd">    predicted value, and each band reports per-unit actual and predicted means</span>
+<span class="sd">    (band totals over band exposure) and their ratio -- so ``actual`` and</span>
+<span class="sd">    ``predicted`` are treated symmetrically and should both be on the *total*</span>
+<span class="sd">    scale, as from ``model.predict(df, exposure=...)``. A well-calibrated</span>
+<span class="sd">    model has ``ae_ratio`` near 1.0 in every band; a systematic drift (low</span>
+<span class="sd">    bands above 1, high bands below) is the classic signature of over-shrunk</span>
+<span class="sd">    predictions.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Indexed 1..n_bands with columns ``n``, ``exposure``,</span>
+<span class="sd">        ``predicted_mean``, ``actual_mean``, ``ae_ratio``. With ``by``</span>
+<span class="sd">        (group labels aligned with ``actual``), one table per group under a</span>
+<span class="sd">        ``(group, band)`` MultiIndex.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">by</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">_as_arrays</span><span class="p">(</span><span class="n">actual</span><span class="p">,</span> <span class="n">predicted</span><span class="p">,</span> <span class="n">exposure</span><span class="p">)</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">by</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;by must match actual/predicted in length&quot;</span><span class="p">)</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="n">a</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">:</span> <span class="n">p</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">:</span> <span class="n">w</span><span class="p">,</span> <span class="s2">&quot;g&quot;</span><span class="p">:</span> <span class="n">keys</span><span class="p">})</span>
+        <span class="n">pieces</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">g</span><span class="p">:</span> <span class="n">calibration_table</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span> <span class="n">d</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span> <span class="n">d</span><span class="p">[</span><span class="s2">&quot;w&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span> <span class="n">n_bands</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">g</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">frame</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">pieces</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="s2">&quot;band&quot;</span><span class="p">])</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">_as_arrays</span><span class="p">(</span><span class="n">actual</span><span class="p">,</span> <span class="n">predicted</span><span class="p">,</span> <span class="n">exposure</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">n_bands</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n_bands must be at least 2&quot;</span><span class="p">)</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;stable&quot;</span><span class="p">)</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">w</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    <span class="n">total_w</span> <span class="o">=</span> <span class="n">w</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">total_w</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;total exposure must be positive&quot;</span><span class="p">)</span>
+    <span class="n">cum_w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+    <span class="n">band</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">((</span><span class="n">cum_w</span> <span class="o">/</span> <span class="n">total_w</span> <span class="o">*</span> <span class="n">n_bands</span> <span class="o">-</span> <span class="mf">1e-12</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="n">n_bands</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_bands</span><span class="p">):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">band</span> <span class="o">==</span> <span class="n">b</span>
+        <span class="n">wb</span> <span class="o">=</span> <span class="n">w</span><span class="p">[</span><span class="n">m</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">wb</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">b</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">))</span>
+            <span class="k">continue</span>
+        <span class="n">psum</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="n">m</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="n">asum</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">m</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="n">predicted_mean</span> <span class="o">=</span> <span class="n">psum</span> <span class="o">/</span> <span class="n">wb</span>
+        <span class="n">actual_mean</span> <span class="o">=</span> <span class="n">asum</span> <span class="o">/</span> <span class="n">wb</span>
+        <span class="n">ae</span> <span class="o">=</span> <span class="n">asum</span> <span class="o">/</span> <span class="n">psum</span> <span class="k">if</span> <span class="n">psum</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">b</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span> <span class="nb">float</span><span class="p">(</span><span class="n">wb</span><span class="p">),</span> <span class="n">predicted_mean</span><span class="p">,</span> <span class="n">actual_mean</span><span class="p">,</span> <span class="n">ae</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;band&quot;</span><span class="p">,</span> <span class="s2">&quot;n&quot;</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="s2">&quot;predicted_mean&quot;</span><span class="p">,</span> <span class="s2">&quot;actual_mean&quot;</span><span class="p">,</span> <span class="s2">&quot;ae_ratio&quot;</span><span class="p">]</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;band&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="actual_expected_table">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.actual_expected_table">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">actual_expected_table</span><span class="p">(</span>
+    <span class="n">actual</span><span class="p">,</span>
+    <span class="n">expected</span><span class="p">,</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">include_total</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Actual-to-expected exhibit: totals, means, and A/E ratio by segment.</span>
+
+<span class="sd">    The workhorse validation exhibit: for each segment, the total actual,</span>
+<span class="sd">    total expected, their exposure-weighted means, and the A/E ratio. An A/E</span>
+<span class="sd">    near 1.0 in every segment of a variable means the model has captured that</span>
+<span class="sd">    variable&#39;s effect; a pattern across levels means residual signal.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual, expected : array-like</span>
+<span class="sd">        Observed outcomes and model expectations, row-aligned. ``expected``</span>
+<span class="sd">        should be on the same total scale as ``actual`` (e.g. include</span>
+<span class="sd">        exposure), as from ``model.predict(df, exposure=...)``.</span>
+<span class="sd">    exposure : array-like, optional</span>
+<span class="sd">        Weights for the mean columns. Row counts when omitted.</span>
+<span class="sd">    by : array-like, mapping, or DataFrame, optional</span>
+<span class="sd">        * omitted -- a single overall row.</span>
+<span class="sd">        * array of labels -- one row per level.</span>
+<span class="sd">        * mapping/DataFrame of ``name -&gt; labels`` -- one block per variable,</span>
+<span class="sd">          stacked tidily under a ``(variable, level)`` MultiIndex; one call</span>
+<span class="sd">          audits every rating variable of a validation frame.</span>
+<span class="sd">    include_total : bool</span>
+<span class="sd">        Append an overall row (labelled ``&quot;All&quot;``). Default True.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Columns ``n``, ``exposure``, ``actual``, ``expected``,</span>
+<span class="sd">        ``actual_mean``, ``expected_mean``, ``ae_ratio``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">_as_arrays</span><span class="p">(</span><span class="n">actual</span><span class="p">,</span> <span class="n">expected</span><span class="p">,</span> <span class="n">exposure</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_row</span><span class="p">(</span><span class="n">mask</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="n">wsum</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="n">asum</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="n">esum</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">n</span><span class="p">,</span>
+            <span class="n">wsum</span><span class="p">,</span>
+            <span class="n">asum</span><span class="p">,</span>
+            <span class="n">esum</span><span class="p">,</span>
+            <span class="n">asum</span> <span class="o">/</span> <span class="n">wsum</span> <span class="k">if</span> <span class="n">wsum</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+            <span class="n">esum</span> <span class="o">/</span> <span class="n">wsum</span> <span class="k">if</span> <span class="n">wsum</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+            <span class="n">asum</span> <span class="o">/</span> <span class="n">esum</span> <span class="k">if</span> <span class="n">esum</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;n&quot;</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="s2">&quot;actual&quot;</span><span class="p">,</span> <span class="s2">&quot;expected&quot;</span><span class="p">,</span> <span class="s2">&quot;actual_mean&quot;</span><span class="p">,</span> <span class="s2">&quot;expected_mean&quot;</span><span class="p">,</span> <span class="s2">&quot;ae_ratio&quot;</span><span class="p">]</span>
+    <span class="n">all_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">by</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">_row</span><span class="p">(</span><span class="n">all_mask</span><span class="p">)],</span> <span class="n">columns</span><span class="o">=</span><span class="n">cols</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="s2">&quot;All&quot;</span><span class="p">]))</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">by</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)):</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">by</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">by</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">by</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">by</span><span class="o">.</span><span class="n">columns</span><span class="p">}</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">labels</span> <span class="ow">in</span> <span class="n">groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">keys</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;by[</span><span class="si">{</span><span class="n">var</span><span class="si">!r}</span><span class="s2">] must match actual/expected in length&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">lvl</span> <span class="ow">in</span> <span class="n">pd</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+                <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_row</span><span class="p">(</span><span class="n">keys</span> <span class="o">==</span> <span class="n">lvl</span><span class="p">))</span>
+                <span class="n">index</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">var</span><span class="p">,</span> <span class="n">lvl</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">include_total</span><span class="p">:</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_row</span><span class="p">(</span><span class="n">all_mask</span><span class="p">))</span>
+            <span class="n">index</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;All&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">rows</span><span class="p">,</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">cols</span><span class="p">,</span>
+            <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_tuples</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;variable&quot;</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">]),</span>
+        <span class="p">)</span>
+
+    <span class="n">keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">by</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">keys</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;by must match actual/expected in length&quot;</span><span class="p">)</span>
+    <span class="n">levels</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;stable&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">_row</span><span class="p">(</span><span class="n">keys</span> <span class="o">==</span> <span class="n">lvl</span><span class="p">)</span> <span class="k">for</span> <span class="n">lvl</span> <span class="ow">in</span> <span class="n">levels</span><span class="p">]</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">levels</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_total</span><span class="p">:</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_row</span><span class="p">(</span><span class="n">all_mask</span><span class="p">))</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">levels</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;All&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">cols</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="compare_models">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.compare_models">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compare_models</span><span class="p">(</span>
+    <span class="n">models</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">response</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">exposure</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">offset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">weights</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_bands</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Side-by-side scorecard for fitted GLMs on one evaluation frame.</span>
+
+<span class="sd">    Every model is scored on the *same* data -- pass a held-out validation</span>
+<span class="sd">    frame (see :func:`ratingmodels.temporal_split` /</span>
+<span class="sd">    :func:`ratingmodels.group_split`) for an honest comparison, or the</span>
+<span class="sd">    training frame for an in-sample one.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    models : mapping or sequence</span>
+<span class="sd">        ``name -&gt; fitted GLMRelativities`` (or a sequence, auto-named</span>
+<span class="sd">        ``model_1``, ``model_2``, ...). Each model must expose the fitted</span>
+<span class="sd">        interface (``predict``, family deviance); i.e. any</span>
+<span class="sd">        :class:`GLMRelativities`-compatible object.</span>
+<span class="sd">    data, response, exposure, offset, weights : DataFrame / str</span>
+<span class="sd">        Evaluation frame and its column names, as in ``GLMRelativities.fit``.</span>
+<span class="sd">    n_bands : int</span>
+<span class="sd">        Bands for the calibration-error summary.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        One row per model: ``family``, ``n_params``, ``converged``,</span>
+<span class="sd">        ``dispersion`` (training), then evaluation-frame metrics</span>
+<span class="sd">        ``deviance``, ``null_deviance``, ``deviance_explained``, ``gini``,</span>
+<span class="sd">        ``ae_ratio``, and ``calibration_error`` (the exposure-weighted mean</span>
+<span class="sd">        absolute deviation of band-level A/E from 1.0).</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Deviance is family-specific: it is comparable between models of the same</span>
+<span class="sd">    family, while ``gini``, ``ae_ratio``, and ``calibration_error`` are</span>
+<span class="sd">    comparable across families. No AIC is reported -- the standard errors are</span>
+<span class="sd">    quasi-likelihood, so a true likelihood is not available.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="n">named</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">named</span> <span class="o">=</span> <span class="p">[(</span><span class="sa">f</span><span class="s2">&quot;model_</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">models</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">named</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;no models given&quot;</span><span class="p">)</span>
+
+    <span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">response</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">prior_w</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">weights</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">expo</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">exposure</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="n">eta_offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">expo</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exposure must be positive&quot;</span><span class="p">)</span>
+        <span class="n">eta_offset</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">expo</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">offset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">eta_offset</span> <span class="o">+=</span> <span class="n">data</span><span class="p">[</span><span class="n">offset</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">rate0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">prior_w</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">prior_w</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">eta_offset</span><span class="p">))</span>
+    <span class="n">mu0</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">rate0</span><span class="p">,</span> <span class="mf">1e-12</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">eta_offset</span><span class="p">)</span>
+
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">named</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;coefficients_&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;model </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is not fit&quot;</span><span class="p">)</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">_power</span><span class="p">()</span>
+        <span class="n">dev</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">_deviance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">prior_w</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">null_dev</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">_deviance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu0</span><span class="p">,</span> <span class="n">prior_w</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">cal</span> <span class="o">=</span> <span class="n">calibration_table</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">expo</span><span class="p">,</span> <span class="n">n_bands</span><span class="o">=</span><span class="n">n_bands</span><span class="p">)</span>
+        <span class="n">ok</span> <span class="o">=</span> <span class="n">cal</span><span class="p">[</span><span class="s2">&quot;ae_ratio&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span>
+        <span class="n">cal_err</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cal</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ok</span><span class="p">,</span> <span class="s2">&quot;ae_ratio&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">),</span>
+                             <span class="n">weights</span><span class="o">=</span><span class="n">cal</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ok</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="n">ok</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
+            <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="p">)</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;family&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">family</span><span class="p">,</span>
+                <span class="s2">&quot;n_params&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">coefficients_</span><span class="p">)),</span>
+                <span class="s2">&quot;converged&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">converged_</span><span class="p">),</span>
+                <span class="s2">&quot;dispersion&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">dispersion_</span><span class="p">),</span>
+                <span class="s2">&quot;deviance&quot;</span><span class="p">:</span> <span class="n">dev</span><span class="p">,</span>
+                <span class="s2">&quot;null_deviance&quot;</span><span class="p">:</span> <span class="n">null_dev</span><span class="p">,</span>
+                <span class="s2">&quot;deviance_explained&quot;</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">dev</span> <span class="o">/</span> <span class="n">null_dev</span> <span class="k">if</span> <span class="n">null_dev</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                <span class="s2">&quot;gini&quot;</span><span class="p">:</span> <span class="n">gini_coefficient</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">expo</span><span class="p">),</span>
+                <span class="s2">&quot;ae_ratio&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">mu</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="k">if</span> <span class="n">mu</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                <span class="s2">&quot;calibration_error&quot;</span><span class="p">:</span> <span class="n">cal_err</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">nm</span> <span class="k">for</span> <span class="n">nm</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">named</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">))</span></div>
 
 </pre></div>
         </article>
