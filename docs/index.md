@@ -78,8 +78,10 @@ once — and `ratingmodels` builds directly on it. `lossmodels`, `extremeloss`, 
 The full arc is runnable end to end — see the worked examples:
 [Example 1: experience to a renewal rate](worked-example-experience.md),
 [Example 2: pricing a book, in columns](worked-example-book.md),
-[Example 3: claims to capital](worked-example.md), and
-[Example 4: censored payments to coverage terms](worked-example-coverage.md).
+[Example 3: claims to capital](worked-example.md),
+[Example 4: censored payments to coverage terms](worked-example-coverage.md),
+[Example 5: triangle to indicated change](worked-example-indication.md), and
+[Example 6: pricing the tail, with error bars](worked-example-tail.md).
 
 ## A cross-package example
 
@@ -146,4 +148,6 @@ worked-example-experience
 worked-example-book
 worked-example
 worked-example-coverage
+worked-example-indication
+worked-example-tail
 :::

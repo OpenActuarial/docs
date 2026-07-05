@@ -204,6 +204,46 @@ stabilizing, use [credibility smoothing](#credibility-smoothed-relativities)
 regularization at scale ever become a genuine requirement, `glum` is the
 designated engine for that job, behind this same API.
 
+### Interactions
+
+When the effect of one variable depends on the level of another — urban
+manufacturing is worse than urban *or* manufacturing suggests — add the
+pair to the design. Categorical × categorical uses treatment coding (an
+indicator per **observed** non-base × non-base cell, so main effects keep
+their interpretation and unobserved cells cannot alias the design);
+categorical × continuous fits one slope modifier per non-base level:
+
+```python
+model = rm.GLMRelativities(family="poisson").fit(
+    df, response="claims", predictors=["area", "industry"],
+    exposure="member_months",
+    interactions=[("area", "industry")],
+)
+
+model.relativities_["area:industry"]   # MultiIndex (area, industry) -> factor
+model.relativity_table()               # adds ("area:industry", "B | mfg") rows
+```
+
+The interaction factor multiplies **on top of** both main effects.
+`to_factor_tables()` deliberately excludes interactions — a `FactorTable`
+is single-variable by contract; read cells from `relativities_["a:b"]`.
+
+### Prediction intervals
+
+`predict_interval` puts delta-method confidence bounds on the fitted mean
+for any frame — the uncertainty of the *rate* the model assigns to a cell,
+from the quasi-likelihood coefficient covariance (it matches
+`results_.get_prediction` to numerical precision):
+
+```python
+model.predict_interval(new_business, exposure="member_months")
+# predicted | ci_low | ci_high        (index-aligned with the input)
+```
+
+This is an interval for the mean, not for individual outcomes — a single
+group's claims vary far more than its expected claims. For outcome
+distributions, simulate frequency and severity instead.
+
 ## Frequency–severity models
 
 The standard pricing decomposition — `loss_per_exposure = frequency ×
@@ -244,6 +284,13 @@ component is a full `GLMRelativities`, so every diagnostic above
 Rows with positive amounts but zero counts raise (severity is undefined
 there); claims closed at zero amount are excluded from the severity fit with
 a warning and still count toward frequency.
+
+Both components accept interaction terms
+(`frequency_interactions=[("area", "industry")]`; severity defaults to the
+frequency list). Categorical × categorical cells surface in
+`combined_relativities()` under an `"a:b"` key with a MultiIndex of level
+pairs, `combined` being the per-cell frequency × severity product;
+`to_factor_tables()` excludes interactions, exactly as the GLM does.
 
 ## Credibility-smoothed relativities
 
@@ -351,6 +398,69 @@ Deviance is family-specific (comparable within a family); `gini`,
 reported — the standard errors are quasi-likelihood, so a true likelihood is
 not available.
 
+## Rate indications
+
+`RateIndication` blends experience against a manual, grosses up through
+`RetentionLoad`, and reads off the indicated rate and change — but it
+consumes *point* inputs: a trended, developed loss cost and an on-level
+premium. `ExperienceExhibit` is where those come from, with every
+adjustment a visible worksheet column:
+
+```python
+ex = rm.ExperienceExhibit(
+    earned_premium=[1_000_000, 1_100_000],
+    losses=[700_000, 650_000],
+    on_level_factors=olf["on_level_factor"],      # from on_level_factors
+    development_factors=proj["development_factor"],  # from ChainLadder
+    trend_factors=[1.05, 1.02],
+    period_labels=["CY2023", "CY2024"],
+)
+ex.exhibit()   # premium | OLF | on-level premium | losses | dev | trend
+#              #   | adjusted_losses | loss_ratio | weight
+
+ind = ex.to_indication(manual_loss_cost=70.0, credibility=0.6,
+                       current_rate=90.0, exposure=24_000, retention=ret)
+ind.indicated_rate_change()
+```
+
+The wiring is exact by construction: the indication's own
+`experience_loss_ratio()` reproduces the exhibit's aggregate ratio, and at
+full credibility the indicated rate **is** `retention.gross_rate(...)` of
+the assembled loss cost — the same expense algebra as the build-up and
+`PricingEvaluation`, not a second implementation that can drift.
+
+## Rating plans
+
+A fitted model is not yet a plan. `RatingPlan` is the implemented object —
+a base rate plus a `FactorTable` per rating variable — that rates a census
+with the full build-up visible, audits its own coverage, and round-trips
+through a dict for filing and version control:
+
+```python
+plan = rm.RatingPlan.from_model(model)        # factors + base_value_
+plan.validate(census)                          # levels the plan cannot rate
+rated = plan.rate(census, exposure="members")  # base_rate | {var}_factor ...
+#   | combined_relativity | rate | premium
+
+plan.rate(census, unknown="error")     # unmapped level -> hard stop, not 1.0
+plan.average_relativity(census, exposure="members")   # off-balance check
+rebuilt = rm.RatingPlan.from_dict(plan.to_dict())     # schema-versioned
+```
+
+`plan.rate(...)["premium"]` reproduces `model.predict(...)` exactly when
+the plan came from `from_model` — the plan **is** the model, restated as
+tables.
+
+Comparing the plan you have against the plan you propose is a first-class
+operation:
+
+```python
+comp = rm.compare_rating_plans(current, proposed, census, exposure="members")
+comp.summary()        # premiums, avg change, share increasing/decreasing
+comp.dislocation()    # the banded exhibit (next section)
+comp.by(census["region"])   # who absorbs the move
+```
+
 ## Rate dislocation
 
 An average rate change hides everything operational — who takes a large
@@ -389,6 +499,46 @@ rm.constraint_impact(
 Both are pure comparisons of rate vectors, so any source of "current" and
 "proposed" works — a renewal run (`renew`), a re-rated plan, or scenario
 output.
+
+## On-level factors
+
+Historical premium was earned at historical rates; the indication needs it
+at today's. `on_level_factors` is the parallelogram method computed in
+closed form — the earned rate index is a piecewise-linear function of time
+and is integrated exactly, so the classic textbook case (+10% mid-year,
+annual policies, calendar-year period) reproduces `1.1 / 1.0125` to
+machine precision rather than to grid resolution:
+
+```python
+rm.on_level_factors(
+    periods=[("2023-01-01", "2023-12-31"), ("2024-01-01", "2024-12-31")],
+    rate_changes=[("2023-07-01", 0.08), ("2024-04-01", 0.05)],
+    policy_term=1.0,          # 0 = instant earning; 1.0 = annual parallelogram
+)
+# period_start | period_end | average_earned_index | current_index
+#   | on_level_factor
+```
+
+## Pooling charges from a severity model
+
+`experience_rate` takes `pooling_charge` as an input; this is where it
+comes from. Any severity object exposing the two-method tail protocol —
+`sf(x)` and `mean_excess(d)` — prices the excess layer above a pooling
+point, returned as an auditable build-up:
+
+```python
+charge = rm.pooling_charge_from_severity(
+    severity, pooling_point=250_000, expected_frequency=0.7,
+    expense_ratio=0.08, risk_margin=0.05,
+)
+# exceedance_probability | mean_excess | expected_excess_per_claim
+#   | pure_excess_cost | pooling_charge
+```
+
+The protocol is duck-typed and deliberately tiny: `lossmodels`
+distributions (and layers) satisfy it, `extremeloss` GPD tail fits satisfy
+it with their closed-form mean excess, and any custom object with the two
+methods qualifies — no cross-package dependency in either direction.
 
 ## Pricing scenarios and margin
 

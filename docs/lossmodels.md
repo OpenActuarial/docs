@@ -112,6 +112,52 @@ truncation points; `ks_statistic` uses the PIT under truncation and compares
 against the **Kaplan–Meier** estimate (`kaplan_meier`, product-limit under
 left truncation and right censoring) when censoring is present.
 
+## Parameter uncertainty and model comparison
+
+A fitted distribution without standard errors is a point estimate
+pretending to be a model. `fit_uncertainty` takes any fitted distribution
+back, evaluates the numerical Hessian of the log-likelihood at its
+parameters, and returns the observed-information covariance — generically,
+for every in-package model, with truncation and censoring flowing through
+so the uncertainty matches the fit actually performed:
+
+```python
+fit = lm.fit_lognormal(claims, truncation=deductible)
+unc = lm.fit_uncertainty(fit, claims, truncation=deductible)
+unc.se                    # standard errors of (mu, sigma)
+unc.summary(0.95)         # estimate | se | ci_low | ci_high
+```
+
+A boundary solution (non-negative-definite Hessian) raises rather than
+returning a covariance that means nothing.
+
+`compare_fits` is the companion to `fit_best_severity`: every candidate on
+every criterion in one table, so the trade-offs are visible — a model can
+win AIC while losing the tail (Anderson–Darling weights the tails,
+Kolmogorov–Smirnov the body):
+
+```python
+lm.compare_fits({"lognormal": ln, "gamma": g, "pareto": p}, claims)
+# n_params | loglik | aic | bic | ks | ad | cvm
+```
+
+The uncertainty carries through to the factors actually filed:
+`increased_limits_table` and `loss_elimination_table` tabulate ratios of
+limited expected values, and — given the model's `FitUncertainty` — put
+delta-method bands on the factor itself (the base-limit row has `se = 0`
+exactly; an infinite-mean severity refuses to produce elimination ratios):
+
+```python
+lm.increased_limits_table(fit, limits=[250e3, 500e3, 1e6],
+                          base_limit=250e3, uncertainty=unc)
+# limit -> lev | ilf | ilf_se | ci_low | ci_high
+```
+
+Every severity model (and `Layer`/`PolicyLimit` by inheritance) also
+exposes the small **tail protocol** — `sf(x)` and `mean_excess(d)` — that
+downstream consumers like `ratingmodels.pooling_charge_from_severity`
+duck-type against.
+
 ## Aggregate losses
 
 `CollectiveRiskModel` composes a frequency and a severity into the aggregate
