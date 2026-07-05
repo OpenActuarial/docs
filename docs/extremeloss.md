@@ -96,6 +96,27 @@ remains the shorthand. A fitted tail also exposes `sf` and a closed-form
 `mean_excess`, so it plugs directly into
 `ratingmodels.pooling_charge_from_severity`.
 
+The same treatment covers block maxima: `fit_gev` populates
+`GEVFit.covariance`, and `gev_return_level` carries delta-method bands
+(periods in blocks). Switching between the POT and block-maxima workflows
+no longer changes how much uncertainty you get to see.
+
+**Did the fit succeed?** `qq_points` / `pp_points` give the diagnostic
+point sets headlessly, and `parametric_bootstrap_gof` tests the fit with
+p-values that are honest about estimation -- every bootstrap replicate is
+*refit* before scoring, because comparing an estimated-parameter statistic
+against the known-parameter null is anti-conservative:
+
+```python
+el.parametric_bootstrap_gof(fit, losses, n_boot=500)
+# {"ks": ..., "ks_pvalue": ..., "ad": ..., "ad_pvalue": ...}
+```
+
+With the `plot` extra, `plot_gpd_diagnostics(fit, losses)` and
+`plot_gev_diagnostics(fit, maxima)` draw the Coles four-panel exhibit --
+probability, quantile, return level with its band and empirical points,
+density.
+
 ## Splicing onto a fitted body
 
 The handoff runs one direction: `extremeloss` fits the tail and returns a

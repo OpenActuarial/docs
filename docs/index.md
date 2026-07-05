@@ -125,6 +125,8 @@ Each package installs independently; `ratingmodels` pulls in `actuarialpy` and
 
 overview
 conventions
+validation
+stability
 :::
 
 :::{toctree}

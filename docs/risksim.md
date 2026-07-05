@@ -71,6 +71,26 @@ rs.metrics.tvar(res.retained_losses, 0.99)
 These are the ecosystem-wide empirical estimators — see the intro above and
 [Conventions](conventions.md#risk-measures-var-and-tvar).
 
+## Dependence between components
+
+Independent components overstate diversification in exactly the tail
+metrics above. `risksim.dependence.impose_rank_correlation` fixes the
+default without touching any sampler: simulate each component as usual,
+then reorder (Iman-Conover) to a target rank correlation -- marginals
+preserved exactly:
+
+```python
+from risksim.dependence import impose_rank_correlation
+
+matrix = np.column_stack([item.sample(n, rng) for item in items])
+total = impose_rank_correlation(matrix, corr, rng).sum(axis=1)
+```
+
+Rank correlation is **not** tail dependence: normal scores leave joint
+extremes asymptotically independent at any rho. When the question is "do
+the components blow up together", pass `scores="t"` with a small `df` --
+same rank correlation, genuinely clustered joint tails.
+
 ## Monte Carlo error
 
 A simulated VaR without an error estimate is a random number with

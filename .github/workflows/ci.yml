@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Sphinx build (warnings are errors)
+        run: python -m sphinx -b html docs docs/_build -W
+      - name: Link check (informational)
+        continue-on-error: true
+        run: python -m sphinx -b linkcheck docs docs/_linkcheck
