@@ -216,6 +216,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../worked-example-book.html">Example 2: pricing a book, in columns</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../worked-example.html">Example 3: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../worked-example-coverage.html">Example 4: censored payments to coverage terms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../worked-example-indication.html">Example 5: triangle to indicated change</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../worked-example-tail.html">Example 6: pricing the tail, with error bars</a></li>
 </ul>
 
 </div>
@@ -271,7 +273,11 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Numeric</span><span class="p">,</span>
@@ -435,6 +441,173 @@
         <span class="p">}</span>
         <span class="n">total</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">indicated_rate</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_rate</span>
         <span class="k">return</span> <span class="n">decompose_rate_change</span><span class="p">(</span><span class="n">drivers</span><span class="p">,</span> <span class="n">total_factor</span><span class="o">=</span><span class="n">total</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_as_period_array</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">arr</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">n</span><span class="p">,):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be a scalar or a length-</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2"> sequence; got shape </span><span class="si">{</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">arr</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> has non-finite values&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">arr</span>
+
+
+<div class="viewcode-block" id="ExperienceExhibit">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.ExperienceExhibit">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExperienceExhibit</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Assemble experience periods into the inputs a rate indication takes.</span>
+
+<span class="sd">    :class:`RateIndication` consumes *point* inputs -- a trended, developed</span>
+<span class="sd">    experience loss cost and an on-level premium. This is the object that</span>
+<span class="sd">    produces them from per-period columns, with every adjustment a visible</span>
+<span class="sd">    column of the worksheet: premium times its on-level factor, losses</span>
+<span class="sd">    times development and trend, a loss ratio per period, and the weighted</span>
+<span class="sd">    total. The natural factor producers are</span>
+<span class="sd">    :func:`~ratingmodels.on_level_factors` (the ``on_level_factor``</span>
+<span class="sd">    column) and ``actuarialpy.reserving.ChainLadder`` (per-origin</span>
+<span class="sd">    development factors), but any source works -- this object composes, it</span>
+<span class="sd">    does not re-derive.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    earned_premium : array-like</span>
+<span class="sd">        Earned premium per experience period, at historical rate level.</span>
+<span class="sd">    losses : array-like</span>
+<span class="sd">        Incurred losses per period (at whatever development and trend</span>
+<span class="sd">        level the factor arguments then adjust for).</span>
+<span class="sd">    on_level_factors, trend_factors, development_factors : scalar or array</span>
+<span class="sd">        Per-period multiplicative adjustments. Default 1.0.</span>
+<span class="sd">    weights : array-like, optional</span>
+<span class="sd">        Weights for the *diagnostic* weighted loss ratio. Default: on-level</span>
+<span class="sd">        premium, making the weighted ratio identical to the aggregate</span>
+<span class="sd">        ratio -- which is also the convention :meth:`to_indication` uses,</span>
+<span class="sd">        since the indication is built from period totals.</span>
+<span class="sd">    period_labels : sequence, optional</span>
+<span class="sd">        Exhibit index; defaults to ``0..n-1``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">earned_premium</span><span class="p">:</span> <span class="nb">object</span>
+    <span class="n">losses</span><span class="p">:</span> <span class="nb">object</span>
+    <span class="n">on_level_factors</span><span class="p">:</span> <span class="nb">object</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">trend_factors</span><span class="p">:</span> <span class="nb">object</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">development_factors</span><span class="p">:</span> <span class="nb">object</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">weights</span><span class="p">:</span> <span class="nb">object</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">period_labels</span><span class="p">:</span> <span class="n">Sequence</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">premium</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">earned_premium</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">premium</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">premium</span> <span class="o">=</span> <span class="n">premium</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">=</span> <span class="n">n</span> <span class="o">=</span> <span class="n">premium</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">premium</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">premium</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;earned_premium must be positive and finite&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">earned_premium</span> <span class="o">=</span> <span class="n">premium</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">losses</span> <span class="o">=</span> <span class="n">_as_period_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">losses</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="s2">&quot;losses&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">losses</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;losses must be nonnegative&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;on_level_factors&quot;</span><span class="p">,</span> <span class="s2">&quot;trend_factors&quot;</span><span class="p">,</span> <span class="s2">&quot;development_factors&quot;</span><span class="p">):</span>
+            <span class="n">arr</span> <span class="o">=</span> <span class="n">_as_period_array</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">),</span> <span class="n">n</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">arr</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be positive&quot;</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">arr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">_as_period_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="s2">&quot;weights&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;weights must be nonnegative with positive sum&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">period_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">period_labels</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;period_labels must match the number of periods&quot;</span><span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------ #</span>
+<div class="viewcode-block" id="ExperienceExhibit.exhibit">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.ExperienceExhibit.exhibit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">exhibit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The worksheet: one row per period, every adjustment a column.&quot;&quot;&quot;</span>
+        <span class="n">olp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">earned_premium</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_level_factors</span>
+        <span class="n">adj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">losses</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">development_factors</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_factors</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">olp</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">period_labels</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">period_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;period&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;earned_premium&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">earned_premium</span><span class="p">,</span>
+                <span class="s2">&quot;on_level_factor&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_level_factors</span><span class="p">,</span>
+                <span class="s2">&quot;on_level_premium&quot;</span><span class="p">:</span> <span class="n">olp</span><span class="p">,</span>
+                <span class="s2">&quot;losses&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">losses</span><span class="p">,</span>
+                <span class="s2">&quot;development_factor&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">development_factors</span><span class="p">,</span>
+                <span class="s2">&quot;trend_factor&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_factors</span><span class="p">,</span>
+                <span class="s2">&quot;adjusted_losses&quot;</span><span class="p">:</span> <span class="n">adj</span><span class="p">,</span>
+                <span class="s2">&quot;loss_ratio&quot;</span><span class="p">:</span> <span class="n">adj</span> <span class="o">/</span> <span class="n">olp</span><span class="p">,</span>
+                <span class="s2">&quot;weight&quot;</span><span class="p">:</span> <span class="n">w</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">index</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_level_premium</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Total on-level earned premium across the periods.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">earned_premium</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_level_factors</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">adjusted_losses</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Total developed, trended losses across the periods.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">losses</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">development_factors</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_factors</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">experience_loss_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Weighted per-period loss ratio (aggregate ratio by default).&quot;&quot;&quot;</span>
+        <span class="n">ex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exhibit</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">ex</span><span class="p">[</span><span class="s2">&quot;loss_ratio&quot;</span><span class="p">],</span> <span class="n">weights</span><span class="o">=</span><span class="n">ex</span><span class="p">[</span><span class="s2">&quot;weight&quot;</span><span class="p">]))</span>
+
+    <span class="c1"># ------------------------------------------------------------------ #</span>
+<div class="viewcode-block" id="ExperienceExhibit.to_indication">
+<a class="viewcode-back" href="../../ratingmodels.html#ratingmodels.ExperienceExhibit.to_indication">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_indication</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">manual_loss_cost</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">credibility</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">exposure</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">retention</span><span class="p">:</span> <span class="n">RetentionLoad</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">target_loss_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.85</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RateIndication</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Wire the assembled totals into a :class:`RateIndication`.</span>
+
+<span class="sd">        ``experience_loss_cost`` becomes ``adjusted_losses / exposure`` and</span>
+<span class="sd">        ``current_premium`` becomes :attr:`on_level_premium`, so the</span>
+<span class="sd">        indication&#39;s own ``experience_loss_ratio()`` reproduces this</span>
+<span class="sd">        exhibit&#39;s aggregate ratio exactly. ``exposure`` is the total over</span>
+<span class="sd">        the experience period, in the same units as ``manual_loss_cost``</span>
+<span class="sd">        and ``current_rate``. Remaining keyword arguments</span>
+<span class="sd">        (``trend_total_factor``, ``benefit_factor``, ...) pass through.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">exposure</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">exposure</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">exposure</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exposure must be positive&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">RateIndication</span><span class="p">(</span>
+            <span class="n">experience_loss_cost</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">adjusted_losses</span> <span class="o">/</span> <span class="n">exposure</span><span class="p">,</span>
+            <span class="n">manual_loss_cost</span><span class="o">=</span><span class="n">manual_loss_cost</span><span class="p">,</span>
+            <span class="n">credibility</span><span class="o">=</span><span class="n">credibility</span><span class="p">,</span>
+            <span class="n">current_rate</span><span class="o">=</span><span class="n">current_rate</span><span class="p">,</span>
+            <span class="n">current_premium</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">on_level_premium</span><span class="p">,</span>
+            <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span>
+            <span class="n">retention</span><span class="o">=</span><span class="n">retention</span><span class="p">,</span>
+            <span class="n">target_loss_ratio</span><span class="o">=</span><span class="n">target_loss_ratio</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </div>
 
 </pre></div>

@@ -63,6 +63,39 @@ parameterization, are pinned in
 [Conventions](conventions.md#tail-fitting-and-splicing). Sampling accepts the
 shared `rng` argument.
 
+## Uncertainty and return levels
+
+`fit_gpd` and `fit_pot` now populate `GPDFit.covariance` with the
+observed-information covariance of `(xi, beta)` (`None` when the
+information matrix is not positive definite — the MLE is irregular for
+`xi <= -1/2`, and a covariance that means nothing is worse than none).
+That uncertainty flows into the two places it matters most.
+
+**Threshold selection with error bands.** The scan reports `xi` and the
+**modified scale** `beta* = beta - xi*u` — the quantity that is actually
+constant above a valid threshold (raw `beta` drifts linearly in `u` even
+under a perfect GPD) — with standard errors, so the question becomes
+"where do these flatten *within their bands*":
+
+```python
+scan = el.threshold_diagnostic_table(losses, thresholds)
+# ... xi | xi_se | modified_scale | modified_scale_se | n_exceedances
+```
+
+**Return levels with confidence intervals.** The loss exceeded once per
+`T` periods, with delta-method intervals over `(zeta_u, xi, beta)`
+including the binomial variance of the exceedance rate (Coles §4.3.3):
+
+```python
+el.gpd_return_level(fit, [10, 50, 200], observations_per_period=1200)
+# return_period | return_level | se | ci_low | ci_high
+```
+
+Point estimates agree exactly with the scalar `fit.return_level(n)`, which
+remains the shorthand. A fitted tail also exposes `sf` and a closed-form
+`mean_excess`, so it plugs directly into
+`ratingmodels.pooling_charge_from_severity`.
+
 ## Splicing onto a fitted body
 
 The handoff runs one direction: `extremeloss` fits the tail and returns a

@@ -216,6 +216,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../worked-example-book.html">Example 2: pricing a book, in columns</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../worked-example.html">Example 3: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../worked-example-coverage.html">Example 4: censored payments to coverage terms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../worked-example-indication.html">Example 5: triangle to indicated change</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../worked-example-tail.html">Example 6: pricing the tail, with error bars</a></li>
 </ul>
 
 </div>
@@ -317,6 +319,46 @@
     <span class="n">n_exceedances</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">fit_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mle&quot;</span>
     <span class="n">covariance</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">se</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Standard errors of ``(xi, beta)``, or ``None`` without covariance.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">_np</span>
+
+        <span class="k">return</span> <span class="n">_np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">_np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">_np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariance</span><span class="p">)),</span> <span class="mf">0.0</span><span class="p">))</span>
+
+<div class="viewcode-block" id="GPDFit.sf">
+<a class="viewcode-back" href="../../extremeloss.html#extremeloss.GPDFit.sf">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Unconditional survival ``P(X &gt; x)``; alias of ``tail_probability``.</span>
+
+<span class="sd">        Half of the small tail protocol (with :meth:`mean_excess`) consumed</span>
+<span class="sd">        by e.g. ``ratingmodels.pooling_charge_from_severity``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tail_probability</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GPDFit.mean_excess">
+<a class="viewcode-back" href="../../extremeloss.html#extremeloss.GPDFit.mean_excess">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mean_excess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Mean excess ``E[X - d | X &gt; d]`` above the threshold, closed form.</span>
+
+<span class="sd">        For the GPD, :math:`e(d) = (\beta + \xi\,(d - u)) / (1 - \xi)` for</span>
+<span class="sd">        :math:`d \ge u` and :math:`\xi &lt; 1`; infinite for :math:`\xi \ge 1`</span>
+<span class="sd">        (the tail has no mean). Below the threshold the GPD says nothing --</span>
+<span class="sd">        a ``ValueError`` rather than a silent extrapolation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;mean_excess is defined by the GPD only at or above the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;threshold (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="si">}</span><span class="s2">); got </span><span class="si">{</span><span class="n">d</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">xi</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">xi</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xi</span><span class="p">))</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">tail_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.evt.gpd</span><span class="w"> </span><span class="kn">import</span> <span class="n">gpd_tail_probability</span>
@@ -443,22 +485,38 @@
 <a class="viewcode-back" href="../../extremeloss.html#extremeloss.ThresholdScan">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ThresholdScan</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Threshold-diagnostic results across a grid of thresholds.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Threshold-diagnostic results across a grid of thresholds.</span>
+
+<span class="sd">    ``modified_scale`` is :math:`\beta^* = \beta - \xi u`: above any valid</span>
+<span class="sd">    GPD threshold both :math:`\xi` and :math:`\beta^*` are constant in</span>
+<span class="sd">    ``u``, so the threshold-selection question is &quot;where do these flatten</span>
+<span class="sd">    *within their confidence bands*&quot; -- which is why the standard-error</span>
+<span class="sd">    columns exist. Raw :math:`\beta` drifts linearly in ``u`` even under a</span>
+<span class="sd">    perfect GPD and diagnoses nothing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">thresholds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
     <span class="n">mean_excess</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
     <span class="n">xi</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
     <span class="n">beta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
     <span class="n">n_exceedances</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">xi_se</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">modified_scale</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">modified_scale_se</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="p">{</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;thresholds&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thresholds</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
             <span class="s2">&quot;mean_excess&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean_excess</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
             <span class="s2">&quot;xi&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xi</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
             <span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
             <span class="s2">&quot;n_exceedances&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_exceedances</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">),</span>
-        <span class="p">}</span></div>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;xi_se&quot;</span><span class="p">,</span> <span class="s2">&quot;modified_scale&quot;</span><span class="p">,</span> <span class="s2">&quot;modified_scale_se&quot;</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span></div>
 
 
 <div class="viewcode-block" id="GPDTail">

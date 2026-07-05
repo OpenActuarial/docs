@@ -217,6 +217,8 @@
 <li class="toctree-l1"><a class="reference internal" href="worked-example-book.html">Example 2: pricing a book, in columns</a></li>
 <li class="toctree-l1"><a class="reference internal" href="worked-example.html">Example 3: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="worked-example-coverage.html">Example 4: censored payments to coverage terms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-indication.html">Example 5: triangle to indicated change</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-tail.html">Example 6: pricing the tail, with error bars</a></li>
 </ul>
 
 </div>
@@ -323,6 +325,28 @@ layers, and <code class="docutils literal notranslate"><span class="pre">apply_c
 </div>
 <p>These are the ecosystem-wide empirical estimators — see the intro above and
 <a class="reference internal" href="conventions.html#risk-measures-var-and-tvar"><span class="std std-ref">Conventions</span></a>.</p>
+</section>
+<section id="monte-carlo-error">
+<h2>Monte Carlo error<a class="headerlink" href="#monte-carlo-error" title="Link to this heading">¶</a></h2>
+<p>A simulated VaR without an error estimate is a random number with
+confidence. <code class="docutils literal notranslate"><span class="pre">risksim.uncertainty</span></code> answers “how much of this is signal” —
+each metric with the interval its sampling theory supports: normal theory
+for the mean, distribution-free order statistics for VaR (on the same
+<code class="docutils literal notranslate"><span class="pre">ceil(n*q)</span></code> rank convention as <code class="docutils literal notranslate"><span class="pre">metrics.var</span></code>, so points match exactly),
+percentile bootstrap for TVaR:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">risksim</span><span class="w"> </span><span class="kn">import</span> <span class="n">uncertainty</span>
+
+<span class="n">uncertainty</span><span class="o">.</span><span class="n">summary_with_error</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">losses</span><span class="p">,</span> <span class="n">quantiles</span><span class="o">=</span><span class="p">(</span><span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">),</span> <span class="n">rng</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+<span class="c1"># {&quot;mean&quot;: {...}, &quot;var_95&quot;: {...}, &quot;tvar_99&quot;: {estimate, se, ci_low, ci_high}}</span>
+
+<span class="n">uncertainty</span><span class="o">.</span><span class="n">quantile_ci</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">losses</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mf">0.99</span><span class="p">)</span>   <span class="c1"># order-statistic interval</span>
+<span class="n">uncertainty</span><span class="o">.</span><span class="n">bootstrap_ci</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">losses</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="n">metrics</span><span class="o">.</span><span class="n">tvar</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">),</span> <span class="n">rng</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">quantile_ci</span></code> reports <code class="docutils literal notranslate"><span class="pre">se</span> <span class="pre">=</span> <span class="pre">nan</span></code> deliberately: a quantile has no
+distribution-free standard error — the interval <em>is</em> the uncertainty
+statement. If the bands are too wide, the answer is more simulations, and
+now you can see it.</p>
 </section>
 <section id="module-risksim">
 <span id="api-reference"></span><h2>API reference<a class="headerlink" href="#module-risksim" title="Link to this heading">¶</a></h2>
@@ -454,6 +478,7 @@ Otherwise, the primary <cite>losses</cite> view is gross loss.</p>
 <li><a class="reference internal" href="#portfolio-simulation">Portfolio simulation</a></li>
 <li><a class="reference internal" href="#contracts">Contracts</a></li>
 <li><a class="reference internal" href="#risk-measures">Risk measures</a></li>
+<li><a class="reference internal" href="#monte-carlo-error">Monte Carlo error</a></li>
 <li><a class="reference internal" href="#module-risksim">API reference</a><ul>
 <li><a class="reference internal" href="#risksim.AggregateLayer"><code class="docutils literal notranslate"><span class="pre">AggregateLayer</span></code></a><ul>
 <li><a class="reference internal" href="#risksim.AggregateLayer.attachment_probability"><code class="docutils literal notranslate"><span class="pre">attachment_probability()</span></code></a></li>

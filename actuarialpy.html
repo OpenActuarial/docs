@@ -217,6 +217,8 @@
 <li class="toctree-l1"><a class="reference internal" href="worked-example-book.html">Example 2: pricing a book, in columns</a></li>
 <li class="toctree-l1"><a class="reference internal" href="worked-example.html">Example 3: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="worked-example-coverage.html">Example 4: censored payments to coverage terms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-indication.html">Example 5: triangle to indicated change</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-tail.html">Example 6: pricing the tail, with error bars</a></li>
 </ul>
 
 </div>
@@ -421,6 +423,29 @@ beside every average:</p>
                     <span class="n">weight_col</span><span class="o">=</span><span class="s2">&quot;premium&quot;</span><span class="p">,</span> <span class="n">groupby</span><span class="o">=</span><span class="s2">&quot;cohort&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section id="development-and-completion">
+<h2>Development and completion<a class="headerlink" href="#development-and-completion" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">actuarialpy.reserving</span></code> fits chain-ladder development patterns from
+cumulative triangles: <code class="docutils literal notranslate"><span class="pre">ChainLadder.fit</span></code> (volume-weighted or simple
+age-to-age factors, optional tail), <code class="docutils literal notranslate"><span class="pre">project</span></code> for per-origin ultimates and
+IBNR, and <code class="docutils literal notranslate"><span class="pre">completion_factors</span></code> / <code class="docutils literal notranslate"><span class="pre">apply_completion</span></code> for the
+completion-factor workflow.</p>
+<p>As of 0.40.0 the pattern carries its own uncertainty — the
+distribution-free standard errors of Mack (1993):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cl</span> <span class="o">=</span> <span class="n">ChainLadder</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">triangle</span><span class="p">)</span>           <span class="c1"># volume-weighted</span>
+<span class="n">cl</span><span class="o">.</span><span class="n">mack_sigma_squared</span><span class="p">(</span><span class="n">triangle</span><span class="p">)</span>          <span class="c1"># variance parameters per period</span>
+<span class="n">cl</span><span class="o">.</span><span class="n">mack_standard_errors</span><span class="p">(</span><span class="n">triangle</span><span class="p">)</span>
+<span class="c1"># latest | ultimate | ibnr | se | cv     (per origin, plus a Total row</span>
+<span class="c1">#                                         with the cross-origin covariance)</span>
+</pre></div>
+</div>
+<p>Two honesty notes, stated rather than hidden: the errors are defined for
+the volume-weighted estimator only (Mack’s model <em>is</em> that estimator, so
+<code class="docutils literal notranslate"><span class="pre">method=&quot;simple&quot;</span></code> refuses), and a fitted <code class="docutils literal notranslate"><span class="pre">tail</span></code> is treated as
+deterministic — ultimates and standard errors scale by it exactly.
+Verified against the published Taylor–Ashe results (total reserve
+18,680,856; total s.e. 2,447,095).</p>
 </section>
 <section id="module-actuarialpy">
 <span id="api-reference"></span><h2>API reference<a class="headerlink" href="#module-actuarialpy" title="Link to this heading">¶</a></h2>
@@ -2257,6 +2282,7 @@ Returns 0 when the record and study window do not overlap.</p>
 <li><a class="reference internal" href="#exposure-and-age-bases">Exposure and age bases</a></li>
 <li><a class="reference internal" href="#retention-primitives">Retention primitives</a></li>
 <li><a class="reference internal" href="#underwriting-margin-and-weighted-rollups">Underwriting margin and weighted rollups</a></li>
+<li><a class="reference internal" href="#development-and-completion">Development and completion</a></li>
 <li><a class="reference internal" href="#module-actuarialpy">API reference</a><ul>
 <li><a class="reference internal" href="#actuarialpy.Experience"><code class="docutils literal notranslate"><span class="pre">Experience</span></code></a><ul>
 <li><a class="reference internal" href="#actuarialpy.Experience.actual_vs_expected"><code class="docutils literal notranslate"><span class="pre">actual_vs_expected()</span></code></a></li>

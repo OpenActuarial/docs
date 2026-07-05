@@ -71,6 +71,30 @@ rs.metrics.tvar(res.retained_losses, 0.99)
 These are the ecosystem-wide empirical estimators — see the intro above and
 [Conventions](conventions.md#risk-measures-var-and-tvar).
 
+## Monte Carlo error
+
+A simulated VaR without an error estimate is a random number with
+confidence. `risksim.uncertainty` answers "how much of this is signal" —
+each metric with the interval its sampling theory supports: normal theory
+for the mean, distribution-free order statistics for VaR (on the same
+`ceil(n*q)` rank convention as `metrics.var`, so points match exactly),
+percentile bootstrap for TVaR:
+
+```python
+from risksim import uncertainty
+
+uncertainty.summary_with_error(result.losses, quantiles=(0.95, 0.99), rng=7)
+# {"mean": {...}, "var_95": {...}, "tvar_99": {estimate, se, ci_low, ci_high}}
+
+uncertainty.quantile_ci(result.losses, q=0.99)   # order-statistic interval
+uncertainty.bootstrap_ci(result.losses, lambda a: metrics.tvar(a, 0.99), rng=7)
+```
+
+`quantile_ci` reports `se = nan` deliberately: a quantile has no
+distribution-free standard error — the interval *is* the uncertainty
+statement. If the bands are too wide, the answer is more simulations, and
+now you can see it.
+
 ## API reference
 
 ```{eval-rst}

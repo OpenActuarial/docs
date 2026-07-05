@@ -67,6 +67,13 @@ flowchart LR
 only through its optional `plot` extra (`pip install "extremeloss[plot]"`), for
 the diagnostic plots; the base install does not require it.
 
+Where packages *cooperate without depending*, they do it through a
+deliberately tiny duck-typed protocol: any severity object exposing
+`sf(x)` and `mean_excess(d)` — every `lossmodels` distribution, every
+`extremeloss` GPD tail fit — plugs into
+`ratingmodels.pooling_charge_from_severity`. The seam is two methods, not
+an import.
+
 ## Conventions
 
 Every package works on plain numpy arrays and pandas Series/DataFrames. There is

@@ -217,6 +217,8 @@
 <li class="toctree-l1"><a class="reference internal" href="worked-example-book.html">Example 2: pricing a book, in columns</a></li>
 <li class="toctree-l1"><a class="reference internal" href="worked-example.html">Example 3: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="worked-example-coverage.html">Example 4: censored payments to coverage terms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-indication.html">Example 5: triangle to indicated change</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-tail.html">Example 6: pricing the tail, with error bars</a></li>
 </ul>
 
 </div>
@@ -316,6 +318,34 @@ parameterization, are pinned in
 <a class="reference internal" href="conventions.html#tail-fitting-and-splicing"><span class="std std-ref">Conventions</span></a>. Sampling accepts the
 shared <code class="docutils literal notranslate"><span class="pre">rng</span></code> argument.</p>
 </section>
+<section id="uncertainty-and-return-levels">
+<h2>Uncertainty and return levels<a class="headerlink" href="#uncertainty-and-return-levels" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">fit_gpd</span></code> and <code class="docutils literal notranslate"><span class="pre">fit_pot</span></code> now populate <code class="docutils literal notranslate"><span class="pre">GPDFit.covariance</span></code> with the
+observed-information covariance of <code class="docutils literal notranslate"><span class="pre">(xi,</span> <span class="pre">beta)</span></code> (<code class="docutils literal notranslate"><span class="pre">None</span></code> when the
+information matrix is not positive definite — the MLE is irregular for
+<code class="docutils literal notranslate"><span class="pre">xi</span> <span class="pre">&lt;=</span> <span class="pre">-1/2</span></code>, and a covariance that means nothing is worse than none).
+That uncertainty flows into the two places it matters most.</p>
+<p><strong>Threshold selection with error bands.</strong> The scan reports <code class="docutils literal notranslate"><span class="pre">xi</span></code> and the
+<strong>modified scale</strong> <code class="docutils literal notranslate"><span class="pre">beta*</span> <span class="pre">=</span> <span class="pre">beta</span> <span class="pre">-</span> <span class="pre">xi*u</span></code> — the quantity that is actually
+constant above a valid threshold (raw <code class="docutils literal notranslate"><span class="pre">beta</span></code> drifts linearly in <code class="docutils literal notranslate"><span class="pre">u</span></code> even
+under a perfect GPD) — with standard errors, so the question becomes
+“where do these flatten <em>within their bands</em>”:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">scan</span> <span class="o">=</span> <span class="n">el</span><span class="o">.</span><span class="n">threshold_diagnostic_table</span><span class="p">(</span><span class="n">losses</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">)</span>
+<span class="c1"># ... xi | xi_se | modified_scale | modified_scale_se | n_exceedances</span>
+</pre></div>
+</div>
+<p><strong>Return levels with confidence intervals.</strong> The loss exceeded once per
+<code class="docutils literal notranslate"><span class="pre">T</span></code> periods, with delta-method intervals over <code class="docutils literal notranslate"><span class="pre">(zeta_u,</span> <span class="pre">xi,</span> <span class="pre">beta)</span></code>
+including the binomial variance of the exceedance rate (Coles §4.3.3):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">el</span><span class="o">.</span><span class="n">gpd_return_level</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">200</span><span class="p">],</span> <span class="n">observations_per_period</span><span class="o">=</span><span class="mi">1200</span><span class="p">)</span>
+<span class="c1"># return_period | return_level | se | ci_low | ci_high</span>
+</pre></div>
+</div>
+<p>Point estimates agree exactly with the scalar <code class="docutils literal notranslate"><span class="pre">fit.return_level(n)</span></code>, which
+remains the shorthand. A fitted tail also exposes <code class="docutils literal notranslate"><span class="pre">sf</span></code> and a closed-form
+<code class="docutils literal notranslate"><span class="pre">mean_excess</span></code>, so it plugs directly into
+<code class="docutils literal notranslate"><span class="pre">ratingmodels.pooling_charge_from_severity</span></code>.</p>
+</section>
 <section id="splicing-onto-a-fitted-body">
 <h2>Splicing onto a fitted body<a class="headerlink" href="#splicing-onto-a-fitted-body" title="Link to this heading">¶</a></h2>
 <p>The handoff runs one direction: <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> fits the tail and returns a
@@ -358,6 +388,30 @@ override the empirical body mass.</p>
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GPDFit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exceedance_fraction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_exceedances</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'mle'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/extremeloss/results.html#GPDFit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#extremeloss.GPDFit" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Fitted generalized Pareto distribution above a threshold.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="extremeloss.GPDFit.mean_excess">
+<span class="sig-name descname"><span class="pre">mean_excess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/extremeloss/results.html#GPDFit.mean_excess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#extremeloss.GPDFit.mean_excess" title="Link to this definition">¶</a></dt>
+<dd><p>Mean excess <code class="docutils literal notranslate"><span class="pre">E[X</span> <span class="pre">-</span> <span class="pre">d</span> <span class="pre">|</span> <span class="pre">X</span> <span class="pre">&gt;</span> <span class="pre">d]</span></code> above the threshold, closed form.</p>
+<p>For the GPD, <span class="math notranslate nohighlight">\(e(d) = (\beta + \xi\,(d - u)) / (1 - \xi)\)</span> for
+<span class="math notranslate nohighlight">\(d \ge u\)</span> and <span class="math notranslate nohighlight">\(\xi &lt; 1\)</span>; infinite for <span class="math notranslate nohighlight">\(\xi \ge 1\)</span>
+(the tail has no mean). Below the threshold the GPD says nothing –
+a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> rather than a silent extrapolation.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="extremeloss.GPDFit.se">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">se</span></span><a class="headerlink" href="#extremeloss.GPDFit.se" title="Link to this definition">¶</a></dt>
+<dd><p>Standard errors of <code class="docutils literal notranslate"><span class="pre">(xi,</span> <span class="pre">beta)</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> without covariance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="extremeloss.GPDFit.sf">
+<span class="sig-name descname"><span class="pre">sf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/extremeloss/results.html#GPDFit.sf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#extremeloss.GPDFit.sf" title="Link to this definition">¶</a></dt>
+<dd><p>Unconditional survival <code class="docutils literal notranslate"><span class="pre">P(X</span> <span class="pre">&gt;</span> <span class="pre">x)</span></code>; alias of <code class="docutils literal notranslate"><span class="pre">tail_probability</span></code>.</p>
+<p>Half of the small tail protocol (with <a class="reference internal" href="#extremeloss.GPDFit.mean_excess" title="extremeloss.GPDFit.mean_excess"><code class="xref py py-meth docutils literal notranslate"><span class="pre">mean_excess()</span></code></a>) consumed
+by e.g. <code class="docutils literal notranslate"><span class="pre">ratingmodels.pooling_charge_from_severity</span></code>.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -391,9 +445,15 @@ tail. Moments raise when they do not exist (<code class="docutils literal notran
 
 <dl class="py class">
 <dt class="sig sig-object py" id="extremeloss.ThresholdScan">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ThresholdScan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thresholds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_excess</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_exceedances</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/extremeloss/results.html#ThresholdScan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#extremeloss.ThresholdScan" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ThresholdScan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thresholds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_excess</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_exceedances</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xi_se</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modified_scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modified_scale_se</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/extremeloss/results.html#ThresholdScan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#extremeloss.ThresholdScan" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Threshold-diagnostic results across a grid of thresholds.</p>
+<p><code class="docutils literal notranslate"><span class="pre">modified_scale</span></code> is <span class="math notranslate nohighlight">\(\beta^* = \beta - \xi u\)</span>: above any valid
+GPD threshold both <span class="math notranslate nohighlight">\(\xi\)</span> and <span class="math notranslate nohighlight">\(\beta^*\)</span> are constant in
+<code class="docutils literal notranslate"><span class="pre">u</span></code>, so the threshold-selection question is “where do these flatten
+<em>within their confidence bands</em>” – which is why the standard-error
+columns exist. Raw <span class="math notranslate nohighlight">\(\beta\)</span> drifts linearly in <code class="docutils literal notranslate"><span class="pre">u</span></code> even under a
+perfect GPD and diagnoses nothing.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -502,6 +562,47 @@ threshold. The mixing weight defaults to the body mass implied by the fit,
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="extremeloss.gpd_return_level">
+<span class="sig-name descname"><span class="pre">gpd_return_level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_periods</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observations_per_period</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.95</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/extremeloss/evt/gpd.html#gpd_return_level"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#extremeloss.gpd_return_level" title="Link to this definition">¶</a></dt>
+<dd><p>Return levels with confidence intervals from a POT/GPD fit.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">T</span></code>-period return level is the loss exceeded once per <code class="docutils literal notranslate"><span class="pre">T</span></code>
+periods on average: with exceedance rate <span class="math notranslate nohighlight">\(\zeta_u\)</span> and <code class="docutils literal notranslate"><span class="pre">m</span></code>
+observations per period, it solves
+<span class="math notranslate nohighlight">\(P(X &gt; r) = 1/(T\,m)\)</span>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[r_T = u + \frac{\beta}{\xi}\left[(T\,m\,\zeta_u)^{\xi} - 1\right]\]</div>
+</div>
+<p>(<span class="math notranslate nohighlight">\(u + \beta\log(T m \zeta_u)\)</span> as <span class="math notranslate nohighlight">\(\xi \to 0\)</span>).
+Confidence intervals are by the delta method over
+<span class="math notranslate nohighlight">\((\zeta_u, \xi, \beta)\)</span>, including the binomial variance of the
+exceedance rate (Coles, 2001, §4.3.3); they require the fit to carry a
+parameter <code class="docutils literal notranslate"><span class="pre">covariance</span></code> (populated by <a class="reference internal" href="#extremeloss.fit_gpd" title="extremeloss.fit_gpd"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit_gpd()</span></code></a> / <code class="docutils literal notranslate"><span class="pre">fit_pot</span></code>
+when the information matrix is positive definite).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fit</strong> (<a class="reference internal" href="#extremeloss.GPDFit" title="extremeloss.GPDFit"><em>GPDFit</em></a>) – A fit whose <code class="docutils literal notranslate"><span class="pre">exceedance_fraction</span></code> reflects the full dataset
+(i.e. from <code class="docutils literal notranslate"><span class="pre">fit_pot</span></code>, not raw <code class="docutils literal notranslate"><span class="pre">fit_gpd</span></code> on excesses alone).</p></li>
+<li><p><strong>return_periods</strong> (<em>float</em><em> or </em><em>array-like</em>) – Periods <code class="docutils literal notranslate"><span class="pre">T</span></code> in the same period unit as <code class="docutils literal notranslate"><span class="pre">observations_per_period</span></code>.</p></li>
+<li><p><strong>observations_per_period</strong> (<em>float</em>) – Observations per period (e.g. claims per year), so <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">*</span>
+<span class="pre">observations_per_period</span> <span class="pre">*</span> <span class="pre">exceedance_fraction</span></code> is the expected
+number of threshold exceedances in <code class="docutils literal notranslate"><span class="pre">T</span></code> periods – it must exceed
+1 for the return level to sit above the threshold.</p></li>
+<li><p><strong>confidence_level</strong> (<em>float</em>) – Wald interval level.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">return_period</span></code>, <code class="docutils literal notranslate"><span class="pre">return_level</span></code>, <code class="docutils literal notranslate"><span class="pre">se</span></code>, <code class="docutils literal notranslate"><span class="pre">ci_low</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ci_high</span></code> (<code class="docutils literal notranslate"><span class="pre">se</span></code>/bounds are <code class="docutils literal notranslate"><span class="pre">nan</span></code> without a covariance).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>dict</em> of str -&gt; numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="extremeloss.sample_lossmodel">
 <span class="sig-name descname"><span class="pre">sample_lossmodel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/extremeloss/integration.html#sample_lossmodel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#extremeloss.sample_lossmodel" title="Link to this definition">¶</a></dt>
 <dd><p>Sample losses from a lossmodels-style severity or aggregate model.</p>
@@ -568,12 +669,18 @@ threshold. The mixing weight defaults to the body mass implied by the fit,
 <li><a class="reference internal" href="#">extremeloss</a><ul>
 <li><a class="reference internal" href="#threshold-selection">Threshold selection</a></li>
 <li><a class="reference internal" href="#fitting-the-tail">Fitting the tail</a></li>
+<li><a class="reference internal" href="#uncertainty-and-return-levels">Uncertainty and return levels</a></li>
 <li><a class="reference internal" href="#splicing-onto-a-fitted-body">Splicing onto a fitted body</a></li>
 <li><a class="reference internal" href="#from-simulated-portfolios">From simulated portfolios</a></li>
 <li><a class="reference internal" href="#module-extremeloss">API reference</a><ul>
 <li><a class="reference internal" href="#extremeloss.BootstrapResult"><code class="docutils literal notranslate"><span class="pre">BootstrapResult</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.GEVFit"><code class="docutils literal notranslate"><span class="pre">GEVFit</span></code></a></li>
-<li><a class="reference internal" href="#extremeloss.GPDFit"><code class="docutils literal notranslate"><span class="pre">GPDFit</span></code></a></li>
+<li><a class="reference internal" href="#extremeloss.GPDFit"><code class="docutils literal notranslate"><span class="pre">GPDFit</span></code></a><ul>
+<li><a class="reference internal" href="#extremeloss.GPDFit.mean_excess"><code class="docutils literal notranslate"><span class="pre">mean_excess()</span></code></a></li>
+<li><a class="reference internal" href="#extremeloss.GPDFit.se"><code class="docutils literal notranslate"><span class="pre">se</span></code></a></li>
+<li><a class="reference internal" href="#extremeloss.GPDFit.sf"><code class="docutils literal notranslate"><span class="pre">sf()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#extremeloss.GPDTail"><code class="docutils literal notranslate"><span class="pre">GPDTail</span></code></a><ul>
 <li><a class="reference internal" href="#extremeloss.GPDTail.from_fit"><code class="docutils literal notranslate"><span class="pre">from_fit()</span></code></a></li>
 </ul>
@@ -589,6 +696,7 @@ threshold. The mixing weight defaults to the body mass implied by the fit,
 <li><a class="reference internal" href="#extremeloss.fit_gpd"><code class="docutils literal notranslate"><span class="pre">fit_gpd()</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.fit_spliced_gpd"><code class="docutils literal notranslate"><span class="pre">fit_spliced_gpd()</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.splice_gpd_tail"><code class="docutils literal notranslate"><span class="pre">splice_gpd_tail()</span></code></a></li>
+<li><a class="reference internal" href="#extremeloss.gpd_return_level"><code class="docutils literal notranslate"><span class="pre">gpd_return_level()</span></code></a></li>
 <li><a class="reference internal" href="#extremeloss.sample_lossmodel"><code class="docutils literal notranslate"><span class="pre">sample_lossmodel()</span></code></a></li>
 </ul>
 </li>

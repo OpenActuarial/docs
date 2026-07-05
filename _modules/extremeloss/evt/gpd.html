@@ -216,6 +216,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../worked-example-book.html">Example 2: pricing a book, in columns</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../worked-example.html">Example 3: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../worked-example-coverage.html">Example 4: censored payments to coverage terms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../worked-example-indication.html">Example 5: triangle to indicated change</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../worked-example-tail.html">Example 6: pricing the tail, with error bars</a></li>
 </ul>
 
 </div>
@@ -280,8 +282,51 @@
         <span class="n">exceedance_fraction</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
         <span class="n">n_exceedances</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">),</span>
         <span class="n">fit_method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+        <span class="n">covariance</span><span class="o">=</span><span class="n">_gpd_covariance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">xi_hat</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">beta_hat</span><span class="p">)),</span>
     <span class="p">)</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_gpd_covariance</span><span class="p">(</span><span class="n">excesses</span><span class="p">,</span> <span class="n">xi</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">beta</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Observed-information covariance of (xi, beta) at the MLE.</span>
+
+<span class="sd">    The numerical Hessian of the GPD log-likelihood, inverted. Returns</span>
+<span class="sd">    ``None`` when the information is not positive definite -- the MLE is</span>
+<span class="sd">    irregular for xi &lt;= -1/2 and near-boundary fits, and a covariance that</span>
+<span class="sd">    means nothing is worse than no covariance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">excesses</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">loglik</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+        <span class="n">c</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">b</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">genpareto</span><span class="o">.</span><span class="n">logpdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">b</span><span class="p">)))</span>
+
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xi</span><span class="p">,</span> <span class="n">beta</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="mf">1e-5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span> <span class="mf">1e-3</span><span class="p">)</span>
+    <span class="n">f0</span> <span class="o">=</span> <span class="n">loglik</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">hess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+        <span class="n">ei</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">ei</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">h</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">hess</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">loglik</span><span class="p">(</span><span class="n">theta</span> <span class="o">+</span> <span class="n">ei</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">f0</span> <span class="o">+</span> <span class="n">loglik</span><span class="p">(</span><span class="n">theta</span> <span class="o">-</span> <span class="n">ei</span><span class="p">))</span> <span class="o">/</span> <span class="n">h</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="n">ej</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">ei</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">hess</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">hess</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">loglik</span><span class="p">(</span><span class="n">theta</span> <span class="o">+</span> <span class="n">ei</span> <span class="o">+</span> <span class="n">ej</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">loglik</span><span class="p">(</span><span class="n">theta</span> <span class="o">+</span> <span class="n">ei</span> <span class="o">-</span> <span class="n">ej</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">loglik</span><span class="p">(</span><span class="n">theta</span> <span class="o">-</span> <span class="n">ei</span> <span class="o">+</span> <span class="n">ej</span><span class="p">)</span>
+        <span class="o">+</span> <span class="n">loglik</span><span class="p">(</span><span class="n">theta</span> <span class="o">-</span> <span class="n">ei</span> <span class="o">-</span> <span class="n">ej</span><span class="p">)</span>
+    <span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">hess</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="o">-</span><span class="n">hess</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">gpd_tail_probability</span><span class="p">(</span>
@@ -342,6 +387,108 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;TVaR is infinite for xi &gt;= 1&quot;</span><span class="p">)</span>
     <span class="n">var_p</span> <span class="o">=</span> <span class="n">gpd_var</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">xi</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">exceedance_fraction</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="n">var_p</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">-</span> <span class="n">xi</span> <span class="o">*</span> <span class="n">threshold</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">xi</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="gpd_return_level">
+<a class="viewcode-back" href="../../../extremeloss.html#extremeloss.gpd_return_level">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">gpd_return_level</span><span class="p">(</span>
+    <span class="n">fit</span><span class="p">,</span>
+    <span class="n">return_periods</span><span class="p">,</span>
+    <span class="n">observations_per_period</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">confidence_level</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return levels with confidence intervals from a POT/GPD fit.</span>
+
+<span class="sd">    The ``T``-period return level is the loss exceeded once per ``T``</span>
+<span class="sd">    periods on average: with exceedance rate :math:`\zeta_u` and ``m``</span>
+<span class="sd">    observations per period, it solves</span>
+<span class="sd">    :math:`P(X &gt; r) = 1/(T\,m)`:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        r_T = u + \frac{\beta}{\xi}\left[(T\,m\,\zeta_u)^{\xi} - 1\right]</span>
+
+<span class="sd">    (:math:`u + \beta\log(T m \zeta_u)` as :math:`\xi \to 0`).</span>
+<span class="sd">    Confidence intervals are by the delta method over</span>
+<span class="sd">    :math:`(\zeta_u, \xi, \beta)`, including the binomial variance of the</span>
+<span class="sd">    exceedance rate (Coles, 2001, §4.3.3); they require the fit to carry a</span>
+<span class="sd">    parameter ``covariance`` (populated by :func:`fit_gpd` / ``fit_pot``</span>
+<span class="sd">    when the information matrix is positive definite).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fit : GPDFit</span>
+<span class="sd">        A fit whose ``exceedance_fraction`` reflects the full dataset</span>
+<span class="sd">        (i.e. from ``fit_pot``, not raw ``fit_gpd`` on excesses alone).</span>
+<span class="sd">    return_periods : float or array-like</span>
+<span class="sd">        Periods ``T`` in the same period unit as ``observations_per_period``.</span>
+<span class="sd">    observations_per_period : float</span>
+<span class="sd">        Observations per period (e.g. claims per year), so ``T *</span>
+<span class="sd">        observations_per_period * exceedance_fraction`` is the expected</span>
+<span class="sd">        number of threshold exceedances in ``T`` periods -- it must exceed</span>
+<span class="sd">        1 for the return level to sit above the threshold.</span>
+<span class="sd">    confidence_level : float</span>
+<span class="sd">        Wald interval level.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of str -&gt; numpy.ndarray</span>
+<span class="sd">        ``return_period``, ``return_level``, ``se``, ``ci_low``,</span>
+<span class="sd">        ``ci_high`` (``se``/bounds are ``nan`` without a covariance).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">NormalDist</span>
+
+    <span class="n">periods</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">return_periods</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">periods</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;return periods must be positive&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">observations_per_period</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;observations_per_period must be positive&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">confidence_level</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;confidence_level must be in (0, 1)&quot;</span><span class="p">)</span>
+    <span class="n">zeta</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">exceedance_fraction</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">zeta</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;fit.exceedance_fraction must be in (0, 1]&quot;</span><span class="p">)</span>
+    <span class="n">xi</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">xi</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">beta</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">threshold</span><span class="p">)</span>
+    <span class="n">n_total</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">n_exceedances</span> <span class="o">/</span> <span class="n">zeta</span><span class="p">))</span>
+
+    <span class="n">expected</span> <span class="o">=</span> <span class="n">periods</span> <span class="o">*</span> <span class="n">observations_per_period</span> <span class="o">*</span> <span class="n">zeta</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">expected</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;return period too short for this threshold: fewer than one &quot;</span>
+            <span class="s2">&quot;expected exceedance; lower the threshold or lengthen the period&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">level</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="n">arg</span> <span class="o">=</span> <span class="n">periods</span> <span class="o">*</span> <span class="n">observations_per_period</span> <span class="o">*</span> <span class="n">z</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-10</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">u</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u</span> <span class="o">+</span> <span class="p">(</span><span class="n">b</span> <span class="o">/</span> <span class="n">c</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">arg</span><span class="o">**</span><span class="n">c</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">level</span><span class="p">(</span><span class="n">zeta</span><span class="p">,</span> <span class="n">xi</span><span class="p">,</span> <span class="n">beta</span><span class="p">)</span>
+    <span class="n">se</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fit</span><span class="o">.</span><span class="n">covariance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="n">cov</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">zeta</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">zeta</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">n_total</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">cov</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">covariance</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="c1"># numeric gradient of the return level in (zeta, xi, beta)</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">zeta</span><span class="p">,</span> <span class="n">xi</span><span class="p">,</span> <span class="n">beta</span><span class="p">])</span>
+        <span class="n">grad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="mf">1e-6</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="mf">1e-6</span><span class="p">)</span>
+            <span class="n">up</span><span class="p">,</span> <span class="n">dn</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">theta</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">up</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">h</span>
+            <span class="n">dn</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">h</span>
+            <span class="n">grad</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">level</span><span class="p">(</span><span class="o">*</span><span class="n">up</span><span class="p">)</span> <span class="o">-</span> <span class="n">level</span><span class="p">(</span><span class="o">*</span><span class="n">dn</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ik,ij,jk-&gt;k&quot;</span><span class="p">,</span> <span class="n">grad</span><span class="p">,</span> <span class="n">cov</span><span class="p">,</span> <span class="n">grad</span><span class="p">)</span>
+        <span class="n">se</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+    <span class="n">z_crit</span> <span class="o">=</span> <span class="n">NormalDist</span><span class="p">()</span><span class="o">.</span><span class="n">inv_cdf</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">+</span> <span class="n">confidence_level</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;return_period&quot;</span><span class="p">:</span> <span class="n">periods</span><span class="p">,</span>
+        <span class="s2">&quot;return_level&quot;</span><span class="p">:</span> <span class="n">r</span><span class="p">,</span>
+        <span class="s2">&quot;se&quot;</span><span class="p">:</span> <span class="n">se</span><span class="p">,</span>
+        <span class="s2">&quot;ci_low&quot;</span><span class="p">:</span> <span class="n">r</span> <span class="o">-</span> <span class="n">z_crit</span> <span class="o">*</span> <span class="n">se</span><span class="p">,</span>
+        <span class="s2">&quot;ci_high&quot;</span><span class="p">:</span> <span class="n">r</span> <span class="o">+</span> <span class="n">z_crit</span> <span class="o">*</span> <span class="n">se</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
 </pre></div>
         </article>
       </div>

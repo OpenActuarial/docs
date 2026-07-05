@@ -217,6 +217,8 @@
 <li class="toctree-l1"><a class="reference internal" href="worked-example-book.html">Example 2: pricing a book, in columns</a></li>
 <li class="toctree-l1"><a class="reference internal" href="worked-example.html">Example 3: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="worked-example-coverage.html">Example 4: censored payments to coverage terms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-indication.html">Example 5: triangle to indicated change</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-tail.html">Example 6: pricing the tail, with error bars</a></li>
 </ul>
 
 </div>
@@ -450,6 +452,42 @@ stabilizing, use <a class="reference internal" href="#credibility-smoothed-relat
 regularization at scale ever become a genuine requirement, <code class="docutils literal notranslate"><span class="pre">glum</span></code> is the
 designated engine for that job, behind this same API.</p>
 </section>
+<section id="interactions">
+<h3>Interactions<a class="headerlink" href="#interactions" title="Link to this heading">¶</a></h3>
+<p>When the effect of one variable depends on the level of another — urban
+manufacturing is worse than urban <em>or</em> manufacturing suggests — add the
+pair to the design. Categorical × categorical uses treatment coding (an
+indicator per <strong>observed</strong> non-base × non-base cell, so main effects keep
+their interpretation and unobserved cells cannot alias the design);
+categorical × continuous fits one slope modifier per non-base level:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">GLMRelativities</span><span class="p">(</span><span class="n">family</span><span class="o">=</span><span class="s2">&quot;poisson&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">,</span> <span class="n">response</span><span class="o">=</span><span class="s2">&quot;claims&quot;</span><span class="p">,</span> <span class="n">predictors</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">],</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;member_months&quot;</span><span class="p">,</span>
+    <span class="n">interactions</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="s2">&quot;industry&quot;</span><span class="p">)],</span>
+<span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">relativities_</span><span class="p">[</span><span class="s2">&quot;area:industry&quot;</span><span class="p">]</span>   <span class="c1"># MultiIndex (area, industry) -&gt; factor</span>
+<span class="n">model</span><span class="o">.</span><span class="n">relativity_table</span><span class="p">()</span>               <span class="c1"># adds (&quot;area:industry&quot;, &quot;B | mfg&quot;) rows</span>
+</pre></div>
+</div>
+<p>The interaction factor multiplies <strong>on top of</strong> both main effects.
+<code class="docutils literal notranslate"><span class="pre">to_factor_tables()</span></code> deliberately excludes interactions — a <code class="docutils literal notranslate"><span class="pre">FactorTable</span></code>
+is single-variable by contract; read cells from <code class="docutils literal notranslate"><span class="pre">relativities_[&quot;a:b&quot;]</span></code>.</p>
+</section>
+<section id="prediction-intervals">
+<h3>Prediction intervals<a class="headerlink" href="#prediction-intervals" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">predict_interval</span></code> puts delta-method confidence bounds on the fitted mean
+for any frame — the uncertainty of the <em>rate</em> the model assigns to a cell,
+from the quasi-likelihood coefficient covariance (it matches
+<code class="docutils literal notranslate"><span class="pre">results_.get_prediction</span></code> to numerical precision):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">predict_interval</span><span class="p">(</span><span class="n">new_business</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;member_months&quot;</span><span class="p">)</span>
+<span class="c1"># predicted | ci_low | ci_high        (index-aligned with the input)</span>
+</pre></div>
+</div>
+<p>This is an interval for the mean, not for individual outcomes — a single
+group’s claims vary far more than its expected claims. For outcome
+distributions, simulate frequency and severity instead.</p>
+</section>
 </section>
 <section id="frequencyseverity-models">
 <h2>Frequency–severity models<a class="headerlink" href="#frequencyseverity-models" title="Link to this heading">¶</a></h2>
@@ -487,6 +525,12 @@ component is a full <code class="docutils literal notranslate"><span class="pre"
 <p>Rows with positive amounts but zero counts raise (severity is undefined
 there); claims closed at zero amount are excluded from the severity fit with
 a warning and still count toward frequency.</p>
+<p>Both components accept interaction terms
+(<code class="docutils literal notranslate"><span class="pre">frequency_interactions=[(&quot;area&quot;,</span> <span class="pre">&quot;industry&quot;)]</span></code>; severity defaults to the
+frequency list). Categorical × categorical cells surface in
+<code class="docutils literal notranslate"><span class="pre">combined_relativities()</span></code> under an <code class="docutils literal notranslate"><span class="pre">&quot;a:b&quot;</span></code> key with a MultiIndex of level
+pairs, <code class="docutils literal notranslate"><span class="pre">combined</span></code> being the per-cell frequency × severity product;
+<code class="docutils literal notranslate"><span class="pre">to_factor_tables()</span></code> excludes interactions, exactly as the GLM does.</p>
 </section>
 <section id="credibility-smoothed-relativities">
 <h2>Credibility-smoothed relativities<a class="headerlink" href="#credibility-smoothed-relativities" title="Link to this heading">¶</a></h2>
@@ -583,6 +627,63 @@ reported — the standard errors are quasi-likelihood, so a true likelihood is
 not available.</p>
 </section>
 </section>
+<section id="rate-indications">
+<h2>Rate indications<a class="headerlink" href="#rate-indications" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">RateIndication</span></code> blends experience against a manual, grosses up through
+<code class="docutils literal notranslate"><span class="pre">RetentionLoad</span></code>, and reads off the indicated rate and change — but it
+consumes <em>point</em> inputs: a trended, developed loss cost and an on-level
+premium. <code class="docutils literal notranslate"><span class="pre">ExperienceExhibit</span></code> is where those come from, with every
+adjustment a visible worksheet column:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ex</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">ExperienceExhibit</span><span class="p">(</span>
+    <span class="n">earned_premium</span><span class="o">=</span><span class="p">[</span><span class="mi">1_000_000</span><span class="p">,</span> <span class="mi">1_100_000</span><span class="p">],</span>
+    <span class="n">losses</span><span class="o">=</span><span class="p">[</span><span class="mi">700_000</span><span class="p">,</span> <span class="mi">650_000</span><span class="p">],</span>
+    <span class="n">on_level_factors</span><span class="o">=</span><span class="n">olf</span><span class="p">[</span><span class="s2">&quot;on_level_factor&quot;</span><span class="p">],</span>      <span class="c1"># from on_level_factors</span>
+    <span class="n">development_factors</span><span class="o">=</span><span class="n">proj</span><span class="p">[</span><span class="s2">&quot;development_factor&quot;</span><span class="p">],</span>  <span class="c1"># from ChainLadder</span>
+    <span class="n">trend_factors</span><span class="o">=</span><span class="p">[</span><span class="mf">1.05</span><span class="p">,</span> <span class="mf">1.02</span><span class="p">],</span>
+    <span class="n">period_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;CY2023&quot;</span><span class="p">,</span> <span class="s2">&quot;CY2024&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">ex</span><span class="o">.</span><span class="n">exhibit</span><span class="p">()</span>   <span class="c1"># premium | OLF | on-level premium | losses | dev | trend</span>
+<span class="c1">#              #   | adjusted_losses | loss_ratio | weight</span>
+
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ex</span><span class="o">.</span><span class="n">to_indication</span><span class="p">(</span><span class="n">manual_loss_cost</span><span class="o">=</span><span class="mf">70.0</span><span class="p">,</span> <span class="n">credibility</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+                       <span class="n">current_rate</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="mi">24_000</span><span class="p">,</span> <span class="n">retention</span><span class="o">=</span><span class="n">ret</span><span class="p">)</span>
+<span class="n">ind</span><span class="o">.</span><span class="n">indicated_rate_change</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The wiring is exact by construction: the indication’s own
+<code class="docutils literal notranslate"><span class="pre">experience_loss_ratio()</span></code> reproduces the exhibit’s aggregate ratio, and at
+full credibility the indicated rate <strong>is</strong> <code class="docutils literal notranslate"><span class="pre">retention.gross_rate(...)</span></code> of
+the assembled loss cost — the same expense algebra as the build-up and
+<code class="docutils literal notranslate"><span class="pre">PricingEvaluation</span></code>, not a second implementation that can drift.</p>
+</section>
+<section id="rating-plans">
+<h2>Rating plans<a class="headerlink" href="#rating-plans" title="Link to this heading">¶</a></h2>
+<p>A fitted model is not yet a plan. <code class="docutils literal notranslate"><span class="pre">RatingPlan</span></code> is the implemented object —
+a base rate plus a <code class="docutils literal notranslate"><span class="pre">FactorTable</span></code> per rating variable — that rates a census
+with the full build-up visible, audits its own coverage, and round-trips
+through a dict for filing and version control:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">plan</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RatingPlan</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>        <span class="c1"># factors + base_value_</span>
+<span class="n">plan</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">census</span><span class="p">)</span>                          <span class="c1"># levels the plan cannot rate</span>
+<span class="n">rated</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">rate</span><span class="p">(</span><span class="n">census</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;members&quot;</span><span class="p">)</span>  <span class="c1"># base_rate | {var}_factor ...</span>
+<span class="c1">#   | combined_relativity | rate | premium</span>
+
+<span class="n">plan</span><span class="o">.</span><span class="n">rate</span><span class="p">(</span><span class="n">census</span><span class="p">,</span> <span class="n">unknown</span><span class="o">=</span><span class="s2">&quot;error&quot;</span><span class="p">)</span>     <span class="c1"># unmapped level -&gt; hard stop, not 1.0</span>
+<span class="n">plan</span><span class="o">.</span><span class="n">average_relativity</span><span class="p">(</span><span class="n">census</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;members&quot;</span><span class="p">)</span>   <span class="c1"># off-balance check</span>
+<span class="n">rebuilt</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">RatingPlan</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>     <span class="c1"># schema-versioned</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">plan.rate(...)[&quot;premium&quot;]</span></code> reproduces <code class="docutils literal notranslate"><span class="pre">model.predict(...)</span></code> exactly when
+the plan came from <code class="docutils literal notranslate"><span class="pre">from_model</span></code> — the plan <strong>is</strong> the model, restated as
+tables.</p>
+<p>Comparing the plan you have against the plan you propose is a first-class
+operation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">comp</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">compare_rating_plans</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">proposed</span><span class="p">,</span> <span class="n">census</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="s2">&quot;members&quot;</span><span class="p">)</span>
+<span class="n">comp</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>        <span class="c1"># premiums, avg change, share increasing/decreasing</span>
+<span class="n">comp</span><span class="o">.</span><span class="n">dislocation</span><span class="p">()</span>    <span class="c1"># the banded exhibit (next section)</span>
+<span class="n">comp</span><span class="o">.</span><span class="n">by</span><span class="p">(</span><span class="n">census</span><span class="p">[</span><span class="s2">&quot;region&quot;</span><span class="p">])</span>   <span class="c1"># who absorbs the move</span>
+</pre></div>
+</div>
+</section>
 <section id="rate-dislocation">
 <h2>Rate dislocation<a class="headerlink" href="#rate-dislocation" title="Link to this heading">¶</a></h2>
 <p>An average rate change hides everything operational — who takes a large
@@ -617,6 +718,43 @@ rate action still owed:</p>
 <p>Both are pure comparisons of rate vectors, so any source of “current” and
 “proposed” works — a renewal run (<code class="docutils literal notranslate"><span class="pre">renew</span></code>), a re-rated plan, or scenario
 output.</p>
+</section>
+<section id="on-level-factors">
+<h2>On-level factors<a class="headerlink" href="#on-level-factors" title="Link to this heading">¶</a></h2>
+<p>Historical premium was earned at historical rates; the indication needs it
+at today’s. <code class="docutils literal notranslate"><span class="pre">on_level_factors</span></code> is the parallelogram method computed in
+closed form — the earned rate index is a piecewise-linear function of time
+and is integrated exactly, so the classic textbook case (+10% mid-year,
+annual policies, calendar-year period) reproduces <code class="docutils literal notranslate"><span class="pre">1.1</span> <span class="pre">/</span> <span class="pre">1.0125</span></code> to
+machine precision rather than to grid resolution:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rm</span><span class="o">.</span><span class="n">on_level_factors</span><span class="p">(</span>
+    <span class="n">periods</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;2023-01-01&quot;</span><span class="p">,</span> <span class="s2">&quot;2023-12-31&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span> <span class="s2">&quot;2024-12-31&quot;</span><span class="p">)],</span>
+    <span class="n">rate_changes</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;2023-07-01&quot;</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;2024-04-01&quot;</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)],</span>
+    <span class="n">policy_term</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>          <span class="c1"># 0 = instant earning; 1.0 = annual parallelogram</span>
+<span class="p">)</span>
+<span class="c1"># period_start | period_end | average_earned_index | current_index</span>
+<span class="c1">#   | on_level_factor</span>
+</pre></div>
+</div>
+</section>
+<section id="pooling-charges-from-a-severity-model">
+<h2>Pooling charges from a severity model<a class="headerlink" href="#pooling-charges-from-a-severity-model" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">experience_rate</span></code> takes <code class="docutils literal notranslate"><span class="pre">pooling_charge</span></code> as an input; this is where it
+comes from. Any severity object exposing the two-method tail protocol —
+<code class="docutils literal notranslate"><span class="pre">sf(x)</span></code> and <code class="docutils literal notranslate"><span class="pre">mean_excess(d)</span></code> — prices the excess layer above a pooling
+point, returned as an auditable build-up:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">charge</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">pooling_charge_from_severity</span><span class="p">(</span>
+    <span class="n">severity</span><span class="p">,</span> <span class="n">pooling_point</span><span class="o">=</span><span class="mi">250_000</span><span class="p">,</span> <span class="n">expected_frequency</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="n">expense_ratio</span><span class="o">=</span><span class="mf">0.08</span><span class="p">,</span> <span class="n">risk_margin</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1"># exceedance_probability | mean_excess | expected_excess_per_claim</span>
+<span class="c1">#   | pure_excess_cost | pooling_charge</span>
+</pre></div>
+</div>
+<p>The protocol is duck-typed and deliberately tiny: <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code>
+distributions (and layers) satisfy it, <code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> GPD tail fits satisfy
+it with their closed-form mean excess, and any custom object with the two
+methods qualifies — no cross-package dependency in either direction.</p>
 </section>
 <section id="pricing-scenarios-and-margin">
 <h2>Pricing scenarios and margin<a class="headerlink" href="#pricing-scenarios-and-margin" title="Link to this heading">¶</a></h2>
@@ -925,7 +1063,7 @@ over the intercept(+offset)-only model, 1 means a saturated fit.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ratingmodels.GLMRelativities.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">object</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuous</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.relativity.GLMRelativities"><span class="pre">GLMRelativities</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.fit" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">object</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuous</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interactions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.relativity.GLMRelativities"><span class="pre">GLMRelativities</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.fit" title="Link to this definition">¶</a></dt>
 <dd><p>Fit relativities for <code class="docutils literal notranslate"><span class="pre">predictors</span></code> against <code class="docutils literal notranslate"><span class="pre">response</span></code>.</p>
 <p><strong>Aggregate vs. rate responses.</strong> <code class="docutils literal notranslate"><span class="pre">exposure</span></code> enters as a log
 offset, which is correct when the response is an <em>aggregate</em> – claim
@@ -953,6 +1091,27 @@ most populous level as the base.</p>
 <p>Categorical levels unseen in fitting fall back to the base level
 (relativity 1.0). <code class="docutils literal notranslate"><span class="pre">exposure</span></code> multiplies the mean; <code class="docutils literal notranslate"><span class="pre">offset</span></code> is a
 column already on the log scale.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.GLMRelativities.predict_interval">
+<span class="sig-name descname"><span class="pre">predict_interval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/relativity.html#GLMRelativities.predict_interval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.GLMRelativities.predict_interval" title="Link to this definition">¶</a></dt>
+<dd><p>Predicted mean with its confidence interval, per row.</p>
+<p>The interval is for the <em>fitted mean</em> (the rate the model assigns to
+this cell), not for an individual outcome: the delta method on the
+link scale, <span class="math notranslate nohighlight">\(\exp(\hat\eta \pm z\,\sqrt{x^\top \Sigma x})\)</span>
+with <span class="math notranslate nohighlight">\(\Sigma\)</span> the quasi-likelihood coefficient covariance.
+Individual outcomes vary far more than the mean; for that question a
+frequency-severity simulation is the right tool, not a GLM interval.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Index-aligned with <code class="docutils literal notranslate"><span class="pre">data</span></code>; columns <code class="docutils literal notranslate"><span class="pre">predicted</span></code>, <code class="docutils literal notranslate"><span class="pre">ci_low</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ci_high</span></code>. With <code class="docutils literal notranslate"><span class="pre">exposure</span></code>, all three are on the total scale.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pandas.DataFrame</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1032,8 +1191,10 @@ where overdispersion is the norm.</p>
 becomes a named lookup that plugs directly into the build-up and
 renewal machinery, with <code class="docutils literal notranslate"><span class="pre">default=1.0</span></code> for unknown levels –
 matching how <a class="reference internal" href="#ratingmodels.GLMRelativities.predict" title="ratingmodels.GLMRelativities.predict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predict()</span></code></a> treats levels unseen at fit time.
-Continuous covariates have no level-&gt;factor form and are not
-included; read their per-unit effect from <a class="reference internal" href="#ratingmodels.GLMRelativities.relativity_table" title="ratingmodels.GLMRelativities.relativity_table"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relativity_table()</span></code></a>.</p>
+Continuous covariates and interaction terms have no single-variable
+level-&gt;factor form and are not included; read their effects from
+<a class="reference internal" href="#ratingmodels.GLMRelativities.relativity_table" title="ratingmodels.GLMRelativities.relativity_table"><code class="xref py py-meth docutils literal notranslate"><span class="pre">relativity_table()</span></code></a> (and cat x cat cells from
+<code class="docutils literal notranslate"><span class="pre">relativities_[&quot;a:b&quot;]</span></code>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>One table per categorical predictor, keyed by variable name.</p>
@@ -1100,7 +1261,7 @@ from a component take that component’s base, 1.0 – matching how its
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ratingmodels.FrequencySeverityModel.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">claim_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">claim_amount</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency_predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">severity_predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency_continuous</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">severity_continuous</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">object</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.FrequencySeverityModel" title="ratingmodels.freqsev.FrequencySeverityModel"><span class="pre">FrequencySeverityModel</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/freqsev.html#FrequencySeverityModel.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FrequencySeverityModel.fit" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">claim_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">claim_amount</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency_predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">severity_predictors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency_continuous</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">severity_continuous</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency_interactions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">severity_interactions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_levels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">object</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.FrequencySeverityModel" title="ratingmodels.freqsev.FrequencySeverityModel"><span class="pre">FrequencySeverityModel</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/freqsev.html#FrequencySeverityModel.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.FrequencySeverityModel.fit" title="Link to this definition">¶</a></dt>
 <dd><p>Fit both components from one claims frame.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1122,6 +1283,16 @@ fits on claims only and thins out fast.</p></li>
 frequency list).</p></li>
 <li><p><strong>severity_continuous</strong> (<em>sequence</em><em> of </em><em>str</em>) – Continuous covariates per component (severity defaults to the
 frequency list).</p></li>
+<li><p><strong>frequency_interactions</strong> (<em>sequence</em><em> of </em><em>pairs</em>) – Interaction terms per component, as in
+<a class="reference internal" href="#ratingmodels.GLMRelativities.fit" title="ratingmodels.GLMRelativities.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GLMRelativities.fit()</span></code></a> (severity defaults to the frequency
+list). Categorical x categorical interactions surface in
+<a class="reference internal" href="#ratingmodels.FrequencySeverityModel.combined_relativities" title="ratingmodels.FrequencySeverityModel.combined_relativities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">combined_relativities()</span></code></a> under an <code class="docutils literal notranslate"><span class="pre">&quot;a:b&quot;</span></code> key with a
+MultiIndex of level pairs.</p></li>
+<li><p><strong>severity_interactions</strong> (<em>sequence</em><em> of </em><em>pairs</em>) – Interaction terms per component, as in
+<a class="reference internal" href="#ratingmodels.GLMRelativities.fit" title="ratingmodels.GLMRelativities.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GLMRelativities.fit()</span></code></a> (severity defaults to the frequency
+list). Categorical x categorical interactions surface in
+<a class="reference internal" href="#ratingmodels.FrequencySeverityModel.combined_relativities" title="ratingmodels.FrequencySeverityModel.combined_relativities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">combined_relativities()</span></code></a> under an <code class="docutils literal notranslate"><span class="pre">&quot;a:b&quot;</span></code> key with a
+MultiIndex of level pairs.</p></li>
 <li><p><strong>base_levels</strong> (<em>mapping</em><em>, </em><em>optional</em>) – Predictor -&gt; reference level, shared by both components.</p></li>
 </ul>
 </dd>
@@ -1167,7 +1338,10 @@ consider whether a zero-mass component belongs in the model.</p>
 <p>One table per variable, built from the <code class="docutils literal notranslate"><span class="pre">combined</span></code> column of
 <a class="reference internal" href="#ratingmodels.FrequencySeverityModel.combined_relativities" title="ratingmodels.FrequencySeverityModel.combined_relativities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">combined_relativities()</span></code></a> (frequency x severity) with
 <code class="docutils literal notranslate"><span class="pre">default=1.0</span></code> for unknown levels – the pure-premium plan you
-would actually apply, ready for the build-up and renewal machinery.</p>
+would actually apply, ready for the build-up and renewal machinery.
+Interaction terms are excluded (a <a class="reference internal" href="#ratingmodels.FactorTable" title="ratingmodels.FactorTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">FactorTable</span></code></a> is
+single-variable by contract); read their cells from
+<a class="reference internal" href="#ratingmodels.FrequencySeverityModel.combined_relativities" title="ratingmodels.FrequencySeverityModel.combined_relativities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">combined_relativities()</span></code></a>.</p>
 </dd></dl>
 
 </dd></dl>
@@ -2094,6 +2268,299 @@ with <code class="docutils literal notranslate"><span class="pre">current_rate</
 </dl>
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.RatingPlan">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RatingPlan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_rate:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factors:</span> <span class="pre">~typing.Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~ratingmodels.relativity.FactorTable]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/plan.html#RatingPlan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RatingPlan" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A complete multiplicative rating plan.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_rate</strong> (<em>float</em>) – The rate at base levels of every variable (per exposure unit).</p></li>
+<li><p><strong>factors</strong> (<em>mapping</em><em> of </em><em>str -&gt; FactorTable</em>) – One table per rating variable, keyed by variable name.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p><code class="docutils literal notranslate"><span class="pre">RatingPlan.from_model(model)</span></code> builds a plan directly from a fitted
+<a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.GLMRelativities"><code class="xref py py-class docutils literal notranslate"><span class="pre">GLMRelativities</span></code></a> or
+<a class="reference internal" href="#ratingmodels.FrequencySeverityModel" title="ratingmodels.FrequencySeverityModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">FrequencySeverityModel</span></code></a> – <code class="docutils literal notranslate"><span class="pre">to_factor_tables()</span></code>
+supplies the factors and <code class="docutils literal notranslate"><span class="pre">base_value_</span></code> the base rate.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RatingPlan.average_relativity">
+<span class="sig-name descname"><span class="pre">average_relativity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="reference internal" href="_modules/ratingmodels/plan.html#RatingPlan.average_relativity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RatingPlan.average_relativity" title="Link to this definition">¶</a></dt>
+<dd><p>Exposure-weighted average factor per variable, and combined.</p>
+<p>The plan’s off-balance diagnostic: a combined average of 1.0 means
+the factors are balanced on this census; anything else is what a
+base-rate correction would need to absorb.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RatingPlan.from_dict">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.RatingPlan" title="ratingmodels.plan.RatingPlan"><span class="pre">RatingPlan</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/plan.html#RatingPlan.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RatingPlan.from_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Rebuild a plan from <a class="reference internal" href="#ratingmodels.RatingPlan.to_dict" title="ratingmodels.RatingPlan.to_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code></a> output.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RatingPlan.from_model">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.RatingPlan" title="ratingmodels.plan.RatingPlan"><span class="pre">RatingPlan</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/plan.html#RatingPlan.from_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RatingPlan.from_model" title="Link to this definition">¶</a></dt>
+<dd><p>Build a plan from a fitted model.</p>
+<p><code class="docutils literal notranslate"><span class="pre">model</span></code> needs <code class="docutils literal notranslate"><span class="pre">to_factor_tables()</span></code> and <code class="docutils literal notranslate"><span class="pre">base_value_</span></code> – both
+<a class="reference internal" href="#ratingmodels.GLMRelativities" title="ratingmodels.GLMRelativities"><code class="xref py py-class docutils literal notranslate"><span class="pre">GLMRelativities</span></code></a> and
+<a class="reference internal" href="#ratingmodels.FrequencySeverityModel" title="ratingmodels.FrequencySeverityModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">FrequencySeverityModel</span></code></a> qualify. <code class="docutils literal notranslate"><span class="pre">base_rate</span></code>
+overrides the fitted base (e.g. after an off-balance correction).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RatingPlan.rate">
+<span class="sig-name descname"><span class="pre">rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unknown</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'default'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/plan.html#RatingPlan.rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RatingPlan.rate" title="Link to this definition">¶</a></dt>
+<dd><p>Rate every row: the full multiplicative build-up, decomposed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataFrame</em>) – One row per unit to rate.</p></li>
+<li><p><strong>columns</strong> (<em>mapping</em><em>, </em><em>optional</em>) – Rating variable -&gt; column name, where names differ.</p></li>
+<li><p><strong>exposure</strong> (<em>str</em><em>, </em><em>optional</em>) – Exposure column; adds a <code class="docutils literal notranslate"><span class="pre">premium</span></code> column (rate x exposure).</p></li>
+<li><p><strong>unknown</strong> (<em>{&quot;default&quot;</em><em>, </em><em>&quot;error&quot;}</em>) – Policy for levels the plan has no factor for. <code class="docutils literal notranslate"><span class="pre">&quot;default&quot;</span></code>
+applies the table’s default; <code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code> raises, listing every
+offending <code class="docutils literal notranslate"><span class="pre">(variable,</span> <span class="pre">level)</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Index-aligned with <code class="docutils literal notranslate"><span class="pre">data</span></code>: <code class="docutils literal notranslate"><span class="pre">base_rate</span></code>, one
+<code class="docutils literal notranslate"><span class="pre">{variable}_factor</span></code> per variable, <code class="docutils literal notranslate"><span class="pre">combined_relativity</span></code>,
+<code class="docutils literal notranslate"><span class="pre">rate</span></code>, and <code class="docutils literal notranslate"><span class="pre">premium</span></code> when <code class="docutils literal notranslate"><span class="pre">exposure</span></code> is given.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RatingPlan.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/ratingmodels/plan.html#RatingPlan.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RatingPlan.to_dict" title="Link to this definition">¶</a></dt>
+<dd><p>A plain-dict form for filing, audit, and version control.</p>
+<p>Round-trips exactly through <a class="reference internal" href="#ratingmodels.RatingPlan.from_dict" title="ratingmodels.RatingPlan.from_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">from_dict()</span></code></a>. If the dict will
+pass through JSON, note that JSON object keys are always strings:
+non-string level keys (e.g. integer territory codes) come back as
+strings, and lookups against the original typed levels will then
+fall to the default. Use string levels for JSON-borne plans.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.RatingPlan.validate">
+<span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/plan.html#RatingPlan.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.RatingPlan.validate" title="Link to this definition">¶</a></dt>
+<dd><p>Levels present in <code class="docutils literal notranslate"><span class="pre">data</span></code> that the plan has no factor for.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Indexed by <code class="docutils literal notranslate"><span class="pre">(variable,</span> <span class="pre">level)</span></code> with column <code class="docutils literal notranslate"><span class="pre">n</span></code> (row count).
+Empty means every level is covered. Run this before rating a new
+census; anything listed here is what <code class="docutils literal notranslate"><span class="pre">unknown=&quot;default&quot;</span></code> would
+silently default and <code class="docutils literal notranslate"><span class="pre">unknown=&quot;error&quot;</span></code> would refuse.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.PlanComparison">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PlanComparison</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proposed_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/plan.html#PlanComparison"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.PlanComparison" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Per-case comparison of two rating plans on one census.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.PlanComparison.by">
+<span class="sig-name descname"><span class="pre">by</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">labels</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/plan.html#PlanComparison.by"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.PlanComparison.by" title="Link to this definition">¶</a></dt>
+<dd><p>Premium-weighted average change per group – who absorbs the move.</p>
+<p><code class="docutils literal notranslate"><span class="pre">labels</span></code> is an array/Series aligned with the census rows.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ratingmodels.PlanComparison.change">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">change</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Series</span></em><a class="headerlink" href="#ratingmodels.PlanComparison.change" title="Link to this definition">¶</a></dt>
+<dd><p>Per-case rate change, <code class="docutils literal notranslate"><span class="pre">proposed/current</span> <span class="pre">-</span> <span class="pre">1</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.PlanComparison.dislocation">
+<span class="sig-name descname"><span class="pre">dislocation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bands</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(-0.10,</span> <span class="pre">-0.05,</span> <span class="pre">0.0,</span> <span class="pre">0.05,</span> <span class="pre">0.10)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/plan.html#PlanComparison.dislocation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.PlanComparison.dislocation" title="Link to this definition">¶</a></dt>
+<dd><p>The banded dislocation exhibit; see <a class="reference internal" href="#ratingmodels.rate_dislocation" title="ratingmodels.rate_dislocation"><code class="xref py py-func docutils literal notranslate"><span class="pre">rate_dislocation()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.PlanComparison.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="reference internal" href="_modules/ratingmodels/plan.html#PlanComparison.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.PlanComparison.summary" title="Link to this definition">¶</a></dt>
+<dd><p>The one-screen comparison: premiums, average change, direction.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.compare_rating_plans">
+<span class="sig-name descname"><span class="pre">compare_rating_plans</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ratingmodels.RatingPlan" title="ratingmodels.plan.RatingPlan"><span class="pre">RatingPlan</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">proposed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ratingmodels.RatingPlan" title="ratingmodels.plan.RatingPlan"><span class="pre">RatingPlan</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unknown</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'default'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.PlanComparison" title="ratingmodels.plan.PlanComparison"><span class="pre">PlanComparison</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/plan.html#compare_rating_plans"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.compare_rating_plans" title="Link to this definition">¶</a></dt>
+<dd><p>Rate one census under two plans and compare.</p>
+<p>Both plans are applied to the <em>same</em> rows with the same column mapping
+and unknown-level policy, so every difference in the result is a plan
+difference, not a data difference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>With <code class="docutils literal notranslate"><span class="pre">summary()</span></code>, <code class="docutils literal notranslate"><span class="pre">dislocation()</span></code>, <code class="docutils literal notranslate"><span class="pre">by(labels)</span></code>, and the
+per-case <code class="docutils literal notranslate"><span class="pre">change</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#ratingmodels.PlanComparison" title="ratingmodels.PlanComparison"><em>PlanComparison</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ratingmodels.ExperienceExhibit">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ExperienceExhibit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">earned_premium</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">losses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_level_factors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trend_factors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">development_factors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">period_labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ratingmodels/indication.html#ExperienceExhibit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ExperienceExhibit" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Assemble experience periods into the inputs a rate indication takes.</p>
+<p><a class="reference internal" href="#ratingmodels.RateIndication" title="ratingmodels.RateIndication"><code class="xref py py-class docutils literal notranslate"><span class="pre">RateIndication</span></code></a> consumes <em>point</em> inputs – a trended, developed
+experience loss cost and an on-level premium. This is the object that
+produces them from per-period columns, with every adjustment a visible
+column of the worksheet: premium times its on-level factor, losses
+times development and trend, a loss ratio per period, and the weighted
+total. The natural factor producers are
+<a class="reference internal" href="#ratingmodels.on_level_factors" title="ratingmodels.on_level_factors"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_level_factors()</span></code></a> (the <code class="docutils literal notranslate"><span class="pre">on_level_factor</span></code>
+column) and <code class="docutils literal notranslate"><span class="pre">actuarialpy.reserving.ChainLadder</span></code> (per-origin
+development factors), but any source works – this object composes, it
+does not re-derive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>earned_premium</strong> (<em>array-like</em>) – Earned premium per experience period, at historical rate level.</p></li>
+<li><p><strong>losses</strong> (<em>array-like</em>) – Incurred losses per period (at whatever development and trend
+level the factor arguments then adjust for).</p></li>
+<li><p><strong>on_level_factors</strong> (<em>scalar</em><em> or </em><em>array</em>) – Per-period multiplicative adjustments. Default 1.0.</p></li>
+<li><p><strong>trend_factors</strong> (<em>scalar</em><em> or </em><em>array</em>) – Per-period multiplicative adjustments. Default 1.0.</p></li>
+<li><p><strong>development_factors</strong> (<em>scalar</em><em> or </em><em>array</em>) – Per-period multiplicative adjustments. Default 1.0.</p></li>
+<li><p><strong>weights</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Weights for the <em>diagnostic</em> weighted loss ratio. Default: on-level
+premium, making the weighted ratio identical to the aggregate
+ratio – which is also the convention <a class="reference internal" href="#ratingmodels.ExperienceExhibit.to_indication" title="ratingmodels.ExperienceExhibit.to_indication"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_indication()</span></code></a> uses,
+since the indication is built from period totals.</p></li>
+<li><p><strong>period_labels</strong> (<em>sequence</em><em>, </em><em>optional</em>) – Exhibit index; defaults to <code class="docutils literal notranslate"><span class="pre">0..n-1</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="ratingmodels.ExperienceExhibit.adjusted_losses">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">adjusted_losses</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#ratingmodels.ExperienceExhibit.adjusted_losses" title="Link to this definition">¶</a></dt>
+<dd><p>Total developed, trended losses across the periods.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.ExperienceExhibit.exhibit">
+<span class="sig-name descname"><span class="pre">exhibit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/indication.html#ExperienceExhibit.exhibit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ExperienceExhibit.exhibit" title="Link to this definition">¶</a></dt>
+<dd><p>The worksheet: one row per period, every adjustment a column.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ratingmodels.ExperienceExhibit.experience_loss_ratio">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">experience_loss_ratio</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#ratingmodels.ExperienceExhibit.experience_loss_ratio" title="Link to this definition">¶</a></dt>
+<dd><p>Weighted per-period loss ratio (aggregate ratio by default).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ratingmodels.ExperienceExhibit.on_level_premium">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">on_level_premium</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#ratingmodels.ExperienceExhibit.on_level_premium" title="Link to this definition">¶</a></dt>
+<dd><p>Total on-level earned premium across the periods.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ratingmodels.ExperienceExhibit.to_indication">
+<span class="sig-name descname"><span class="pre">to_indication</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manual_loss_cost</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">credibility</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exposure</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retention</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ratingmodels.RetentionLoad" title="ratingmodels.loading.RetentionLoad"><span class="pre">RetentionLoad</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_loss_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.85</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.RateIndication" title="ratingmodels.indication.RateIndication"><span class="pre">RateIndication</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/indication.html#ExperienceExhibit.to_indication"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.ExperienceExhibit.to_indication" title="Link to this definition">¶</a></dt>
+<dd><p>Wire the assembled totals into a <a class="reference internal" href="#ratingmodels.RateIndication" title="ratingmodels.RateIndication"><code class="xref py py-class docutils literal notranslate"><span class="pre">RateIndication</span></code></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">experience_loss_cost</span></code> becomes <code class="docutils literal notranslate"><span class="pre">adjusted_losses</span> <span class="pre">/</span> <span class="pre">exposure</span></code> and
+<code class="docutils literal notranslate"><span class="pre">current_premium</span></code> becomes <a class="reference internal" href="#ratingmodels.ExperienceExhibit.on_level_premium" title="ratingmodels.ExperienceExhibit.on_level_premium"><code class="xref py py-attr docutils literal notranslate"><span class="pre">on_level_premium</span></code></a>, so the
+indication’s own <code class="docutils literal notranslate"><span class="pre">experience_loss_ratio()</span></code> reproduces this
+exhibit’s aggregate ratio exactly. <code class="docutils literal notranslate"><span class="pre">exposure</span></code> is the total over
+the experience period, in the same units as <code class="docutils literal notranslate"><span class="pre">manual_loss_cost</span></code>
+and <code class="docutils literal notranslate"><span class="pre">current_rate</span></code>. Remaining keyword arguments
+(<code class="docutils literal notranslate"><span class="pre">trend_total_factor</span></code>, <code class="docutils literal notranslate"><span class="pre">benefit_factor</span></code>, …) pass through.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.on_level_factors">
+<span class="sig-name descname"><span class="pre">on_level_factors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">periods</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate_changes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">policy_term</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="reference internal" href="_modules/ratingmodels/onlevel.html#on_level_factors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.on_level_factors" title="Link to this definition">¶</a></dt>
+<dd><p>On-level factors per experience period, by the exact parallelogram.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>periods</strong> (<em>sequence</em><em> of </em><em>(</em><em>start</em><em>, </em><em>end</em><em>)</em>) – Experience periods, <code class="docutils literal notranslate"><span class="pre">start</span> <span class="pre">&lt;</span> <span class="pre">end</span></code>. Floats or datetime-likes.</p></li>
+<li><p><strong>rate_changes</strong> (<em>sequence</em><em> of </em><em>(</em><em>date</em><em>, </em><em>change</em><em>)</em>) – Rate-change history as decimal changes (<code class="docutils literal notranslate"><span class="pre">0.08</span></code> for +8%). Multiple
+changes on one date compound. May be empty (all factors 1.0).</p></li>
+<li><p><strong>policy_term</strong> (<em>float</em>) – Policy term in the same units as float dates (years for datetime
+input). <code class="docutils literal notranslate"><span class="pre">0</span></code> means premium is earned the instant it is written –
+the in-force approximation; <code class="docutils literal notranslate"><span class="pre">1.0</span></code> is the classic annual-policy
+parallelogram.</p></li>
+<li><p><strong>current_date</strong> (<em>optional</em>) – The “as of” for the current rate level. Default: after every listed
+change (the full cumulative index). Pass a date to exclude changes
+after it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>One row per period: <code class="docutils literal notranslate"><span class="pre">period_start</span></code>, <code class="docutils literal notranslate"><span class="pre">period_end</span></code>,
+<code class="docutils literal notranslate"><span class="pre">average_earned_index</span></code>, <code class="docutils literal notranslate"><span class="pre">current_index</span></code>, <code class="docutils literal notranslate"><span class="pre">on_level_factor</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>The textbook case – one +10% change mid-year, annual policies, calendar
+year period: an eighth of the earned premium sits in the new-rate
+triangle, so the average index is 1.0125 and the factor 1.1/1.0125.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ratingmodels.pooling_charge_from_severity">
+<span class="sig-name descname"><span class="pre">pooling_charge_from_severity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">severity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pooling_point</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_frequency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expense_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">risk_margin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="reference internal" href="_modules/ratingmodels/pooling.html#pooling_charge_from_severity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.pooling_charge_from_severity" title="Link to this definition">¶</a></dt>
+<dd><p>Expected pooling charge per exposure unit, decomposed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>severity</strong> – Any object with <code class="docutils literal notranslate"><span class="pre">sf(x)</span></code> and <code class="docutils literal notranslate"><span class="pre">mean_excess(d)</span></code> (see module
+docstring). Both must accept a float and return a float.</p></li>
+<li><p><strong>pooling_point</strong> (<em>float</em>) – The per-claim attachment <code class="docutils literal notranslate"><span class="pre">d</span></code> above which losses are pooled.</p></li>
+<li><p><strong>expected_frequency</strong> (<em>float</em>) – Expected claims per exposure unit (the same exposure unit the
+charge should be quoted in).</p></li>
+<li><p><strong>expense_ratio</strong> (<em>float</em>) – Expense provision as a share of the <em>charge</em>: the pure charge is
+divided by <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">-</span> <span class="pre">expense_ratio</span></code>. Must lie in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1)</span></code>.</p></li>
+<li><p><strong>risk_margin</strong> (<em>float</em>) – Proportional loading on the pure excess cost, applied before the
+expense gross-up.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The build-up, each step auditable: <code class="docutils literal notranslate"><span class="pre">exceedance_probability</span></code>
+(<span class="math notranslate nohighlight">\(S(d)\)</span>), <code class="docutils literal notranslate"><span class="pre">mean_excess</span></code> (<span class="math notranslate nohighlight">\(e(d)\)</span>),
+<code class="docutils literal notranslate"><span class="pre">expected_excess_per_claim</span></code> (<span class="math notranslate nohighlight">\(S(d)\,e(d) = E[(X-d)_+]\)</span>),
+<code class="docutils literal notranslate"><span class="pre">pure_excess_cost</span></code> (frequency <span class="math notranslate nohighlight">\(\times\; E[(X-d)_+]\)</span>), and
+<code class="docutils literal notranslate"><span class="pre">pooling_charge</span></code> (after margin and expense gross-up). The final
+value is what <code class="docutils literal notranslate"><span class="pre">experience_rate</span></code> expects as its
+<code class="docutils literal notranslate"><span class="pre">pooling_charge</span></code> input.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.Series</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>TypeError</strong> – If <code class="docutils literal notranslate"><span class="pre">severity</span></code> lacks the protocol methods.</p></li>
+<li><p><strong>ValueError</strong> – For an infinite mean excess (a tail with <span class="math notranslate nohighlight">\(\xi \ge 1\)</span> has no
+    finite pooling cost at any attachment) or invalid loadings.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="ratingmodels.renew">
 <span class="sig-name descname"><span class="pre">renew</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indicated_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">floor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Series</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">round_to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ratingmodels.RenewalAction" title="ratingmodels.renewal.RenewalAction"><span class="pre">RenewalAction</span></a></span></span><a class="reference internal" href="_modules/ratingmodels/renewal.html#renew"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ratingmodels.renew" title="Link to this definition">¶</a></dt>
@@ -2350,6 +2817,8 @@ every resulting premium is positive) is validated with explicit errors.</p>
 <li><a class="reference internal" href="#glm-relativities">GLM relativities</a><ul>
 <li><a class="reference internal" href="#aggregate-vs-rate-responses">Aggregate vs. rate responses</a></li>
 <li><a class="reference internal" href="#diagnostics">Diagnostics</a></li>
+<li><a class="reference internal" href="#interactions">Interactions</a></li>
+<li><a class="reference internal" href="#prediction-intervals">Prediction intervals</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#frequencyseverity-models">Frequency–severity models</a></li>
@@ -2359,7 +2828,11 @@ every resulting premium is positive) is validated with explicit errors.</p>
 <li><a class="reference internal" href="#comparing-candidates">Comparing candidates</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#rate-indications">Rate indications</a></li>
+<li><a class="reference internal" href="#rating-plans">Rating plans</a></li>
 <li><a class="reference internal" href="#rate-dislocation">Rate dislocation</a></li>
+<li><a class="reference internal" href="#on-level-factors">On-level factors</a></li>
+<li><a class="reference internal" href="#pooling-charges-from-a-severity-model">Pooling charges from a severity model</a></li>
 <li><a class="reference internal" href="#pricing-scenarios-and-margin">Pricing scenarios and margin</a></li>
 <li><a class="reference internal" href="#module-ratingmodels">API reference</a><ul>
 <li><a class="reference internal" href="#ratingmodels.full_credibility_standard"><code class="docutils literal notranslate"><span class="pre">full_credibility_standard()</span></code></a></li>
@@ -2390,6 +2863,7 @@ every resulting premium is positive) is validated with explicit errors.</p>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.deviance_explained_"><code class="docutils literal notranslate"><span class="pre">deviance_explained_</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.fit"><code class="docutils literal notranslate"><span class="pre">fit()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.predict"><code class="docutils literal notranslate"><span class="pre">predict()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.GLMRelativities.predict_interval"><code class="docutils literal notranslate"><span class="pre">predict_interval()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.relativity_table"><code class="docutils literal notranslate"><span class="pre">relativity_table()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.residuals"><code class="docutils literal notranslate"><span class="pre">residuals()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.GLMRelativities.summary"><code class="docutils literal notranslate"><span class="pre">summary()</span></code></a></li>
@@ -2484,6 +2958,33 @@ every resulting premium is positive) is validated with explicit errors.</p>
 <li><a class="reference internal" href="#ratingmodels.corridor"><code class="docutils literal notranslate"><span class="pre">corridor()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.rate_dislocation"><code class="docutils literal notranslate"><span class="pre">rate_dislocation()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.constraint_impact"><code class="docutils literal notranslate"><span class="pre">constraint_impact()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RatingPlan"><code class="docutils literal notranslate"><span class="pre">RatingPlan</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.RatingPlan.average_relativity"><code class="docutils literal notranslate"><span class="pre">average_relativity()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RatingPlan.from_dict"><code class="docutils literal notranslate"><span class="pre">from_dict()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RatingPlan.from_model"><code class="docutils literal notranslate"><span class="pre">from_model()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RatingPlan.rate"><code class="docutils literal notranslate"><span class="pre">rate()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RatingPlan.to_dict"><code class="docutils literal notranslate"><span class="pre">to_dict()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.RatingPlan.validate"><code class="docutils literal notranslate"><span class="pre">validate()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.PlanComparison"><code class="docutils literal notranslate"><span class="pre">PlanComparison</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.PlanComparison.by"><code class="docutils literal notranslate"><span class="pre">by()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.PlanComparison.change"><code class="docutils literal notranslate"><span class="pre">change</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.PlanComparison.dislocation"><code class="docutils literal notranslate"><span class="pre">dislocation()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.PlanComparison.summary"><code class="docutils literal notranslate"><span class="pre">summary()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.compare_rating_plans"><code class="docutils literal notranslate"><span class="pre">compare_rating_plans()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.ExperienceExhibit"><code class="docutils literal notranslate"><span class="pre">ExperienceExhibit</span></code></a><ul>
+<li><a class="reference internal" href="#ratingmodels.ExperienceExhibit.adjusted_losses"><code class="docutils literal notranslate"><span class="pre">adjusted_losses</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.ExperienceExhibit.exhibit"><code class="docutils literal notranslate"><span class="pre">exhibit()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.ExperienceExhibit.experience_loss_ratio"><code class="docutils literal notranslate"><span class="pre">experience_loss_ratio</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.ExperienceExhibit.on_level_premium"><code class="docutils literal notranslate"><span class="pre">on_level_premium</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.ExperienceExhibit.to_indication"><code class="docutils literal notranslate"><span class="pre">to_indication()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ratingmodels.on_level_factors"><code class="docutils literal notranslate"><span class="pre">on_level_factors()</span></code></a></li>
+<li><a class="reference internal" href="#ratingmodels.pooling_charge_from_severity"><code class="docutils literal notranslate"><span class="pre">pooling_charge_from_severity()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.renew"><code class="docutils literal notranslate"><span class="pre">renew()</span></code></a></li>
 <li><a class="reference internal" href="#ratingmodels.RenewalAction"><code class="docutils literal notranslate"><span class="pre">RenewalAction</span></code></a><ul>
 <li><a class="reference internal" href="#ratingmodels.RenewalAction.to_frame"><code class="docutils literal notranslate"><span class="pre">to_frame()</span></code></a></li>

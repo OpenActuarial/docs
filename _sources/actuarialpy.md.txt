@@ -170,6 +170,32 @@ ap.weighted_summary(book, value_cols="rate_action",
                     weight_col="premium", groupby="cohort")
 ```
 
+## Development and completion
+
+`actuarialpy.reserving` fits chain-ladder development patterns from
+cumulative triangles: `ChainLadder.fit` (volume-weighted or simple
+age-to-age factors, optional tail), `project` for per-origin ultimates and
+IBNR, and `completion_factors` / `apply_completion` for the
+completion-factor workflow.
+
+As of 0.40.0 the pattern carries its own uncertainty — the
+distribution-free standard errors of Mack (1993):
+
+```python
+cl = ChainLadder.fit(triangle)           # volume-weighted
+cl.mack_sigma_squared(triangle)          # variance parameters per period
+cl.mack_standard_errors(triangle)
+# latest | ultimate | ibnr | se | cv     (per origin, plus a Total row
+#                                         with the cross-origin covariance)
+```
+
+Two honesty notes, stated rather than hidden: the errors are defined for
+the volume-weighted estimator only (Mack's model *is* that estimator, so
+`method="simple"` refuses), and a fitted `tail` is treated as
+deterministic — ultimates and standard errors scale by it exactly.
+Verified against the published Taylor–Ashe results (total reserve
+18,680,856; total s.e. 2,447,095).
+
 ## API reference
 
 ```{eval-rst}

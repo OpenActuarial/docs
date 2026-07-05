@@ -216,6 +216,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../worked-example-book.html">Example 2: pricing a book, in columns</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../worked-example.html">Example 3: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../worked-example-coverage.html">Example 4: censored payments to coverage terms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../worked-example-indication.html">Example 5: triangle to indicated change</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../worked-example-tail.html">Example 6: pricing the tail, with error bars</a></li>
 </ul>
 
 </div>
@@ -296,6 +298,50 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">std</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">())</span>
+
+    <span class="c1"># --- Tail interface (the cross-package severity protocol) ---</span>
+<div class="viewcode-block" id="SeverityModel.sf">
+<a class="viewcode-back" href="../../../lossmodels.html#lossmodels.SeverityModel.sf">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Survival function ``P(X &gt; x)``; the complement of :meth:`cdf`.</span>
+
+<span class="sd">        Together with :meth:`mean_excess` this is the small protocol that</span>
+<span class="sd">        downstream consumers (e.g. ``ratingmodels`` pooling charges) rely</span>
+<span class="sd">        on -- any object with these two methods qualifies.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SeverityModel.mean_excess">
+<a class="viewcode-back" href="../../../lossmodels.html#lossmodels.SeverityModel.mean_excess">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mean_excess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Mean excess ``E[X - d | X &gt; d]`` via the limited-expected-value identity.</span>
+
+<span class="sd">        Uses :math:`E[(X-d)_+] = E[X] - E[\min(X, d)]` divided by ``S(d)`` --</span>
+<span class="sd">        finite-interval integration only (and closed-form</span>
+<span class="sd">        :meth:`limited_expected_value` where a subclass provides one), which</span>
+<span class="sd">        is numerically far better behaved for heavy tails than integrating</span>
+<span class="sd">        the survival function to infinity. An infinite mean means an</span>
+<span class="sd">        infinite mean excess, returned as ``inf``; where ``S(d) = 0`` the</span>
+<span class="sd">        conditional expectation is undefined and ``nan`` is returned.</span>
+<span class="sd">        Subclasses with a fully closed form may still override.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">OverflowError</span><span class="p">):</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>  <span class="c1"># models that raise where the mean diverges</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">di</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">arr</span><span class="p">)):</span>
+            <span class="n">surv</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sf</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">di</span><span class="p">)))</span>
+            <span class="k">if</span> <span class="n">surv</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">mean</span><span class="p">):</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">mean</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">limited_expected_value</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">di</span><span class="p">))))</span> <span class="o">/</span> <span class="n">surv</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span></div>
+
 
     <span class="c1"># --- Quantile / inverse CDF ---</span>
 <div class="viewcode-block" id="SeverityModel.quantile">

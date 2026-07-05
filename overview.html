@@ -217,6 +217,8 @@
 <li class="toctree-l1"><a class="reference internal" href="worked-example-book.html">Example 2: pricing a book, in columns</a></li>
 <li class="toctree-l1"><a class="reference internal" href="worked-example.html">Example 3: claims to capital</a></li>
 <li class="toctree-l1"><a class="reference internal" href="worked-example-coverage.html">Example 4: censored payments to coverage terms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-indication.html">Example 5: triangle to indicated change</a></li>
+<li class="toctree-l1"><a class="reference internal" href="worked-example-tail.html">Example 6: pricing the tail, with error bars</a></li>
 </ul>
 
 </div>
@@ -322,6 +324,12 @@ internal dependencies.</p>
     </pre><p><code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> pulls in matplotlib
 only through its optional <code class="docutils literal notranslate"><span class="pre">plot</span></code> extra (<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;extremeloss[plot]&quot;</span></code>), for
 the diagnostic plots; the base install does not require it.</p>
+<p>Where packages <em>cooperate without depending</em>, they do it through a
+deliberately tiny duck-typed protocol: any severity object exposing
+<code class="docutils literal notranslate"><span class="pre">sf(x)</span></code> and <code class="docutils literal notranslate"><span class="pre">mean_excess(d)</span></code> — every <code class="docutils literal notranslate"><span class="pre">lossmodels</span></code> distribution, every
+<code class="docutils literal notranslate"><span class="pre">extremeloss</span></code> GPD tail fit — plugs into
+<code class="docutils literal notranslate"><span class="pre">ratingmodels.pooling_charge_from_severity</span></code>. The seam is two methods, not
+an import.</p>
 </section>
 <section id="conventions">
 <h2>Conventions<a class="headerlink" href="#conventions" title="Link to this heading">¶</a></h2>
