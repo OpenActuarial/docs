@@ -202,6 +202,8 @@
   <ul>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation.html">Validation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stability.html">API stability</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Packages</span></p>
 <ul class="current">
@@ -525,6 +527,10 @@ component is a full <code class="docutils literal notranslate"><span class="pre"
 <p>Rows with positive amounts but zero counts raise (severity is undefined
 there); claims closed at zero amount are excluded from the severity fit with
 a warning and still count toward frequency.</p>
+<p><code class="docutils literal notranslate"><span class="pre">predict_interval</span></code> exists here too – component log-scale variances add
+under the stated independence of the two fits, and <code class="docutils literal notranslate"><span class="pre">predicted</span></code> equals
+<code class="docutils literal notranslate"><span class="pre">pure_premium_prediction</span></code> exactly – so moving from a GLM to a
+frequency-severity model keeps its error bars.</p>
 <p>Both components accept interaction terms
 (<code class="docutils literal notranslate"><span class="pre">frequency_interactions=[(&quot;area&quot;,</span> <span class="pre">&quot;industry&quot;)]</span></code>; severity defaults to the
 frequency list). Categorical × categorical cells surface in

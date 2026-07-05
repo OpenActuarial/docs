@@ -202,6 +202,8 @@
   <ul>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conventions.html">Conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation.html">Validation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stability.html">API stability</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Packages</span></p>
 <ul class="current">
@@ -345,6 +347,23 @@ including the binomial variance of the exceedance rate (Coles §4.3.3):</p>
 remains the shorthand. A fitted tail also exposes <code class="docutils literal notranslate"><span class="pre">sf</span></code> and a closed-form
 <code class="docutils literal notranslate"><span class="pre">mean_excess</span></code>, so it plugs directly into
 <code class="docutils literal notranslate"><span class="pre">ratingmodels.pooling_charge_from_severity</span></code>.</p>
+<p>The same treatment covers block maxima: <code class="docutils literal notranslate"><span class="pre">fit_gev</span></code> populates
+<code class="docutils literal notranslate"><span class="pre">GEVFit.covariance</span></code>, and <code class="docutils literal notranslate"><span class="pre">gev_return_level</span></code> carries delta-method bands
+(periods in blocks). Switching between the POT and block-maxima workflows
+no longer changes how much uncertainty you get to see.</p>
+<p><strong>Did the fit succeed?</strong> <code class="docutils literal notranslate"><span class="pre">qq_points</span></code> / <code class="docutils literal notranslate"><span class="pre">pp_points</span></code> give the diagnostic
+point sets headlessly, and <code class="docutils literal notranslate"><span class="pre">parametric_bootstrap_gof</span></code> tests the fit with
+p-values that are honest about estimation – every bootstrap replicate is
+<em>refit</em> before scoring, because comparing an estimated-parameter statistic
+against the known-parameter null is anti-conservative:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">el</span><span class="o">.</span><span class="n">parametric_bootstrap_gof</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span> <span class="n">losses</span><span class="p">,</span> <span class="n">n_boot</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+<span class="c1"># {&quot;ks&quot;: ..., &quot;ks_pvalue&quot;: ..., &quot;ad&quot;: ..., &quot;ad_pvalue&quot;: ...}</span>
+</pre></div>
+</div>
+<p>With the <code class="docutils literal notranslate"><span class="pre">plot</span></code> extra, <code class="docutils literal notranslate"><span class="pre">plot_gpd_diagnostics(fit,</span> <span class="pre">losses)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">plot_gev_diagnostics(fit,</span> <span class="pre">maxima)</span></code> draw the Coles four-panel exhibit –
+probability, quantile, return level with its band and empirical points,
+density.</p>
 </section>
 <section id="splicing-onto-a-fitted-body">
 <h2>Splicing onto a fitted body<a class="headerlink" href="#splicing-onto-a-fitted-body" title="Link to this heading">¶</a></h2>

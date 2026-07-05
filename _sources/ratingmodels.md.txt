@@ -285,6 +285,11 @@ Rows with positive amounts but zero counts raise (severity is undefined
 there); claims closed at zero amount are excluded from the severity fit with
 a warning and still count toward frequency.
 
+`predict_interval` exists here too -- component log-scale variances add
+under the stated independence of the two fits, and `predicted` equals
+`pure_premium_prediction` exactly -- so moving from a GLM to a
+frequency-severity model keeps its error bars.
+
 Both components accept interaction terms
 (`frequency_interactions=[("area", "industry")]`; severity defaults to the
 frequency list). Categorical × categorical cells surface in
