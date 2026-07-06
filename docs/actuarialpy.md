@@ -88,6 +88,28 @@ ap.amortization_schedule(200_000, 0.06 / 12, 360)  # full schedule (DataFrame)
 ap.year_fraction("2024-01-01", "2024-07-01", convention="30/360")  # 0.5
 ```
 
+The element-wise functions honor the ecosystem [vectorization
+contract](conventions.md#vectorization-contract): a scalar rate returns a
+`float`, while a numpy array or pandas Series returns the same kind on the same
+index — so a per-scenario or per-period rate column maps straight to a result
+column. The cash-flow reductions (`net_present_value`, `internal_rate_of_return`,
+`present_value_curve`) take a whole stream and return a scalar; everything else
+mirrors its input.
+
+```python
+import pandas as pd
+
+rates = pd.Series([0.03, 0.05, 0.07], index=["low", "base", "high"], name="rate")
+
+ap.discount_factor(rates, 10)     # Series on the same index: 0.7441, 0.6139, 0.5083
+ap.annuity_immediate(rates, 20)   # Series: 14.8775, 12.4622, 10.5940
+
+# assign results straight back onto a scenario frame
+book = pd.DataFrame({"rate": [0.03, 0.05, 0.07]})
+book["discount_10y"] = ap.discount_factor(book["rate"], 10)
+book["annuity_20y"] = ap.annuity_immediate(book["rate"], 20)
+```
+
 ## Exposure and age bases
 
 Exact and rounded ages, and exposure-years over a study window — the inputs an
