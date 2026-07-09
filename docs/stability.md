@@ -22,7 +22,8 @@ ratingmodels changelog).
 **Cross-package floors.** Sibling dependencies use compatible-release
 pins (`actuarialpy~=0.40.0` style): a package release is tested against
 the sibling minor it names. The dependency direction is deliberately
-thin — `ratingmodels` requires `actuarialpy`; everything else
+thin and one-way — `experiencestudies`, `projectionmodels`, and
+`ratingmodels` each require `actuarialpy`; everything else
 cooperates through small duck-typed protocols (`sf` + `mean_excess`)
 rather than imports.
 

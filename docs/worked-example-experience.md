@@ -1,8 +1,9 @@
 # Example 1: experience to a renewal rate
 
 The first two boxes of the workflow, end to end: read a monthly experience
-panel with `actuarialpy` — frequency-severity, trend decomposition,
-seasonality, credibility — then carry the projected loss cost into a
+panel with `experiencestudies` — frequency-severity and trend decomposition
+through the fluent `Experience` object — over `actuarialpy` primitives for
+seasonality, trend, and credibility, then carry the projected loss cost into a
 `ratingmodels` indication and constrain it into a bookable renewal. Every
 number on this page is the output of this exact fixed-seed run, pinned by a
 regression test in the `ratingmodels` suite.
@@ -19,6 +20,7 @@ import numpy as np
 import pandas as pd
 import actuarialpy as ap
 import ratingmodels as rm
+from experiencestudies import Experience
 
 rng = np.random.default_rng(42)
 months = pd.date_range("2023-01-01", "2025-12-01", freq="MS")
@@ -43,8 +45,8 @@ df["year"] = df["month"].dt.year
 Bind the column roles once and every view derives from them:
 
 ```python
-exp = ap.Experience(df, expense="allowed", revenue="premium",
-                    exposure="member_months", date="month", count="claim_count")
+exp = Experience(df, expense="allowed", revenue="premium",
+                 exposure="member_months", date="month", count="claim_count")
 
 exp.frequency_severity(groupby="year")
 #  year  frequency  severity  loss_per_exposure

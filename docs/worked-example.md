@@ -3,7 +3,7 @@
 One block of business carried across the whole ecosystem: fit a severity body
 (`lossmodels`), diagnose and fit the tail (`extremeloss`), splice, convolve
 with frequency, reinsure and measure the capital (`risksim`), price it
-(`ratingmodels`), and report the result (`actuarialpy`). Every number on this
+(`ratingmodels`), and report the result (`experiencestudies`). Every number on this
 page is the output of this exact fixed-seed run. The page is pinned by a
 regression test in the `extremeloss` suite, so these numbers cannot silently
 drift.
@@ -14,7 +14,7 @@ import lossmodels as lm
 import extremeloss as xl
 import risksim as rs
 import ratingmodels as rm
-import actuarialpy as ap
+import experiencestudies as es
 
 rng = np.random.default_rng(20260702)
 
@@ -124,7 +124,7 @@ comfortably inside the 7.84 per unit that a 3% margin on 261.31 provides.
 ## Report it
 
 ```python
-uw = ap.UnderwritingSummary.from_per_exposure(
+uw = es.UnderwritingSummary.from_per_exposure(
     revenue_per_exposure={"premium": 261.31},
     loss_per_exposure={"expected_losses": 198.05 * 1.05},   # incl. LAE
     expense_per_exposure=0.09 * 261.31 + 22.0,

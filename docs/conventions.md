@@ -255,7 +255,7 @@ $$
 Gross margin is the loss-tier result — operating expense is excluded, which
 is also why operating expense never enters a loss ratio. Gain/(loss) is the
 underwriting result after expense. Both packages use these identical
-definitions: the reporting side in [actuarialpy](actuarialpy.md)
+definitions: the reporting side in [experiencestudies](experiencestudies.md)
 (`UnderwritingSummary`, `underwriting_summary`) and the pricing side in
 [ratingmodels](ratingmodels.md) (`PricingEvaluation`), where at charged rate
 $P$ with loss cost $L$ per exposure unit, LAE ratio, fixed expense $F$, and

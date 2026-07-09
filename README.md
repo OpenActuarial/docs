@@ -1,8 +1,9 @@
 # OpenActuarial documentation
 
 Source for the unified documentation site at <https://openactuarial.org> — one
-Sphinx site covering all five packages in the OpenActuarial ecosystem
-(actuarialpy, ratingmodels, lossmodels, extremeloss, risksim).
+Sphinx site covering all seven packages in the OpenActuarial ecosystem
+(actuarialpy, experiencestudies, projectionmodels, ratingmodels, lossmodels,
+extremeloss, risksim).
 
 ## Build locally
 
@@ -18,9 +19,11 @@ versions in your environment. For local iteration, install the packages editable
 
     docs/
       conf.py            Sphinx configuration
-      index.md           landing page: the five packages + install
+      index.md           landing page: the packages + install
       overview.md        how they compose
       actuarialpy.md     narrative + API reference
+      experiencestudies.md
+      projectionmodels.md
       ratingmodels.md
       lossmodels.md
       extremeloss.md

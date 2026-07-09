@@ -1,40 +1,59 @@
 # actuarialpy
 
-Experience analysis on a single tidy table, plus the shared numerical core the
-rest of the ecosystem builds on. You build one DataFrame — claims/expense,
-revenue, exposure, by period — and `Experience` gives you views (`by`,
-`rolling`, `trend`, completion, seasonality, credibility, pooling) without
-re-pivoting.
+Shared actuarial primitives and general tooling — the calculation core the
+rest of the ecosystem builds on. Ratios and per-exposure metrics, chain-ladder
+development and IBNR, credibility, trend, seasonal factors, financial
+mathematics, exposure and lifecycle bases, size banding, pooling, margins, and
+weighted rollups, applied to claims, exposure, and premium data. It does not
+perform data preparation or encode filed methodology: the caller supplies the
+table and selects the method. Every result is a DataFrame or Series, and the
+only dependencies are numpy and pandas.
+
+The *study layer* that builds on these primitives — the fluent `Experience`
+object, experience summaries, actual-versus-expected, claimant, cohort, and
+decomposition analyses, and the underwriting income statement — lives in
+[experiencestudies](experiencestudies.md), which depends on `actuarialpy` and
+never the other way around.
 
 ## Quickstart
+
+Pass an aggregate at the grain you are analysing and call the primitive you
+need — the free functions accept scalars, numpy arrays, or pandas Series and
+return the same type:
 
 ```python
 import pandas as pd
 import actuarialpy as ap
 
-df = pd.DataFrame({
-    "month": pd.period_range("2024-01", periods=6, freq="M").astype(str),
-    "product": ["PPO"] * 6,
-    "paid":    [120_000, 118_000, 125_000, 130_000, 128_000, 135_000],
-    "premium": [150_000] * 6,
-    "member_months": [1000, 1005, 1010, 1008, 1012, 1015],
+ap.loss_ratio(1_240_000, 1_500_000)     # 0.827
+ap.per_exposure(1_240_000, 12_000)      # 103.33 per exposure unit
+ap.severity(1_240_000, 3_875)           # 320.00 per claim
+
+# fit a trend on a monthly panel and project it forward
+monthly = pd.DataFrame({
+    "month": pd.date_range("2025-01-01", periods=12, freq="MS"),
+    "loss_ratio": [0.802, 0.810, 0.807, 0.815, 0.818, 0.822,
+                   0.825, 0.831, 0.828, 0.836, 0.840, 0.845],
 })
-
-exp = ap.Experience(df, expense="paid", revenue="premium",
-                    exposure="member_months", date="month")
-
-exp.by("product")                              # grouped view
-exp.loss_ratio                                 # paid / premium
-
-ap.per_exposure(df["paid"], df["member_months"])  # amount per exposure unit
-ap.loss_ratio(df["paid"], df["premium"])       # as a free function
+fit = ap.fit_trend(monthly, date_col="month", value_col="loss_ratio")
+fit.annual_trend                                     # 0.0552
+fit.r_squared                                        # 0.974
+ap.project_forward(0.845, fit.annual_trend, months=12)   # 0.8916
+ap.trend_factor(fit.annual_trend, months=18)             # 1.0839
 ```
+
+Build the aggregate with pandas at the grain that matches the question —
+typically a single `groupby` that sums claims, counts exposure from a
+correctly-grained table, and joins premium. For repeated experience-analysis
+workflows on such a table, the fluent `Experience` object in
+[experiencestudies](experiencestudies.md) binds the column roles once and
+derives every view from them.
 
 ## Credibility
 
-Credibility primitives live here — `ratingmodels` and the other packages
-delegate to them rather than re-implementing. Limited-fluctuation (classical)
-credibility from exposure:
+Credibility primitives live here — `experiencestudies`, `projectionmodels`,
+and `ratingmodels` delegate to them rather than re-implementing.
+Limited-fluctuation (classical) credibility from exposure:
 
 ```python
 import actuarialpy as ap
@@ -142,45 +161,7 @@ The pooling module includes two general retention-stability primitives:
   retention at which retained CV hits a target. The basis for a size-graded
   pooling schedule.
 
-## Underwriting margin and weighted rollups
-
-The two-tier underwriting income statement — **gross margin** (revenue less
-loss expense, operating expense excluded) and **gain/(loss)** (gross margin
-less operating expense). The ratios mirror the `loss_ratio` /
-`expense_ratio` / `combined_ratio` trio in `metrics`, and denominators are
-explicit parameters because real exhibits mix them (loss ratio over net
-revenue beside an expense ratio over gross premium); `reconciliation()`
-reports the resulting gap in `gain% = 1 − combined ratio`. Domain naming is
-a **view concern, never a calculation concern**: the `profile` option
-renames the loss-ratio column the same way `summarize_experience` does
-(`"health"` → `mlr`, `"life"` → `benefit_ratio`), and `labels` renames
-anything else. The full convention is on the [conventions](conventions.md)
-page.
-
-```python
-import actuarialpy as ap
-
-uw = ap.UnderwritingSummary.from_per_exposure(
-    revenue_per_exposure={"premium": 400.0, "refund": -1.4},
-    loss_per_exposure={"claims": 340.0, "other_loss": 16.4},
-    expense_per_exposure=37.4,
-    exposure=300_000,
-)
-uw.loss_ratio, uw.expense_ratio, uw.combined_ratio   # explicit denominators
-uw.gross_margin_per_exposure, uw.gain_per_exposure   # the two tiers
-uw.to_frame(profile="health")                        # loss_ratio -> mlr, math unchanged
-
-# grouped, from a tidy table: components summed first,
-# every ratio a ratio of sums
-ap.underwriting_summary(
-    df, groupby="cohort",
-    revenue_cols=["premium", "refund"], loss_cols=["claims"],
-    expense_cols="expense", exposure_col="member_months",
-    premium_col="premium",
-)
-# per-exposure outputs are the mechanical {name}_per_{exposure_col};
-# domain names (a health shop's _pmpm) are opt-in via labels
-```
+## Weighted rollups
 
 Quantities that are already rates at the row level — rate actions,
 persistency — cannot be summed. `weighted_mean` and `weighted_summary`
@@ -191,6 +172,13 @@ beside every average:
 ap.weighted_summary(book, value_cols="rate_action",
                     weight_col="premium", groupby="cohort")
 ```
+
+The composed two-tier underwriting income statement that used to sit beside
+these rollups (`UnderwritingSummary`, `underwriting_summary`) now lives in
+[experiencestudies](experiencestudies.md) — it is an assembled report rather
+than an atomic calculation. The margin *primitives* (`margin`, `margin_ratio`,
+`add_margin`) remain here, and the shared margin definitions are on the
+[conventions](conventions.md#margin-and-denominators) page.
 
 ## Development and completion
 

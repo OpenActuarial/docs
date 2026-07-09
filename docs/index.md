@@ -1,6 +1,6 @@
 # OpenActuarial
 
-OpenActuarial is a dependency-light Python ecosystem for general actuarial workflows, including experience analysis, rating and pricing models, loss modeling, tail estimation, simulation, and portfolio capital. The packages are modular and can be installed individually, with `actuarialpy` providing shared foundational components for packages that require them.
+OpenActuarial is a dependency-light Python ecosystem for general actuarial workflows, including experience analysis, projection, rating and pricing models, loss modeling, tail estimation, simulation, and portfolio capital. The packages are modular and can be installed individually, with `actuarialpy` providing the shared calculation primitives that the workflow packages build on.
 
 ## The ecosystem
 
@@ -11,10 +11,32 @@ OpenActuarial is a dependency-light Python ecosystem for general actuarial workf
 :link: actuarialpy
 :link-type: doc
 
-**The core.** Experience analysis on a tidy table, plus the shared
-primitives — credibility, trend, completion, seasonality, financial
-mathematics, exposure, and underwriting margin — that `ratingmodels`
-builds on directly.
+**The primitives.** Ratios and per-exposure metrics, chain-ladder
+development and IBNR, credibility, trend, seasonality, financial
+mathematics, exposure and lifecycle bases, banding, pooling, margins,
+and weighted rollups — pure calculation on numpy and pandas, which the
+experience, projection, and pricing layers build on directly.
+:::
+
+:::{grid-item-card} experiencestudies
+:link: experiencestudies
+:link-type: doc
+
+**Experience.** Experience reporting and analysis — summaries and views,
+actual-versus-expected, claimant and concentration analysis, cohort and
+duration studies, driver and frequency–severity decomposition, rolling
+monitors, banded summaries, the two-tier underwriting summary, and the
+fluent `Experience` object.
+:::
+
+:::{grid-item-card} projectionmodels
+:link: projectionmodels
+:link-type: doc
+
+**Projection.** Focused claim, premium, and expense projections on
+supplied exposure — renewal rate actions, a complete → deseasonalize →
+trend → blend → reseasonalize claim pipeline, scenario adjustments, and
+summaries that never average ratios or duplicate exposure.
 :::
 
 :::{grid-item-card} ratingmodels
@@ -55,23 +77,30 @@ large-claim loading.
 
 ## The workflow
 
-Left to right, the packages trace one analysis — experience, pricing, loss, tail,
-and capital:
+The top row is one analysis, left to right — experience, projection, pricing,
+loss, tail, and capital. `actuarialpy` is not a stage of that analysis: it is
+the primitives library the first three stages build on.
 
 :::{mermaid}
 flowchart LR
-    AP["actuarialpy<br/>experience"]:::core
+    AP["actuarialpy<br/>shared primitives"]:::core
+    ES["experiencestudies<br/>experience"]
+    PM["projectionmodels<br/>projection"]
     RM["ratingmodels<br/>pricing"]
     LM["lossmodels<br/>loss"]
     EL["extremeloss<br/>tail"]
     RS["risksim<br/>capital"]
-    AP --> RM --> LM --> EL --> RS
+    ES --> PM --> RM --> LM --> EL --> RS
+    AP --> ES
+    AP --> PM
+    AP --> RM
     classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
 :::
 
-The arrows are the analytical sequence, not install requirements. `actuarialpy`
-is the shared core — credibility, trend, financial math, and exposure live there
-once — and `ratingmodels` builds directly on it. `lossmodels`, `extremeloss`, and
+The workflow arrows are the analytical sequence, not install requirements.
+Credibility, trend, completion, seasonality, financial math, and exposure live
+once, in `actuarialpy`, and the experience, projection, and pricing layers
+delegate to it rather than re-implementing. `lossmodels`, `extremeloss`, and
 `risksim` install independently (`extremeloss` can optionally integrate
 `lossmodels` for severity splicing).
 
@@ -85,39 +114,60 @@ The full arc is runnable end to end — see the worked examples:
 
 ## A cross-package example
 
-Blend an experience rate with a manual rate and read the indicated change:
+The layers compose directly — the study layer reads the block, the primitives
+supply credibility, and the pricing layer blends and indicates:
 
 ```python
+import pandas as pd
 import actuarialpy as ap
+import experiencestudies as es
 import ratingmodels as rm
 
-# credibility from exposure (lives in actuarialpy; ratingmodels delegates to it)
-z = ap.limited_fluctuation_z(exposure=96_000, full_credibility_standard=120_000)
+df = pd.DataFrame({
+    "month": pd.date_range("2025-01-01", periods=12, freq="MS"),
+    "segment": ["ppo"] * 12,
+    "allowed": [8_000 * v for v in [498, 505, 512, 508, 516, 511,
+                                    519, 514, 522, 517, 509, 513.0]],
+    "premium": [8_000 * 560.0] * 12,
+    "member_months": [8_000] * 12,
+})
 
+# study layer: how is the block performing?
+exp = es.Experience(df, expense="allowed", revenue="premium",
+                    exposure="member_months", date="month")
+seg = exp.by("segment")                                     # loss ratio 0.914
+loss_cost = seg["total_expense_per_member_months"].iloc[0]  # 512.00 per member-month
+
+# primitives: credibility from exposure (lives in actuarialpy)
+z = ap.limited_fluctuation_z(exposure=96_000, full_credibility_standard=120_000)  # 0.894
+
+# pricing: blend against a manual rate and indicate
 manual = rm.ManualRate(base_loss_cost=480, factors={"area": 1.05, "industry": 0.97})
 indication = rm.RateIndication(
-    experience_loss_cost=512,
+    experience_loss_cost=loss_cost,
     manual_loss_cost=manual.loss_cost(),
     credibility=z,
     current_rate=560,
     target_loss_ratio=0.85,
 )
 
-indication.indicated_rate_change()        # blended, credibility-weighted change
+indication.indicated_rate_change()        # +7.0% — blended, credibility-weighted
 indication.rate_change_decomposition()    # attribute the change to each driver
 ```
 
-Every numeric argument above also accepts a column — the same call prices a
-whole book; see [Example 2: pricing a book, in columns](worked-example-book.md).
+Every numeric argument in the pricing calls also accepts a column — the same
+call prices a whole book; see
+[Example 2: pricing a book, in columns](worked-example-book.md).
 
 ## Install
 
 ```bash
-pip install actuarialpy ratingmodels lossmodels extremeloss risksim
+pip install actuarialpy experiencestudies projectionmodels ratingmodels lossmodels extremeloss risksim
 ```
 
-Each package installs independently; `ratingmodels` pulls in `actuarialpy` and
-`statsmodels` as dependencies.
+Each package installs independently; `experiencestudies`, `projectionmodels`,
+and `ratingmodels` pull in `actuarialpy` as a dependency, and `ratingmodels`
+additionally pulls in `statsmodels`.
 
 :::{toctree}
 :hidden:
@@ -135,6 +185,8 @@ stability
 :maxdepth: 1
 
 actuarialpy
+experiencestudies
+projectionmodels
 ratingmodels
 lossmodels
 extremeloss
