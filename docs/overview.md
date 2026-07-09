@@ -44,7 +44,7 @@ arrow below corresponds to a real interface.
 
 :::{mermaid}
 flowchart LR
-    subgraph CORE["built on actuarialpy — shared primitives"]
+    subgraph CORE["built on actuarialpy"]
         ES["experiencestudies<br/>experience"]
         PM["projectionmodels<br/>projection"]
         RM["ratingmodels<br/>pricing"]
