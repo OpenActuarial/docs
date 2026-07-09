@@ -38,29 +38,42 @@ The OpenActuarial packages span a connected analytical workflow—from raw exper
 
 ## The workflow
 
-The top row is one analysis, read left to right — experience, projection,
-pricing, loss, tail, and capital. `actuarialpy` is not a stage of that
-analysis: it is the primitives library the first three stages build on.
+In use, the packages compose into a renewal cycle: study the experience,
+project claims, set rates, and project premium under those rates. Every
+arrow below corresponds to a real interface.
 
 :::{mermaid}
 flowchart LR
-    AP["actuarialpy<br/>shared primitives"]:::core
-    ES["experiencestudies<br/>experience"]
-    PM["projectionmodels<br/>projection"]
-    RM["ratingmodels<br/>pricing"]
-    LM["lossmodels<br/>loss"]
-    EL["extremeloss<br/>tail"]
-    RS["risksim<br/>capital"]
-    ES --> PM --> RM --> LM --> EL --> RS
-    AP --> ES
-    AP --> PM
-    AP --> RM
+    subgraph CORE["built on actuarialpy — shared primitives"]
+        ES["experiencestudies<br/>experience"]
+        PM["projectionmodels<br/>projection"]
+        RM["ratingmodels<br/>pricing"]
+    end
+    ES --> PM
+    ES --> RM
+    PM -- "projected loss cost" --> RM
+    RM -- "rate actions & loads" --> PM
+    LM["lossmodels<br/>severity & frequency"] -- "pooling charge" --> RM
+    EL["extremeloss<br/>tail"] -- "pooling charge" --> RM
+    LM -. "splice" .-> EL
+    LM --> RS["risksim<br/>capital"]
+    EL --> RS
     classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
+    class CORE core
 :::
 
-The workflow arrows are the analytical sequence, not install requirements:
-every package is usable on its own, and you can enter the arc at whatever
-stage your problem starts.
+The loop between pricing and projection is deliberate — the rate actions the
+pricing layer produces are an input to `PremiumProjection` (as
+`RenewalRateActions`), because you project the rates you set. The
+distribution work is its own forward-looking mode — severity and frequency
+in `lossmodels`, the tail in `extremeloss`, aggregate simulation and risk
+measures in `risksim` — and it reaches the deterministic side through
+pricing: any severity object exposing `sf` and `mean_excess` prices a
+pooling charge in `ratingmodels`, which enters `ClaimProjection` as a
+`rate_load`. `actuarialpy` is not a stage data passes through: it is the
+primitives layer the boxed packages are built on. Every package is usable on
+its own — enter the graph wherever your problem starts. The install-time
+picture is below.
 
 ## Dependencies
 

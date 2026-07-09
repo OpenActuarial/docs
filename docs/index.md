@@ -77,34 +77,43 @@ large-claim loading.
 
 ## The workflow
 
-The top row is one analysis, left to right — experience, projection, pricing,
-loss, tail, and capital. `actuarialpy` is not a stage of that analysis: it is
-the primitives library the first three stages build on.
+In use, the packages compose into a renewal cycle: study the experience,
+project claims, set rates, and project premium under those rates. Every
+arrow below corresponds to a real interface.
 
 :::{mermaid}
 flowchart LR
-    AP["actuarialpy<br/>shared primitives"]:::core
-    ES["experiencestudies<br/>experience"]
-    PM["projectionmodels<br/>projection"]
-    RM["ratingmodels<br/>pricing"]
-    LM["lossmodels<br/>loss"]
-    EL["extremeloss<br/>tail"]
-    RS["risksim<br/>capital"]
-    ES --> PM --> RM --> LM --> EL --> RS
-    AP --> ES
-    AP --> PM
-    AP --> RM
+    subgraph CORE["built on actuarialpy — shared primitives"]
+        ES["experiencestudies<br/>experience"]
+        PM["projectionmodels<br/>projection"]
+        RM["ratingmodels<br/>pricing"]
+    end
+    ES --> PM
+    ES --> RM
+    PM -- "projected loss cost" --> RM
+    RM -- "rate actions & loads" --> PM
+    LM["lossmodels<br/>severity & frequency"] -- "pooling charge" --> RM
+    EL["extremeloss<br/>tail"] -- "pooling charge" --> RM
+    LM -. "splice" .-> EL
+    LM --> RS["risksim<br/>capital"]
+    EL --> RS
     classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
+    class CORE core
 :::
 
-The workflow arrows are the analytical sequence, not install requirements.
-Credibility, trend, completion, seasonality, financial math, and exposure live
-once, in `actuarialpy`, and the experience, projection, and pricing layers
-delegate to it rather than re-implementing. `lossmodels`, `extremeloss`, and
-`risksim` install independently (`extremeloss` can optionally integrate
-`lossmodels` for severity splicing).
+The pricing–projection pair is deliberately a loop — the rate actions the
+pricing work produces are an input to the premium projection
+(`RenewalRateActions`), because you project the rates you set. The severity
+and tail work runs as its own forward-looking mode — fit the body, splice
+the tail, simulate the aggregate, measure the capital — and reaches the
+deterministic side through pricing: any severity exposing `sf` and
+`mean_excess` prices a pooling charge, which enters the claim projection as
+a rate load. `actuarialpy` is not a stage data passes through: it is the
+primitives layer the boxed packages are built on, and the ecosystem's only
+required install edges point into it (the [overview](overview.md) draws the
+dependency graph).
 
-The full arc is runnable end to end — see the worked examples:
+Each seam above is runnable end to end — see the worked examples:
 [Example 1: experience to a renewal rate](worked-example-experience.md),
 [Example 2: pricing a book, in columns](worked-example-book.md),
 [Example 3: claims to capital](worked-example.md),
