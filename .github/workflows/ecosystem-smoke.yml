@@ -1,0 +1,65 @@
+# Nightly cross-package drift detector.
+#
+# Per-repo CI only runs when *that* repo is pushed, so a release in one
+# package can break another's tests invisibly — the victim's badge stays
+# green until its next push. (Exactly this happened when actuarialpy 0.44
+# moved UnderwritingSummary to experiencestudies: extremeloss's
+# worked-example test kept a green badge while being latently broken.)
+#
+# This workflow re-runs every package's full test suite daily against
+# whatever its dependencies currently resolve to on PyPI, so ecosystem
+# drift surfaces within a day instead of at the next unrelated push.
+#
+# On a scheduled-run failure, GitHub emails the last committer of this
+# workflow file. Run it on demand with workflow_dispatch after any release.
+name: ecosystem-smoke
+
+on:
+  schedule:
+    - cron: "17 6 * * *" # daily, 06:17 UTC — off the top of the hour
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - actuarialpy
+          - experiencestudies
+          - projectionmodels
+          - ratingmodels
+          - lossmodels
+          - extremeloss
+          - risksim
+        include:
+          # Extras beyond [dev] that the repo's own CI installs.
+          - repo: extremeloss
+            extras: "dev,plot"
+          - repo: actuarialpy
+            extra-deps: "chainladder"
+    name: ${{ matrix.repo }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: OpenActuarial/${{ matrix.repo }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip
+      # The checked-out source with its dev extras; every OpenActuarial
+      # dependency resolves from PyPI at whatever is *currently released* —
+      # which is the whole point of this workflow.
+      - run: pip install -e ".[${{ matrix.extras || 'dev' }}]"
+      - name: Cross-library deps
+        if: matrix.extra-deps
+        run: pip install ${{ matrix.extra-deps }}
+      - name: Show resolved ecosystem versions
+        run: pip list | grep -iE 'actuarialpy|experiencestudies|projectionmodels|ratingmodels|lossmodels|extremeloss|risksim' || true
+      - run: pytest -q
