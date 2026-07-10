@@ -43,7 +43,7 @@ premium_data = pd.DataFrame({
 
 periods = pd.period_range("2027-01", periods=12, freq="M").astype(str)
 exposure = pd.DataFrame(
-    [{"group_id": g, "projection_period": p, "member_months": 1_000.0}
+    [{"group_id": g, "projection_period": p, "exposure_units": 1_000.0}
      for g in ("A", "B") for p in periods]
 )
 
@@ -51,7 +51,7 @@ results = pm.PremiumProjection(
     premium_data=premium_data,
     projection_keys=["group_id"],
     exposure=exposure,
-    exposure_col="member_months",
+    exposure_col="exposure_units",
     horizon=pm.ProjectionHorizon("2027-01-01", periods=12),
     recurring_rate_action_col="rate_action",
 ).project()
@@ -74,14 +74,14 @@ experience = pm.ClaimExperience(
     claim_type_col="claim_type",
     date_col="incurred_month",
     claims_col="reported_claims",
-    exposure_col="member_months",
+    exposure_col="exposure_units",
     valuation_date="2026-12-31",
 )
 
 projection = pm.ClaimProjection.from_experience(
     experience,
     exposure=exposure,
-    exposure_col="member_months",
+    exposure_col="exposure_units",
     horizon=pm.ProjectionHorizon("2027-01-01", periods=12),
     trend=pm.TrendAssumption.from_values("claim_trend", 0.06),
     # optionally: completion=, seasonality=, credibility=, complement=
@@ -137,7 +137,7 @@ trend = estimate_trend(
     by=["claim_type"],
     date_col="incurred_month",
     value_col="deseasonalized_claims",
-    exposure_col="member_months",
+    exposure_col="exposure_units",
 )
 ```
 
@@ -146,9 +146,8 @@ assumption keeps both the estimate and the selection.
 
 ## Results
 
-`ProjectionResults` holds the per-period detail and summarizes it correctly:
-exposure-weighted rates, summed amounts — never a naive average of ratios,
-never exposure counted twice across claim types:
+`ProjectionResults` holds the per-period detail and summarizes it: amounts
+are summed, and rates are recomputed from the summed amounts and exposure:
 
 ```python
 results.to_frame()                       # full detail

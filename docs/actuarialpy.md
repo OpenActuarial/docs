@@ -43,8 +43,8 @@ ap.trend_factor(fit.annual_trend, months=18)             # 1.0839
 ```
 
 Build the aggregate with pandas at the grain that matches the question —
-typically a single `groupby` that sums claims, counts exposure from a
-correctly-grained table, and joins premium. For repeated experience-analysis
+typically a single `groupby` that sums claims, counts exposure from the
+exposure table, and joins premium. For repeated experience-analysis
 workflows on such a table, the fluent `Experience` object in
 [experiencestudies](experiencestudies.md) binds the column roles once and
 derives every view from them.
@@ -70,13 +70,13 @@ import pandas as pd
 import actuarialpy as ap
 
 exp = pd.DataFrame({
-    "product": ["PPO", "PPO", "HMO", "HMO"],
+    "product": ["motor", "motor", "marine", "marine"],
     "paid":    [125_000, 130_000, 88_000, 91_000],
-    "member_months": [1010, 1008, 640, 655],
+    "exposure": [1010, 1008, 640, 655],
 })
 
 model = ap.BuhlmannStraub.from_frame(
-    exp, group="product", value="paid", weight="member_months",
+    exp, group="product", value="paid", weight="exposure",
 )
 
 model.k                    # Bühlmann k = EPV / VHM
@@ -99,6 +99,10 @@ ap.present_value(1000, 0.05, 3)          # 863.84  — discount at 5% for 3 yrs
 ap.future_value(1000, 0.05, 3)           # 1157.63
 ap.annuity_immediate(0.05, 10)           # 7.7217  — PV of 1/yr, 10 yrs @ 5%
 ap.annuity_due(0.05, 10)                 # 8.1078
+
+# a deferred pension: 30k a year for 25 years, first payment in 20 years
+30_000 * ap.annuity_due(0.045, 25) * ap.discount_factor(0.045, 20)
+                                         # 192,752.68
 
 # level-payment loan: 200k principal, 6% nominal, 30 years monthly
 ap.level_payment(200_000, 0.06 / 12, 360)          # 1199.10 per month

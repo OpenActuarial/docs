@@ -28,7 +28,7 @@ import risksim as rs
 
 port = rs.Portfolio([
     rs.PortfolioItem("commercial", crm),
-    rs.PortfolioItem("specialty", other_model, weight=0.4),
+    rs.PortfolioItem("surety", other_model, weight=0.4),
 ])
 res = port.simulate(100_000, rng=7)
 res.gross_losses, res.component_losses, res.component_names

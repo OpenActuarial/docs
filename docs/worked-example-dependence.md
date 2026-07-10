@@ -12,7 +12,7 @@ run.
 
 ## Two lines
 
-A medical block and a smaller, heavier-tailed specialty line — anything with
+A property book and a smaller, heavier-tailed liability line — anything with
 a `.sample` method drops into a portfolio item:
 
 ```python
@@ -22,13 +22,13 @@ import risksim as rs
 from risksim import metrics, uncertainty
 from risksim.dependence import impose_rank_correlation
 
-medical = lm.CollectiveRiskModel(lm.NegativeBinomial(65.3, 0.269),
+prop = lm.CollectiveRiskModel(lm.NegativeBinomial(65.3, 0.269),
                                  lm.Lognormal(9.2, 0.95))
-specialty = lm.CollectiveRiskModel(lm.Poisson(26.0),
+liab = lm.CollectiveRiskModel(lm.Poisson(26.0),
                                    lm.Lognormal(10.2, 1.35))
 
-port = rs.Portfolio([rs.PortfolioItem("medical", medical),
-                     rs.PortfolioItem("specialty", specialty)])
+port = rs.Portfolio([rs.PortfolioItem("property", prop),
+                     rs.PortfolioItem("liability", liab)])
 res = port.simulate(200_000, rng=7)
 M = res.component_losses          # the (n_sims, 2) matrix, columns in
                                   # res.component_names order
@@ -41,8 +41,8 @@ combined comparison quantifies what that assumption is worth:
 
 | | mean | VaR₉₉ | TVaR₉₉ | TVaR₉₉.₅ |
 |---|---:|---:|---:|---:|
-| medical | 2,757,874 | 3,953,177 | 4,159,691 | 4,299,128 |
-| specialty | 1,738,858 | 4,566,745 | 5,809,053 | 6,745,713 |
+| property | 2,757,874 | 3,953,177 | 4,159,691 | 4,299,128 |
+| liability | 1,738,858 | 4,566,745 | 5,809,053 | 6,745,713 |
 | **combined, independent** | 4,496,732 | 7,479,457 | 8,697,291 | 9,620,716 |
 
 The standalone TVaR₉₉.₅ sum to 11,044,841 against the combined 9,620,716 —
@@ -103,7 +103,7 @@ normal scores leave joint extremes asymptotically independent while the t
 copula clusters them. And yet the sum's TVaR barely moved between the two.
 Both facts are the lesson: a capital metric on the sum can be nearly blind
 to tail dependence that a joint trigger — a second-event cover, a
-combined-ratio covenant, a group-wide stress test — feels at full strength.
+combined-ratio covenant, an enterprise-wide stress test — feels at full strength.
 Choose `scores=` by the question being asked, which is exactly why the
 switch exists.
 

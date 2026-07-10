@@ -11,7 +11,7 @@ regression test in the `ratingmodels` suite.
 ## The panel
 
 Three years of monthly experience for one block, two segments with a shifting
-mix (the HMO segment grows while the PPO shrinks), genuine seasonality, and
+mix (the south segment grows while the north shrinks), genuine seasonality, and
 frequency and severity trends of +2% and +4.5% a year baked into the
 generator:
 
@@ -25,8 +25,8 @@ from experiencestudies import Experience
 rng = np.random.default_rng(42)
 months = pd.date_range("2023-01-01", "2025-12-01", freq="MS")
 rows = []
-for seg, mm0, growth, f0, s0 in [("ppo", 5200, -0.010, 0.30, 950.0),
-                                 ("hmo", 3100, +0.055, 0.34, 880.0)]:
+for seg, mm0, growth, f0, s0 in [("north", 5200, -0.010, 0.30, 950.0),
+                                 ("south", 3100, +0.055, 0.34, 880.0)]:
     for i, m in enumerate(months):
         yrs = i / 12.0
         mm = mm0 * (1 + growth) ** yrs
@@ -36,7 +36,7 @@ for seg, mm0, growth, f0, s0 in [("ppo", 5200, -0.010, 0.30, 950.0),
         cc = freq * mm
         rows.append((m, seg, mm, cc, cc * sev, 393.0 * mm))
 df = pd.DataFrame(rows, columns=["month", "segment", "member_months",
-                                 "claim_count", "allowed", "premium"])
+                                 "claim_count", "incurred", "premium"])
 df["year"] = df["month"].dt.year
 ```
 
@@ -45,7 +45,7 @@ df["year"] = df["month"].dt.year
 Bind the column roles once and every view derives from them:
 
 ```python
-exp = Experience(df, expense="allowed", revenue="premium",
+exp = Experience(df, expense="incurred", revenue="premium",
                  exposure="member_months", date="month", count="claim_count")
 
 exp.frequency_severity(groupby="year")
@@ -62,7 +62,7 @@ see [Rates, exposure, and decomposition](conventions.md#rates-exposure-and-decom
 
 Where did the 2024 → 2025 change come from? With `mix_by`, the LMDI split
 separates within-segment frequency and severity movement from the effect of
-the book shifting toward the HMO segment:
+the book shifting toward the south segment:
 
 ```python
 d = exp.decompose_trend(period_col="year", prior_period=2024,
@@ -82,13 +82,13 @@ Fit monthly factors on the aggregated panel, deseasonalize, and fit the
 underlying trend on what remains:
 
 ```python
-dm = df.groupby("month", as_index=False)[["allowed", "member_months"]].sum()
-factors = ap.seasonality_factors(dm, date_col="month", value_col="allowed",
+dm = df.groupby("month", as_index=False)[["incurred", "member_months"]].sum()
+factors = ap.seasonality_factors(dm, date_col="month", value_col="incurred",
                                  exposure_col="member_months")
 # January 1.049, July 0.940 — the winter peak the generator planted
 
-dm2 = ap.deseasonalize(dm, factors, date_col="month", value_col="allowed")
-fit = ap.fit_trend(dm2, value_col="allowed_deseasonalized",
+dm2 = ap.deseasonalize(dm, factors, date_col="month", value_col="incurred")
+fit = ap.fit_trend(dm2, value_col="incurred_deseasonalized",
                    date_col="month", exposure_col="member_months")
 # annual_trend 0.0666   r² 0.961   (true combined trend: 1.02 × 1.045 − 1 = 6.6%)
 ```

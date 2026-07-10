@@ -30,24 +30,24 @@ from experiencestudies import Experience, summarize_experience
 
 df = pd.DataFrame({
     "month": pd.date_range("2025-01-01", periods=12, freq="MS"),
-    "lob": ["med"] * 6 + ["rx"] * 6,
+    "lob": ["auto"] * 6 + ["property"] * 6,
     "claims": [820, 910, 875, 1010, 990, 1105, 380, 395, 402, 410, 425, 440.0],
     "premium": [1500.0] * 6 + [600.0] * 6,
-    "member_months": [1000] * 12,
+    "earned_units": [1000] * 12,
 })
 
 # free-function form
 summarize_experience(
     df, groupby="lob",
-    expense_cols="claims", revenue_cols="premium", exposure_cols="member_months",
+    expense_cols="claims", revenue_cols="premium", exposure_cols="earned_units",
 )
-#  lob | member_months | ... | loss_ratio
-#  med |          6000 | ... |     0.6344
-#  rx  |          6000 | ... |     0.6811
+#  lob      | earned_units | ... | loss_ratio
+#  auto     |         6000 | ... |     0.6344
+#  property |         6000 | ... |     0.6811
 
 # fluent form — bind the column roles once, then every view derives from them
 exp = Experience(df, expense="claims", revenue="premium",
-                 exposure="member_months", date="month")
+                 exposure="earned_units", date="month")
 exp.by("lob")        # the same grouped summary
 exp.rolling(3)       # trailing three-month monitor
 ```
@@ -86,11 +86,11 @@ are:
 ```python
 import experiencestudies as es
 
-by_claimant = es.summarize_claimants(claims, claimant_col="member_id",
+by_claimant = es.summarize_claimants(claims, claimant_col="claimant_id",
                                      amount_cols="paid")
 
-es.top_claimants(claims, claimant_col="member_id", amount_cols="paid", n=3)
-#  member_id |     paid | rank | share_of_total | cumulative_share
+es.top_claimants(claims, claimant_col="claimant_id", amount_cols="paid", n=3)
+#  claimant_id |     paid | rank | share_of_total | cumulative_share
 #  m1        | 550,000  |    1 |         0.7534 |           0.7534
 #  m2        |  96,000  |    2 |         0.1315 |           0.8849
 #  m5        |  61,000  |    3 |         0.0836 |           0.9685
@@ -132,9 +132,11 @@ es.summarize_actual_vs_expected(merged, groupby="segment",
 
 [Example 8](worked-example-monitoring.md) runs the whole monitoring cycle —
 plan, A/E, trailing monitor, claimant attribution of the miss, and a pooled
-restatement. (For full multi-period claim, premium, and expense projections
-with renewal rate actions and scenarios, use
-[projectionmodels](projectionmodels.md).)
+restatement. The same frame shape runs a mortality or lapse study
+unchanged: actuals are deaths or lapses, the expected column is a table
+rate times exposure, and the A/E ratio is the study's headline. (For full
+multi-period claim, premium, and expense projections with renewal rate
+actions and scenarios, use [projectionmodels](projectionmodels.md).)
 
 ## Underwriting income statement
 

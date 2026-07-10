@@ -31,7 +31,7 @@ $$
 $$
 
 This estimator is exact for the empirical distribution — it weights an atom at
-the VaR correctly, reduces to the mean of the largest $n(1-q)$ observations
+the VaR, reduces to the mean of the largest $n(1-q)$ observations
 when $nq$ is an integer, and guarantees $\mathrm{TVaR}_q \ge \mathrm{VaR}_q$
 at every $q$.
 

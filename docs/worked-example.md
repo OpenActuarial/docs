@@ -5,8 +5,7 @@ One block of business carried across the whole ecosystem: fit a severity body
 with frequency, reinsure and measure the capital (`risksim`), price it
 (`ratingmodels`), and report the result (`experiencestudies`). Every number on this
 page is the output of this exact fixed-seed run. The page is pinned by a
-regression test in the `extremeloss` suite, so these numbers cannot silently
-drift.
+regression test in the `extremeloss` suite.
 
 ```python
 import numpy as np

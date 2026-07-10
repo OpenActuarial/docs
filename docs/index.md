@@ -36,7 +36,7 @@ fluent `Experience` object.
 **Projection.** Focused claim, premium, and expense projections on
 supplied exposure — renewal rate actions, a complete → deseasonalize →
 trend → blend → reseasonalize claim pipeline, scenario adjustments, and
-summaries that never average ratios or duplicate exposure.
+exposure-weighted summaries of the results.
 :::
 
 :::{grid-item-card} ratingmodels
@@ -144,15 +144,15 @@ import ratingmodels as rm
 
 df = pd.DataFrame({
     "month": pd.date_range("2025-01-01", periods=12, freq="MS"),
-    "segment": ["ppo"] * 12,
-    "allowed": [8_000 * v for v in [498, 505, 512, 508, 516, 511,
+    "segment": ["north"] * 12,
+    "incurred": [8_000 * v for v in [498, 505, 512, 508, 516, 511,
                                     519, 514, 522, 517, 509, 513.0]],
     "premium": [8_000 * 560.0] * 12,
     "member_months": [8_000] * 12,
 })
 
 # study layer: how is the block performing?
-exp = es.Experience(df, expense="allowed", revenue="premium",
+exp = es.Experience(df, expense="incurred", revenue="premium",
                     exposure="member_months", date="month")
 seg = exp.by("segment")                                     # loss ratio 0.914
 loss_cost = seg["total_expense_per_member_months"].iloc[0]  # 512.00 per member-month
@@ -184,9 +184,9 @@ call prices a whole book; see
 pip install actuarialpy experiencestudies projectionmodels ratingmodels lossmodels extremeloss risksim
 ```
 
-Each package installs independently; `experiencestudies`, `projectionmodels`,
-and `ratingmodels` pull in `actuarialpy` as a dependency, and `ratingmodels`
-additionally pulls in `statsmodels`.
+Any subset works — pip resolves the declared dependencies: the workflow
+packages (`experiencestudies`, `projectionmodels`, `ratingmodels`) declare
+`actuarialpy`, and `ratingmodels` additionally declares `statsmodels`.
 
 :::{toctree}
 :hidden:
