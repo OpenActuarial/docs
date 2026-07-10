@@ -104,13 +104,37 @@ pooling or exclusion work.
 
 ## Actual versus expected and forecasting
 
-`summarize_actual_vs_expected` compares realized experience against an
-expected column and reports the variance and actual-to-expected ratio.
 `expected_from_rate` and `forecast_from_rate` build expected or forecast
-values from a rate basis; `forecast_experience` projects an experience frame
-forward; `compare_actual_to_expected` reports the resulting variance. (For
-full multi-period claim, premium, and expense projections with renewal rate
-actions and scenarios, use [projectionmodels](projectionmodels.md).)
+values from a rate basis; `forecast_experience` applies them across a frame;
+`compare_actual_to_expected` aligns the actuals against the plan and
+`summarize_actual_vs_expected` reports the variance in dollars, per
+exposure, and as an actual-to-expected ratio — sums first, then ratios:
+
+```python
+plan = es.forecast_experience(basis, rate_col="base_rate",
+                              exposure_col="member_months",
+                              annual_trend=0.07,
+                              months_forward="months_forward")
+
+merged = es.compare_actual_to_expected(
+    actual, plan[["segment", "month", "expected_expense"]],
+    on=["segment", "month"],
+    actual_col="claims", expected_col="expected_expense")
+
+es.summarize_actual_vs_expected(merged, groupby="segment",
+                                actual_cols="claims",
+                                expected_cols="expected_expense",
+                                exposure_cols="member_months")
+#  segment |     actual |   expected | variance | variance_per_member_months | actual_to_expected
+#  hmo     | 17,574,301 | 17,875,730 | -301,429 |                      -8.37 |             0.9831
+#  ppo     | 11,568,101 | 10,846,909 | +721,193 |                     +34.34 |             1.0665
+```
+
+[Example 8](worked-example-monitoring.md) runs the whole monitoring cycle —
+plan, A/E, trailing monitor, claimant attribution of the miss, and a pooled
+restatement. (For full multi-period claim, premium, and expense projections
+with renewal rate actions and scenarios, use
+[projectionmodels](projectionmodels.md).)
 
 ## Underwriting income statement
 
@@ -142,7 +166,17 @@ share one denominator.
 `to_excel_report` writes a dict of named views to a multi-sheet Excel
 workbook (one sheet per key). The values are plain DataFrames, so any summary
 on this page — grouped experience, an underwriting statement, a rolling
-monitor — can be a sheet. It needs the `excel` extra:
+monitor — can be a sheet:
+
+```python
+es.to_excel_report(
+    {"experience": exp.by("lob"),
+     "rolling_12m": exp.rolling(12, groupby="lob"),
+     "underwriting": uw},
+    "monitoring_pack.xlsx")
+```
+
+It needs the `excel` extra:
 
 ```bash
 pip install "experiencestudies[excel]"

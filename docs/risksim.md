@@ -90,6 +90,10 @@ Rank correlation is **not** tail dependence: normal scores leave joint
 extremes asymptotically independent at any rho. When the question is "do
 the components blow up together", pass `scores="t"` with a small `df` --
 same rank correlation, genuinely clustered joint tails.
+[Example 9](worked-example-dependence.md) measures both effects on a
+two-line portfolio — the diversification benefit halving at ρ = 0.5, and
+the joint-exceedance probability separating the two score choices that
+every sum-based metric cannot tell apart.
 
 ## Monte Carlo error
 

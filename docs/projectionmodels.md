@@ -5,6 +5,10 @@ exposure. The package is intentionally organized around concrete workflows —
 most users should not need to construct a calculation graph or define a
 custom state engine. It depends on [actuarialpy](actuarialpy.md) for its
 completion, trend, seasonality, and credibility estimation.
+[Example 7](worked-example-projection.md) runs the whole renewal cycle end
+to end — estimated assumptions, a credibility-blended claim projection,
+indicated and capped rate actions fed back through `RenewalRateActions`,
+expenses on three bases, and the projected loss-ratio path.
 
 The package root contains the workflow objects most actuaries need:
 

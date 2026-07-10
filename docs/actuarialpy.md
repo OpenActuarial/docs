@@ -151,15 +151,51 @@ ap.add_exposure_column(cohort, entry_col="entry", exit_col="term",
                        study_start="2024-01-01", study_end="2025-12-31")
 ```
 
-## Retention primitives
+## Pooling and retention
 
-The pooling module includes two general retention-stability primitives:
+Row-level pooling is one call — `pool_losses` splits each loss at the
+pooling point into a retained and an excess column, leaving attribution to
+the caller ([Example 8](worked-example-monitoring.md) runs it at claimant
+level, [Example 2](worked-example-book.md) uses the grouped `ratingmodels`
+wrapper on a claim file):
 
-- `retained_cv(outcomes, retention, n_units=1)` — coefficient of variation of the
-  retained aggregate of `n_units` i.i.d. units each capped at `retention`.
-- `retention_for_target_cv(outcomes, n_units, target_cv, ...)` — inverts it: the
-  retention at which retained CV hits a target. The basis for a size-graded
-  pooling schedule.
+```python
+import pandas as pd
+import actuarialpy as ap
+
+claims = pd.DataFrame({"claim_id": [1, 2, 3],
+                       "paid": [80_000.0, 310_000.0, 95_000.0]})
+ap.pool_losses(claims, loss_col="paid", pooling_point=250_000.0)
+#  claim_id     paid  pooled_loss  excess_loss
+#         1   80,000       80,000            0
+#         2  310,000      250,000       60,000
+#         3   95,000       95,000            0
+```
+
+The module also includes two retention-stability primitives:
+`retained_cv(outcomes, retention, n_units)` is the coefficient of variation
+of the retained aggregate of `n_units` i.i.d. units each capped at
+`retention`, and `retention_for_target_cv` inverts it — the retention at
+which retained volatility hits a target, which is the basis for a
+size-graded pooling schedule:
+
+```python
+import numpy as np
+
+rng = np.random.default_rng(3)
+outcomes = rng.lognormal(9.0, 1.4, size=20_000)   # per-unit annual outcomes
+
+ap.retained_cv(outcomes, retention=100_000, n_units=40)   # 0.2119
+ap.retained_cv(outcomes, retention=250_000, n_units=40)   # 0.2735
+
+ap.retention_for_target_cv(outcomes, n_units=40, target_cv=0.10)    # 14,912
+ap.retention_for_target_cv(outcomes, n_units=160, target_cv=0.10)   # 83,652
+```
+
+Raising the retention raises the retained CV — more volatile large claims
+kept — and the inverse call reads a schedule straight off the data: at a 10%
+stability standard, four times the units supports a five-and-a-half-times
+retention.
 
 ## Weighted rollups
 
