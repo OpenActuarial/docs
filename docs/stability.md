@@ -19,16 +19,15 @@ method is corrected — a correction is a change, and the changelog says
 so (see, for example, the `null_deviance_` and IRLS notes in the
 ratingmodels changelog).
 
-**Cross-package floors.** Sibling dependencies use compatible-release
-pins (`actuarialpy~=0.40.0` style): a package release is tested against
-the sibling minor it names. The dependency direction is deliberately
-thin and one-way — `experiencestudies`, `projectionmodels`, and
-`ratingmodels` each require `actuarialpy`; everything else
-cooperates through small duck-typed protocols (`sf` + `mean_excess`)
-rather than imports.
+**Cross-package floors.** Sibling dependencies declare explicit version
+ranges in each package's `pyproject.toml` — a floor always, and an
+upper cap where the downstream package is exposed to sibling API
+movement. The dependency direction is deliberately thin and one-way —
+`experiencestudies`, `projectionmodels`, and `ratingmodels` each
+require `actuarialpy`; everything else cooperates through small
+duck-typed protocols (`sf` + `mean_excess`) rather than imports.
 
-**Python.** All packages support Python 3.10–3.13, enforced by the CI
-matrix on Linux and Windows.
+**Python.** All packages support Python 3.10–3.13, enforced by the CI matrix.
 
 **What 1.0 will mean.** Freezing the public surface listed above, with
 removals thereafter only via a full deprecation cycle. The gate is not
