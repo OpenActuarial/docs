@@ -86,7 +86,7 @@ merged = es.compare_actual_to_expected(
     actual, plan[["segment", "month", "expected_expense"]],
     on=["segment", "month"], actual_col="claims", expected_col="expected_expense")
 
-es.summarize_actual_vs_expected(
+ave_seg = es.summarize_actual_vs_expected(
     merged, groupby="segment", actual_cols="claims",
     expected_cols="expected_expense", exposure_cols="member_months")
 ```
@@ -98,6 +98,12 @@ es.summarize_actual_vs_expected(
 
 The HMO is inside noise. The PPO is 6.7% — 721 thousand — over. The monthly
 view is where the honesty starts:
+
+```python
+ave_month = es.summarize_actual_vs_expected(
+    merged[merged["segment"] == "ppo"], groupby="month", actual_cols="claims",
+    expected_cols="expected_expense", exposure_cols="member_months")
+```
 
 | month | A/E (ppo) |
 |---|---:|
@@ -148,8 +154,10 @@ and measure the concentration:
 h1 = detail[detail["month"].dt.year == 2026]
 byc = es.summarize_claimants(h1, claimant_col="member_id",
                              amount_cols="paid", groupby="segment")
-es.top_claimants(h1, claimant_col="member_id", amount_cols="paid",
-                 groupby="segment", n=3)
+top = es.top_claimants(h1, claimant_col="member_id", amount_cols="paid",
+                       groupby="segment", n=3)
+conc = es.claim_concentration(byc, groupby="segment",
+                              thresholds=[100_000, 250_000])
 ```
 
 | segment | member | total | rank | share of segment |
@@ -207,7 +215,7 @@ ratios-of-sums per the
 [shared definitions](conventions.md#margin-and-denominators):
 
 ```python
-es.underwriting_summary(
+uw = es.underwriting_summary(
     actual, groupby="segment",
     revenue_cols="premium", loss_cols="claims", expense_cols="expense",
     exposure_col="member_months", premium_col="premium")
