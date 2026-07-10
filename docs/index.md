@@ -91,7 +91,7 @@ flowchart LR
     ES --> PM
     ES --> RM
     PM -- "projected loss cost" --> RM
-    RM -- "rate actions & loads" --> PM
+    RM -- "indicated changes & loads" --> PM
     LM["lossmodels<br/>severity & frequency"] -- "pooling charge" --> RM
     EL["extremeloss<br/>tail"] -- "pooling charge" --> RM
     LM -. "splice" .-> EL
@@ -101,9 +101,16 @@ flowchart LR
     class CORE core
 :::
 
-The pricing–projection pair is deliberately a loop — the rate actions the
-pricing work produces are an input to the premium projection
-(`RenewalRateActions`), because you project the rates you set. The severity
+The pricing–projection pair is deliberately a loop, with one honest caveat
+about who decides what. Pricing produces the *indicated* change; the
+*selected* action is a business decision — renewal strategy, cohort review,
+underwriting judgment — that the indication and the monitoring views inform
+rather than determine. In ecosystem terms: `ratingmodels` supplies the
+indication, `experiencestudies` supplies the cohort, persistency, and
+actual-versus-expected views the forum argues from, and
+`RenewalRateActions` carries whatever was selected, because you project the
+rates you set. `rm.renew`'s cap-and-floor is a mechanical stand-in for that
+selection, not a claim that pricing makes it. The severity
 and tail work runs as its own forward-looking mode — fit the body, splice
 the tail, simulate the aggregate, measure the capital — and reaches the
 deterministic side through pricing: any severity exposing `sf` and

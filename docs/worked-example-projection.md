@@ -220,13 +220,20 @@ action.to_frame()
 ```
 
 The large group needed +11.8% and the corridor released 10; the small group's
-manual blend kept its indication inside the cap, so B renews at formula.
+manual blend kept its indication inside the cap, so B renews at formula. One
+honesty note about that step: in production, indicated-to-selected is a
+renewal-strategy decision — cohort performance, persistency risk,
+competitive position, underwriting judgment — that the indication informs
+rather than determines. `renew`'s cap-and-floor is a mechanical stand-in
+for that selection here, and `RenewalRateActions` below will carry whatever
+the forum actually issues.
 
 ## Project the premium you will actually charge
 
 The issued actions — not the indicated ones — become an effective-dated
 `RenewalRateActions` table, keyed to each group's renewal date. This is the
-loop closing: the pricing layer's output is the premium projection's input.
+loop closing: the selected actions, wherever they were decided, are the
+premium projection's input.
 
 ```python
 actions = pm.RenewalRateActions(

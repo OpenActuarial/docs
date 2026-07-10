@@ -52,7 +52,7 @@ flowchart LR
     ES --> PM
     ES --> RM
     PM -- "projected loss cost" --> RM
-    RM -- "rate actions & loads" --> PM
+    RM -- "indicated changes & loads" --> PM
     LM["lossmodels<br/>severity & frequency"] -- "pooling charge" --> RM
     EL["extremeloss<br/>tail"] -- "pooling charge" --> RM
     LM -. "splice" .-> EL
@@ -62,9 +62,12 @@ flowchart LR
     class CORE core
 :::
 
-The loop between pricing and projection is deliberate — the rate actions the
-pricing layer produces are an input to `PremiumProjection` (as
-`RenewalRateActions`), because you project the rates you set. The
+The loop between pricing and projection is deliberate, with the division of
+labor stated honestly: the pricing layer produces the *indicated* change,
+the *selected* action is a renewal-strategy decision that the indication and
+the `experiencestudies` monitoring views inform rather than determine, and
+`PremiumProjection` takes whatever was selected (as `RenewalRateActions`),
+because you project the rates you set. The
 distribution work is its own forward-looking mode — severity and frequency
 in `lossmodels`, the tail in `extremeloss`, aggregate simulation and risk
 measures in `risksim` — and it reaches the deterministic side through
