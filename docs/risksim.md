@@ -125,3 +125,24 @@ now you can see it.
 .. automodule:: risksim
    :members:
 ```
+
+### risksim.dependence
+
+```{eval-rst}
+.. automodule:: risksim.dependence
+   :members:
+```
+
+### risksim.metrics
+
+```{eval-rst}
+.. automodule:: risksim.metrics
+   :members:
+```
+
+### risksim.uncertainty
+
+```{eval-rst}
+.. automodule:: risksim.uncertainty
+   :members:
+```
