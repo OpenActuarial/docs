@@ -261,7 +261,7 @@ pdet.loc[pdet["is_renewal_period"],
 
 ## Expenses, and the year as it will book
 
-`ExpenseProjection` handles the three bases in one table — per-exposure
+`ExpenseProjection` handles three of its four bases in one table — per-exposure
 administration, commission as a percent of the projected premium, claim
 administration as a percent of the projected claims — each trended from its
 base date. The claim and premium projections feed it directly:
@@ -294,6 +294,24 @@ expense_pp = pm.ExpenseProjection(
 ).project().summarize(by=["group_id", "projection_period", "calendar_quarter"],
                       measures=["projected_expense"])
 ```
+
+One knob this schedule doesn't exercise: `trend` may be keyed by expense
+type, which is how a contractually flat fee stays flat while its neighbours
+trend. Had the schedule carried a $6.50 per-member network fee fixed by
+contract, the scalar becomes a lookup and the zero-trend type projects at
+its base value — no special case required:
+
+```python
+trend=pm.TrendAssumption.from_values(
+    "expense_trend",
+    pd.DataFrame({"expense_type": ["administration", "network_fee",
+                                   "commission", "claim_admin"],
+                  "expense_trend": [0.03, 0.0, 0.03, 0.03]}),
+    lookup="expense_type")
+```
+
+[Example 10](worked-example-contract.md) wires the pattern end to end,
+flat fee and all.
 
 Merging the three projections on the shared period keys gives the exhibit —
 the forward loss-ratio and gain path, with each renewal visibly landing:
