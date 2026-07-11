@@ -21,15 +21,19 @@ versions in your environment. For local iteration, install the packages editable
       conf.py            Sphinx configuration
       index.md           landing page: the packages + install
       overview.md        how they compose
-      actuarialpy.md     narrative + API reference
-      experiencestudies.md
-      projectionmodels.md
-      ratingmodels.md
-      lossmodels.md
-      extremeloss.md
-      risksim.md
+      <package>.md       narrative + API reference, one per package
+      conventions.md     ecosystem-wide mathematical conventions
+      stability.md       per-package API stability
+      validation.md      comparisons against external references
+      worked-example*.md nine end-to-end examples, runnable top to bottom
       _static/           custom CSS
       CNAME              custom domain
+
+## Nightly checks
+
+`.github/workflows/ecosystem-smoke.yml` reruns every package's test suite
+against current PyPI releases each night and runs a blocking link check over
+the site, so cross-package drift and link rot surface within a day.
 
 ## Deploy
 
