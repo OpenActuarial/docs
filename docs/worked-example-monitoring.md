@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 import actuarialpy as ap
 import experiencestudies as es
-from experiencestudies import Experience
+from actuarialpy import Experience
 
 rng = np.random.default_rng(20260630)
 months = pd.date_range("2024-07-01", "2026-06-01", freq="MS")
@@ -121,14 +121,14 @@ plan. The next two tools can.
 
 ## The trailing monitor
 
-The fluent `Experience` binds the column roles once; `rolling` is then a
+The `Experience` binds the column roles once; `es.rolling` is then a
 one-liner, and the trailing-twelve window does what monthly A/E cannot —
 average out the noise while holding a real event in view for a full year:
 
 ```python
 exp = Experience(panel, expense="claims", revenue="premium",
                  exposure="member_months", date="month")
-roll = exp.rolling(12, groupby="segment")
+roll = es.rolling(exp, 12, groupby="segment")
 ```
 
 | window ending | trailing LR (ppo) | claims PMPM |
@@ -175,8 +175,8 @@ marks the row for downstream pooling or case-management workflows.
 
 ## Pool it, and re-ask the question
 
-Claimant-level pooling is one call — the fluent
-`exp.pool_claimants("member_id", 250_000)` or, on the claimant summary,
+Claimant-level pooling is one call —
+`es.pool_claimants(exp, "member_id", 250_000)` or, on the claimant summary,
 the `actuarialpy` primitive it delegates to:
 
 ```python

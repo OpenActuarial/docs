@@ -14,7 +14,7 @@ The package root contains the workflow objects most actuaries need:
 
 | Object | Role |
 | --- | --- |
-| `ClaimExperience` | Prepare a base claim rate from experience |
+| `project` / `base_rates` | Build the projection from the canonical `Experience` |
 | `ClaimProjection` | Project claim rates and claims by claim type |
 | `PremiumProjection` | Roll premium forward, including renewal rate actions |
 | `RenewalRateActions` | Supply effective-dated rate actions |
@@ -64,21 +64,28 @@ For different actions at different renewals, provide an effective-dated
 
 ## Claims by claim type
 
-`ClaimExperience` prepares a base rate from history, and
-`ClaimProjection.from_experience` carries it through the projection:
+`project` builds the projection straight from the canonical
+[`actuarialpy.Experience`](actuarialpy.md): the record grain defaults to the
+bound `dimensions`, and the claim-type dimension is inferred as the grain
+column absent from the exposure frame (pass `claim_type=` when ambiguous).
+A *wide* Experience built with a `wide_by=` pivot melts itself -- the recorded
+pivot becomes the claim-type dimension, and non-pivot expense columns are
+announced as excluded. `seasonality="estimate"` fits factors from the bound
+history; trend is always a stated selection, never a silent estimate:
 
 ```python
-experience = pm.ClaimExperience(
+from actuarialpy import Experience
+
+experience = Experience(
     hist,
-    projection_keys=["group_id"],
-    claim_type_col="claim_type",
-    date_col="incurred_month",
-    claims_col="reported_claims",
-    exposure_col="exposure_units",
+    expense="reported_claims",
+    exposure="exposure_units",
+    date="incurred_month",
+    dimensions=["group_id", "claim_type"],
     valuation_date="2026-12-31",
 )
 
-projection = pm.ClaimProjection.from_experience(
+projection = pm.project(
     experience,
     exposure=exposure,
     exposure_col="exposure_units",

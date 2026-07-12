@@ -47,6 +47,7 @@ weighted — is the one that matters.
 ```python
 import numpy as np
 import pandas as pd
+from actuarialpy import Experience
 import projectionmodels as pm
 import ratingmodels as rm
 
@@ -68,17 +69,16 @@ history = pd.DataFrame(
                           ("outpatient", 190.0, 0.060))
      for i, m in enumerate(months)])
 
-experience = pm.ClaimExperience(
-    history, projection_keys=KEYS, claim_type_col="claim_type",
-    date_col="incurred_month", claims_col="reported_claims",
-    exposure_col="member_months")
+experience = Experience(
+    history, expense="reported_claims", exposure="member_months",
+    date="incurred_month", dimensions=[*KEYS, "claim_type"])
 claim_trend = pm.TrendAssumption.from_values(
     "claim_trend",
     pd.DataFrame({"claim_type": ["inpatient", "outpatient"],
                   "annual_trend": [0.075, 0.060]}),
     lookup=["claim_type"], rate_col="annual_trend")
 
-claims = pm.ClaimProjection.from_experience(
+claims = pm.project(
     experience, exposure=exposure, exposure_col="member_months",
     horizon=horizon, trend=claim_trend,
 ).project().summarize(by=["group_id", "projection_period"],

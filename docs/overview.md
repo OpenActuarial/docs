@@ -15,11 +15,11 @@ The OpenActuarial packages span a connected analytical workflow—from raw exper
   actual-versus-expected and simple forecasting, claimant and concentration
   analysis, cohort and duration studies, driver and frequency–severity
   decomposition, rolling monitors, banded summaries, the two-tier
-  underwriting income statement, the Excel report writer, and the fluent
-  `Experience` object that ties them together.
+  underwriting income statement, and the Excel report writer — study
+  functions over the canonical `actuarialpy.Experience`.
 - **projectionmodels** — the projection layer: claim, premium, and expense
-  projections on supplied exposure, organized as concrete workflow objects —
-  `ClaimExperience` / `ClaimProjection`, `PremiumProjection` with
+  projections on supplied exposure, organized as concrete workflows —
+  the `project` entrypoint over `ClaimProjection`, `PremiumProjection` with
   effective-dated `RenewalRateActions`, `ExpenseProjection`, projection
   horizons and date cohorts, scenario adjustments, and results that
   summarize without averaging ratios or duplicating exposure.

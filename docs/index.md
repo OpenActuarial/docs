@@ -25,8 +25,8 @@ experience, projection, and pricing layers build on directly.
 **Experience.** Experience reporting and analysis — summaries and views,
 actual-versus-expected, claimant and concentration analysis, cohort and
 duration studies, driver and frequency–severity decomposition, rolling
-monitors, banded summaries, the two-tier underwriting summary, and the
-fluent `Experience` object.
+monitors, banded summaries, and the two-tier underwriting summary —
+study functions over the canonical `Experience`.
 :::
 
 :::{grid-item-card} projectionmodels
@@ -153,9 +153,9 @@ df = pd.DataFrame({
 })
 
 # study layer: how is the block performing?
-exp = es.Experience(df, expense="incurred", revenue="premium",
+exp = ap.Experience(df, expense="incurred", revenue="premium",
                     exposure="member_months", date="month")
-seg = exp.by("segment")                                     # loss ratio 0.914
+seg = es.summary(exp, "segment")                            # loss ratio 0.914
 loss_cost = seg["total_expense_per_member_months"].iloc[0]  # 512.00 per member-month
 
 # primitives: credibility from exposure (lives in actuarialpy)

@@ -20,6 +20,7 @@ three incurred months still developing (55% / 85% / 96% reported):
 ```python
 import numpy as np
 import pandas as pd
+from actuarialpy import Experience
 import projectionmodels as pm
 import ratingmodels as rm
 from projectionmodels.integrations import actuarialpy as apx
@@ -116,7 +117,7 @@ member-months against the full-credibility standard.
 
 ## Project the claims
 
-`ClaimExperience` reads the history; `ClaimProjection.from_experience` runs
+The canonical `Experience` binds the history once; `pm.project` runs
 the pipeline in its
 [fixed order](projectionmodels.md#cost-levels-and-pipeline-order) — complete
 → deseasonalize → trend to the blend basis → credibility blend →
@@ -135,17 +136,17 @@ exposure = pd.DataFrame(
     [{"group_id": g, "projection_period": p, "member_months": mm}
      for g, mm in (("A", 5000.0), ("B", 700.0)) for p in periods])
 
-experience = pm.ClaimExperience(
-    hist, projection_keys=["group_id"], claim_type_col="claim_type",
-    date_col="incurred_month", claims_col="reported_claims",
-    exposure_col="member_months", valuation_date=VALUATION)
+experience = Experience(
+    hist, expense="reported_claims", exposure="member_months",
+    date="incurred_month", dimensions=["group_id", "claim_type"],
+    valuation_date=VALUATION)
 manual = pm.Assumption(
     "manual_claim_rate",
     pd.DataFrame({"claim_type": ["inpatient", "outpatient"],
                   "manual_claim_rate": [215.0, 335.0]}),
     lookup=["claim_type"], value_col="manual_claim_rate")
 
-claim_projection = pm.ClaimProjection.from_experience(
+claim_projection = pm.project(
     experience, exposure=exposure, exposure_col="member_months",
     horizon=horizon, completion=completion, seasonality=seasonality,
     trend=trend, credibility=credibility, complement=manual,

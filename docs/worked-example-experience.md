@@ -2,7 +2,7 @@
 
 The first two boxes of the workflow, end to end: read a monthly experience
 panel with `experiencestudies` — frequency-severity and trend decomposition
-through the fluent `Experience` object — over `actuarialpy` primitives for
+as study functions over the canonical `Experience` — with `actuarialpy` primitives for
 seasonality, trend, and credibility, then carry the projected loss cost into a
 `ratingmodels` indication and constrain it into a bookable renewal. Every
 number on this page is the output of this exact fixed-seed run, pinned by a
@@ -20,7 +20,9 @@ import numpy as np
 import pandas as pd
 import actuarialpy as ap
 import ratingmodels as rm
-from experiencestudies import Experience
+from actuarialpy import Experience
+
+import experiencestudies as es
 
 rng = np.random.default_rng(42)
 months = pd.date_range("2023-01-01", "2025-12-01", freq="MS")
@@ -48,7 +50,7 @@ Bind the column roles once and every view derives from them:
 exp = Experience(df, expense="incurred", revenue="premium",
                  exposure="member_months", date="month", count="claim_count")
 
-exp.frequency_severity(groupby="year")
+es.frequency_severity(exp, groupby="year")
 #  year  frequency  severity  loss_per_exposure
 #  2023     0.3182    938.35             298.58
 #  2024     0.3256    980.67             319.29
@@ -65,7 +67,7 @@ separates within-segment frequency and severity movement from the effect of
 the book shifting toward the south segment:
 
 ```python
-d = exp.decompose_trend(period_col="year", prior_period=2024,
+d = es.decompose_trend(exp, period_col="year", prior_period=2024,
                         current_period=2025, mix_by="segment").iloc[0]
 # loss_per_exposure : 319.29 -> 339.60   (trend 1.0636)
 # frequency_trend 1.0156   severity_trend 1.0465   mix_trend 1.0007

@@ -4,8 +4,8 @@ The study layer of the ecosystem: experience summaries and views,
 actual-versus-expected and simple forecasting, claimant and concentration
 analysis, cohort and duration studies, driver and frequency–severity
 decomposition, rolling monitors, banded summaries, and the two-tier
-underwriting income statement — tied together by the fluent `Experience`
-object. Where [actuarialpy](actuarialpy.md) answers "what is the loss ratio /
+underwriting income statement — study functions over the canonical
+[`actuarialpy.Experience`](actuarialpy.md). Where [actuarialpy](actuarialpy.md) answers "what is the loss ratio /
 development factor / credibility weight for this table?", `experiencestudies`
 answers "how is this block performing, why is it moving, and where is the risk
 concentrated?". It does not perform data preparation or encode filed
@@ -16,17 +16,22 @@ There are two interfaces. The **free functions** — `summarize_experience`,
 `summarize_actual_vs_expected`, `summarize_claimants`, `cohort_summary`,
 `decompose_per_exposure_trend`, `frequency_severity_summary`,
 `rolling_summary`, `summarize_by_band`, and the forecasting helpers — each
-take a DataFrame and return a DataFrame. The **`Experience` object** is a
-fluent wrapper that remembers the expense, revenue, exposure, and date columns
-once, then exposes the same analyses as chainable methods, each restatement
-returning a new `Experience` so adjustments compose without mutating the
-source.
+take a DataFrame and return a DataFrame. The **study functions** — `summary`,
+`views`, `rolling`, `margin`, `claimants`, `pool_claimants`,
+`actual_vs_expected`, `decompose_trend`, and friends — take the canonical
+`Experience`, which remembers the expense, revenue, exposure, and date
+columns once. Its restatements (`adjust`, `deseasonalize`, `complete`,
+`filter`, `with_status`) live on the object in `actuarialpy` and each return
+a new `Experience`, so adjustments compose without mutating the source.
 
 ## Quickstart
 
 ```python
 import pandas as pd
-from experiencestudies import Experience, summarize_experience
+from actuarialpy import Experience
+
+import experiencestudies as es
+from experiencestudies import summarize_experience
 
 df = pd.DataFrame({
     "month": pd.date_range("2025-01-01", periods=12, freq="MS"),
@@ -45,11 +50,11 @@ summarize_experience(
 #  auto     |         6000 | ... |     0.6344
 #  property |         6000 | ... |     0.6811
 
-# fluent form — bind the column roles once, then every view derives from them
+# Experience form — bind the column roles once, then every view derives from them
 exp = Experience(df, expense="claims", revenue="premium",
                  exposure="earned_units", date="month")
-exp.by("lob")        # the same grouped summary
-exp.rolling(3)       # trailing three-month monitor
+es.summary(exp, "lob")   # the same grouped summary
+es.rolling(exp, 3)       # trailing three-month monitor
 ```
 
 Per-exposure output columns are the mechanical `{name}_per_{exposure_col}`;
@@ -60,8 +65,8 @@ domain names (a health shop's `mlr` or `_pmpm`) are opt-in via `profile` /
 
 Adjustments return a new `Experience`, so a restated view is a chain. The
 seasonal and completion factors come from `actuarialpy`
-(`seasonality_factors`, `completion_factors`); `experiencestudies` applies
-them through the fluent lens:
+(`seasonality_factors`, `completion_factors`) and are applied on the
+`Experience` itself:
 
 ```python
 restated = (
@@ -69,7 +74,7 @@ restated = (
        .deseasonalize(seasonal_factors)   # divide out a seasonal shape
        .complete(completion_factors, valuation_date="2025-12-31")  # gross up to ultimate
 )
-restated.by("lob")                        # terminal summary of the restated view
+es.summary(restated, "lob")               # terminal summary of the restated view
 ```
 
 Binding `count` (a claim or service count) unlocks the frequency–severity
@@ -172,8 +177,8 @@ monitor — can be a sheet:
 
 ```python
 es.to_excel_report(
-    {"experience": exp.by("lob"),
-     "rolling_12m": exp.rolling(12, groupby="lob"),
+    {"experience": es.summary(exp, "lob"),
+     "rolling_12m": es.rolling(exp, 12, groupby="lob"),
      "underwriting": uw},
     "monitoring_pack.xlsx")
 ```

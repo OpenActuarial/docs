@@ -9,11 +9,12 @@ perform data preparation or encode filed methodology: the caller supplies the
 table and selects the method. Every result is a DataFrame or Series, and the
 only dependencies are numpy and pandas.
 
-The *study layer* that builds on these primitives — the fluent `Experience`
-object, experience summaries, actual-versus-expected, claimant, cohort, and
-decomposition analyses, and the underwriting income statement — lives in
-[experiencestudies](experiencestudies.md), which depends on `actuarialpy` and
-never the other way around.
+`actuarialpy` also owns the ecosystem's shared data contract: the canonical
+`Experience` container ([below](#the-experience-container)). The *study
+layer* that builds on both — experience summaries, actual-versus-expected,
+claimant, cohort, and decomposition analyses, and the underwriting income
+statement — lives in [experiencestudies](experiencestudies.md), which depends
+on `actuarialpy` and never the other way around.
 
 ## Quickstart
 
@@ -45,9 +46,96 @@ ap.trend_factor(fit.annual_trend, months=18)             # 1.0839
 Build the aggregate with pandas at the grain that matches the question —
 typically a single `groupby` that sums claims, counts exposure from the
 exposure table, and joins premium. For repeated experience-analysis
-workflows on such a table, the fluent `Experience` object in
-[experiencestudies](experiencestudies.md) binds the column roles once and
-derives every view from them.
+workflows on such a table, the canonical `Experience` object binds the
+column roles once; the study views over it live in
+[experiencestudies](experiencestudies.md).
+
+## The Experience container
+
+`Experience` is the ecosystem's canonical semantic wrapper for historical
+actuarial data: it binds column roles, grain metadata, and snapshot context
+once, so [experiencestudies](experiencestudies.md),
+[projectionmodels](projectionmodels.md), and
+[ratingmodels](ratingmodels.md) consume one object instead of re-declaring
+columns.
+
+```python
+import actuarialpy as ap
+
+exp = ap.Experience(
+    panel,
+    expense="paid_claims", revenue="premium",       # measure roles: at least
+    exposure="member_months", count="claim_count",  #   one required, none mandatory
+    date="incurred_month",
+    dimensions=["group_id", "claim_type"],          # segmentation, lookups, grain defaults
+    exposure_keys=["member_id", "incurred_month"],  # one row per exposure unit (opt-in guard)
+    valuation_date="2026-06-30",
+)
+```
+
+Three kinds of metadata do three different jobs. The **measure and date
+roles** name what the columns mean. **`dimensions`** are segmentation
+columns — consumers use them as defaults for reporting cuts, assumption
+lookups, and projection grain; they say nothing about row grain.
+**`exposure_keys`** identify one exposure unit: when bound, construction
+validates the frame is unique on them, so long (service-line-grain) data is
+rejected at the door instead of silently overcounting every per-exposure
+figure. Leave them unbound and no grain safety is claimed.
+
+The object holds **no actuarial judgment**. Its public methods are immutable
+*transformations* — each takes caller-supplied assumptions as arguments and
+returns a new `Experience`, so restatements chain:
+
+```python
+work = (
+    exp.filter(query="group_id == 1102052")
+       .complete(completion_factors)     # develops to ultimate; valuation date
+       .adjust(1.03)                     #   defaults from the object
+       .deseasonalize(seasonal_factors)
+)
+```
+
+`complete()` also tracks state: it marks each developed column `"ultimate"`
+in the object's `basis`, and completing a column already on an ultimate
+basis raises — the double-development mistake is an error, not a silent
+overstatement. Data that arrives already developed declares it at
+construction (`basis={"paid_claims": "ultimate"}`).
+
+**Multi-table sources bind at the doorway.** `Experience.from_tables` builds
+the experience tab from source extracts -- a grain-defining table (membership,
+validated unique) plus any number of `Measures` specs naming their role in the
+same vocabulary (`expense`, `revenue`, `count`), an optional `wide_by`
+categorical to pivot (claim types become expense columns, recorded as
+provenance), and each table's own date floored to the grain period. One fixed
+algorithm: finer tables aggregate up, coarser tables are refused (allocation
+is judgment), unmatched keys are surfaced, empty cells are structural zeros.
+
+```python
+exp = ap.Experience.from_tables(
+    membership, grain=["member_id", "month"], exposure="member_months",
+    tables=[
+        ap.Measures(claim_lines, expense="paid_amount",
+                    wide_by="claim_type", date="incurred_date"),
+        ap.Measures(billing, revenue="billed_premium"),
+    ],
+    date="month", period="M", dimensions="group_id",
+)
+```
+
+Coarser worksheets derive from it structurally: `exp.aggregate(by="group_id",
+freq="MS")` sums the measure roles to a new validated grain (and requires
+`exposure_keys`, since summing exposure is only provably safe on a proven
+grain), and `exp.melt()` undoes a recorded pivot when a consumer needs the
+categories long.
+
+Everything analytical is a *function that accepts an `Experience`* — a split
+enforced by a test (no public method on the class may return anything else).
+Here in `actuarialpy`, `fit_trend` and `trend_summary` are Experience-native
+(`ap.fit_trend(work)` resolves the value, date, and exposure columns from
+the bound roles); the study summaries live in
+[experiencestudies](experiencestudies.md), projections in
+[projectionmodels](projectionmodels.md), and worksheet construction in
+[ratingmodels](ratingmodels.md).
 
 ## Credibility
 
