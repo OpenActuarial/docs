@@ -200,3 +200,14 @@ carries its own usage.
 .. automodule:: lossmodels
    :members:
 ```
+
+## Fitting from an `Experience`
+
+`lossmodels.integrations.actuarialpy` consumes the canonical claims-listing
+`Experience` (or an `ExperienceSet`, routing to its named listing):
+`fit_severity_from_experience(exp, by="claim_type")` fits one model per
+category off the bound expense role, and `fit_frequency_from_experience`
+fits per-period counts off the date and count roles. Aggregated experience
+tabs are refused -- monthly sums are a compound distribution, not severity.
+The core package stays array-level; install the `[actuarialpy]` extra or
+the `openactuarial` meta-package.

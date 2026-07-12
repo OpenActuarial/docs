@@ -147,3 +147,12 @@ xl.tail_summary_from_risksim(res)
 .. automodule:: extremeloss
    :members:
 ```
+
+## Fitting from an `Experience`
+
+`extremeloss.integrations.actuarialpy` fits GPD tails straight from a
+claims-listing `Experience` (or an `ExperienceSet`):
+`fit_gpd_from_experience(exp, threshold=...)` -- extracting the excesses is
+structural; selecting the threshold stays the caller's judgment. Aggregated
+experience tabs are refused. The core package stays array-level; install
+the `[actuarialpy]` extra or the `openactuarial` meta-package.

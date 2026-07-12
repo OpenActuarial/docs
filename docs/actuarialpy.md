@@ -103,7 +103,7 @@ construction (`basis={"paid_claims": "ultimate"}`).
 
 **Multi-table sources bind at the doorway.** `Experience.from_tables` builds
 the experience tab from source extracts -- a grain-defining table (membership,
-validated unique) plus any number of `Measures` specs naming their role in the
+validated unique) plus any number of `Source` specs naming their role in the
 same vocabulary (`expense`, `revenue`, `count`), an optional `wide_by`
 categorical to pivot (claim types become expense columns, recorded as
 provenance), and each table's own date floored to the grain period. One fixed
@@ -113,10 +113,10 @@ is judgment), unmatched keys are surfaced, empty cells are structural zeros.
 ```python
 exp = ap.Experience.from_tables(
     membership, grain=["member_id", "month"], exposure="member_months",
-    tables=[
-        ap.Measures(claim_lines, expense="paid_amount",
+    sources=[
+        ap.Source(claim_lines, expense="paid_amount",
                     wide_by="claim_type", date="incurred_date"),
-        ap.Measures(billing, revenue="billed_premium"),
+        ap.Source(billing, revenue="billed_premium"),
     ],
     date="month", period="M", dimensions="group_id",
 )
@@ -127,6 +127,33 @@ freq="MS")` sums the measure roles to a new validated grain (and requires
 `exposure_keys`, since summing exposure is only provably safe on a proven
 grain), and `exp.melt()` undoes a recorded pivot when a consumer needs the
 categories long.
+
+**One construction call: the `ExperienceSet` workbook.** When the same
+sources feed several grains, `ExperienceSet.from_tables` builds them
+together: the worksheet (`book.tab`) plus one listing member per *named*
+`Source` spec (`book["claims"]`), each an ordinary, materialized,
+grain-honest `Experience`. Consumers accept the set and route themselves --
+studies, rating, and projection to the tab; severity and tail fitting to
+the claims listing.
+
+```python
+book = ap.ExperienceSet.from_tables(
+    membership, grain=["member_id", "month"], exposure="member_months",
+    sources=[ap.Source(claim_lines, expense="paid_amount",
+                       wide_by="claim_type", date="incurred_date",
+                       name="claims"),
+             ap.Source(billing, revenue="billed_premium")],
+    date="month", period="M", dimensions="group_id",
+)
+book.cohort(group_id="1102052")   # re-derives every member from the sources
+book.reconcile()                  # ties each listing's totals to the tab
+```
+
+`cohort(...)` filters the grain table (the population authority) and
+rebuilds all members -- propagation by reconstruction, never mutation.
+`reconcile()` surfaces exclusions (orphan keys) instead of dropping them
+silently. One construction call is universal; one instance never holds two
+grains.
 
 Everything analytical is a *function that accepts an `Experience`* — a split
 enforced by a test (no public method on the class may return anything else).
