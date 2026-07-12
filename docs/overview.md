@@ -90,8 +90,12 @@ estimation for the same reason. `extremeloss` can optionally pull in
 and `extremeloss` stay array-level at the core but each ships an optional
 `integrations/actuarialpy` module (the `actuarialpy` extra) that consumes the
 canonical claims-listing `Experience` -- an optional edge pointing the same
-direction as every other. `risksim` has no internal dependencies: it consumes
-fitted models, never experience, so no edge to `actuarialpy` exists or should.
+direction as every other. `risksim`'s core is numpy-only: it consumes fitted models through a formal
+`SupportsSample` protocol -- anything with a `.sample()` method, which every
+`lossmodels` distribution and `extremeloss` tail fit satisfies, along with
+any distribution object from outside the ecosystem -- so its only declared
+edge is a dev-extra on `lossmodels` for its own tests. It never touches
+experience, so no edge to `actuarialpy` exists or should.
 
 :::{mermaid}
 flowchart LR
@@ -108,6 +112,8 @@ flowchart LR
     EL -.->|optional, via splice| LM
     LM -.->|optional, via actuarialpy extra| AP
     EL -.->|optional, via actuarialpy extra| AP
+    LM -.->|".sample() protocol, dev extra"| RS
+    EL -.->|".sample() protocol"| RS
     classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
 :::
 
@@ -121,7 +127,11 @@ deliberately tiny duck-typed protocol: any severity object exposing
 `sf(x)` and `mean_excess(d)` — every `lossmodels` distribution, every
 `extremeloss` GPD tail fit — plugs into
 `ratingmodels.pooling_charge_from_severity`. The seam is two methods, not
-an import. The data-object seam works the same way in reverse: the
+an import. `risksim` runs on the same principle from the other side: its
+`SupportsSample` protocol accepts any object with `.sample()` -- every
+`lossmodels` distribution, every `extremeloss` tail, or any distribution you
+bring from outside the ecosystem -- so the workflow diagram's arrows into
+`risksim` are protocol seams, not imports. The data-object seam works the same way in reverse: the
 `Experience`/`ExperienceSet` contract flows *up* through the layers as data,
 while every import edge keeps pointing *down* -- a package consuming the
 contract is a package depending on `actuarialpy`, never the other way
