@@ -218,6 +218,7 @@ risksim
 :caption: Worked examples
 :maxdepth: 1
 
+worked-example-every-package
 worked-example-experience
 worked-example-book
 worked-example
