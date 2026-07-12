@@ -1,4 +1,4 @@
-# Worked example: every package, one object
+# Example 11: every package, one object
 
 The whole ecosystem off a single construction call. Three source extracts —
 membership, a claims listing, billing — become an `ExperienceSet`, and the

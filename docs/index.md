@@ -129,8 +129,9 @@ Each seam above is runnable end to end — see the worked examples:
 [Example 6: pricing the tail, with error bars](worked-example-tail.md),
 [Example 7: the renewal cycle, projected](worked-example-projection.md),
 [Example 8: the plan, the actuals, and the miss](worked-example-monitoring.md),
-[Example 9: two lines, one tail](worked-example-dependence.md), and
-[Example 10: the pinned ratio, two ways](worked-example-contract.md).
+[Example 9: two lines, one tail](worked-example-dependence.md),
+[Example 10: the pinned ratio, two ways](worked-example-contract.md), and
+[Example 11: every package, one object](worked-example-every-package.md).
 
 ## A cross-package example
 
@@ -218,7 +219,6 @@ risksim
 :caption: Worked examples
 :maxdepth: 1
 
-worked-example-every-package
 worked-example-experience
 worked-example-book
 worked-example
@@ -229,4 +229,5 @@ worked-example-projection
 worked-example-monitoring
 worked-example-dependence
 worked-example-contract
+worked-example-every-package
 :::
