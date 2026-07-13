@@ -132,6 +132,138 @@ is nothing bespoke to audit per table:
 This is the reconciliation an actuary otherwise does by hand between the
 claims extract and the worksheet — made mechanical and repeatable.
 
+## From your tables to the object
+
+The roles above each take **one column or a list**. In practice it is the loss
+side that splits into several items — claim categories, and expense loadings —
+while revenue is usually a single premium line. Where the block already lives in
+one wide frame, bind it directly; where it arrives as separate extracts, let
+`from_tables` assemble it.
+
+### Shape 1 — one wide table you have already joined
+
+Inpatient, outpatient, and rx as three loss items in one frame, one row per
+group-month:
+
+```text
+group_id      month  member_months  inpatient  outpatient    rx  premium
+       A 2025-01-01          100.0     3000.0      1500.0 600.0   6000.0
+       A 2025-02-01          100.0     3200.0      1400.0 650.0   6000.0
+       B 2025-01-01          100.0     2100.0      1800.0 500.0   6000.0
+       B 2025-02-01          100.0     2000.0      1900.0 520.0   6000.0
+```
+
+Bind the three with a list; revenue is the single premium column, and a summary
+keeps every item **and** the totals:
+
+```python
+exp = ap.Experience(
+    wide,
+    expense=["inpatient", "outpatient", "rx"],   # three loss items
+    revenue="premium",
+    exposure="member_months", date="month", dimensions=["group_id"],
+)
+
+es.summary(exp, "group_id")
+```
+
+```text
+group_id  inpatient  outpatient     rx  total_expense  premium  total_revenue  loss_ratio
+       A     6200.0      2900.0 1250.0        10350.0  12000.0        12000.0      0.8625
+       B     4100.0      3700.0 1020.0         8820.0  12000.0        12000.0      0.7350
+```
+
+`total_expense` sums the three loss columns and `loss_ratio` is that over
+premium, while each item stays its own column for a by-item view.
+
+Two categorizations worth stating, since both tempt a second revenue column
+that does not belong. Retention items — administrative fees, commission,
+premium tax, the risk/profit load — are loss-side loadings, so they bind under
+the `expense` role. And a premium *refund* is not a revenue source but a signed
+offset to premium: if you net one in, carry it negative in the role
+(`revenue=["premium", "refund"]`) so `total_revenue` nets to premium less the
+refund, with gross premium still its own column for a gross-premium denominator.
+A participating dividend is typically shown below the underwriting result
+instead, not in revenue at all.
+
+### Shape 2 — separate long extracts
+
+More often the data arrives as several extracts at different grains: a
+membership table that defines the grain, one or more claim listings at
+claim-line grain, and billing. One `Source` per measure item, and `from_tables`
+brings them all to the membership grain.
+
+The grain table — one row per member-month:
+
+```text
+member_id      month  member_months group_id
+       m1 2025-01-01            1.0        A
+       m1 2025-02-01            1.0        A
+       m2 2025-01-01            1.0        A
+```
+
+Two claim extracts — different systems, each at claim-line grain, and both
+calling their amount column `paid`:
+
+```text
+# medical                            # pharmacy
+member_id incurred_date  paid        member_id incurred_date  paid
+       m1    2025-01-01 800.0               m2    2025-01-01 200.0
+       m3    2025-02-01 700.0               m3    2025-02-01 150.0
+```
+
+Billing — premium at member-month grain:
+
+```text
+member_id      month  premium
+       m1 2025-01-01   1200.0
+       m1 2025-02-01   1200.0
+       m2 2025-01-01   1200.0
+```
+
+```{important}
+Both claim extracts name their amount `paid`, so binding them as-is collides —
+`column(s) ['paid'] collide ... rename them before binding`. Give each a
+distinct name with `rename=`, as below.
+```
+
+```python
+book = ap.ExperienceSet.from_tables(
+    membership, grain=["member_id", "month"], exposure="member_months",
+    sources=[
+        ap.Source(medical,  expense="paid", rename={"paid": "medical"},
+                  date="incurred_date", name="medical"),
+        ap.Source(pharmacy, expense="paid", rename={"paid": "pharmacy"},
+                  date="incurred_date", name="pharmacy"),
+        ap.Source(billing, revenue="premium"),
+    ],
+    date="month", period="M", dimensions="group_id",
+)
+```
+
+The three extracts become one tab — one column per item, empty cells filled as
+structural zeros (a member-month with no medical claim is zero, not missing):
+
+```text
+member_id      month  member_months group_id  medical  pharmacy  premium
+       m1 2025-01-01            1.0        A    800.0       0.0   1200.0
+       m1 2025-02-01            1.0        A      0.0       0.0   1200.0
+       m2 2025-01-01            1.0        A      0.0     200.0   1200.0
+       m2 2025-02-01            1.0        A      0.0       0.0   1200.0
+```
+
+and `reconcile()` confirms each listing ties back to it:
+
+```text
+ listing measure  source_total  tab_total  difference  ties
+ medical    paid        1500.0     1500.0         0.0  True
+pharmacy    paid         350.0      350.0         0.0  True
+```
+
+When several items are *categories within one table* rather than separate
+tables — claim type on a single claims extract — pivot them in place with
+`wide_by` instead of one `Source` each (see **Wide claims by type** below).
+
 ## Reconcile and cohort
 
 `reconcile()` ties every listing's measure totals back to the tab and returns
