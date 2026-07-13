@@ -105,13 +105,6 @@ also becomes a listing member, reachable by `book["claims"]`. What a
 member's `.data` shows is exactly what a consumer receives — there is no
 hidden state.
 
-```{note}
-`book.tab` is renamed to `book.primary` in the 0.47 release (with `tab`
-kept as a deprecated alias for one minor version) — inside the workbook
-metaphor every named listing is a "tab", so `.primary` states the intended
-meaning less ambiguously. On the installed 0.46 line, use `book.tab`.
-```
-
 ## What `from_tables` does — one fixed, auditable algorithm
 
 Every `Source` is brought to the declared grain by the same rules, so there
