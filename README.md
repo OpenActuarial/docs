@@ -25,7 +25,7 @@ versions in your environment. For local iteration, install the packages editable
       conventions.md     ecosystem-wide mathematical conventions
       stability.md       per-package API stability
       validation.md      comparisons against external references
-      worked-example*.md nine end-to-end examples, runnable top to bottom
+      worked-example*.md end-to-end examples (one page per workflow), runnable top to bottom
       _static/           custom CSS
       CNAME              custom domain
 

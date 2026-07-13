@@ -9,13 +9,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - name: Sphinx build (warnings are errors)
-        run: python -m sphinx -b html docs docs/_build -W
+        run: python -m sphinx -b html -W --keep-going docs docs/_build
       - name: Link check (informational)
         continue-on-error: true
         run: python -m sphinx -b linkcheck docs docs/_linkcheck

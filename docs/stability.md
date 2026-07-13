@@ -27,7 +27,16 @@ movement. The dependency direction is deliberately thin and one-way —
 require `actuarialpy`; everything else cooperates through small
 duck-typed protocols (`sf` + `mean_excess`) rather than imports.
 
-**Python.** All packages support Python 3.10–3.13, enforced by the CI matrix.
+**Python.** All packages support Python 3.10–3.14. This sentence can no
+longer silently drift: the CI `metadata` job fails any package whose
+classifiers or `requires-python` disagree with the version list the matrix
+actually tests, and a `min-deps` job runs every suite at the minimum
+declared dependency versions on the oldest supported Python.
+
+**What this documentation was built against.**
+
+```{include} _build_info.md
+```
 
 **What 1.0 will mean.** Freezing the public surface listed above, with
 removals thereafter only via a full deprecation cycle. The gate is not
