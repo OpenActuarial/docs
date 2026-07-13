@@ -20,7 +20,7 @@ take a DataFrame and return a DataFrame. The **study functions** — `summary`,
 `views`, `rolling`, `margin`, `claimants`, `pool_claimants`,
 `actual_vs_expected`, `decompose_trend`, and friends — take the canonical
 `Experience`, which remembers the expense, revenue, exposure, and date
-columns once. Its restatements (`adjust`, `deseasonalize`, `complete`,
+columns once — the recommended path for any multi-step analysis, with the free functions as the low-level escape hatch for one-off calculations. Its restatements (`adjust`, `deseasonalize`, `complete`,
 `filter`, `with_status`) live on the object in `actuarialpy` and each return
 a new `Experience`, so adjustments compose without mutating the source.
 
@@ -41,7 +41,13 @@ df = pd.DataFrame({
     "earned_units": [1000] * 12,
 })
 
-# free-function form
+# recommended: bind the column roles once, then every view derives from them
+exp = Experience(df, expense="claims", revenue="premium",
+                 exposure="earned_units", date="month")
+es.summary(exp, "lob")   # grouped experience summary
+es.rolling(exp, 3)       # trailing three-month monitor
+
+# low-level: the same summary straight from a DataFrame, columns named explicitly
 summarize_experience(
     df, groupby="lob",
     expense_cols="claims", revenue_cols="premium", exposure_cols="earned_units",
@@ -49,12 +55,6 @@ summarize_experience(
 #  lob      | earned_units | ... | loss_ratio
 #  auto     |         6000 | ... |     0.6344
 #  property |         6000 | ... |     0.6811
-
-# Experience form — bind the column roles once, then every view derives from them
-exp = Experience(df, expense="claims", revenue="premium",
-                 exposure="earned_units", date="month")
-es.summary(exp, "lob")   # the same grouped summary
-es.rolling(exp, 3)       # trailing three-month monitor
 ```
 
 Per-exposure output columns are the mechanical `{name}_per_{exposure_col}`;

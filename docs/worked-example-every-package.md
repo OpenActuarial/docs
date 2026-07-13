@@ -1,4 +1,4 @@
-# Example 11: every package, one object
+# Start here: one data definition across the ecosystem
 
 The whole ecosystem off a single construction call. Three source extracts —
 membership, a claims listing, billing — become an `ExperienceSet`, and the

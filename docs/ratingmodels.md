@@ -11,9 +11,30 @@ and on `statsmodels` for GLM estimation.
 Everything is vectorized under one contract: the same call that rates one
 group rates a whole book of columns.
 
-## Quickstart
+## Workflow quickstart
 
-Blend an experience rate with a manual rate and read the indicated change:
+Starting from an [`Experience`](data-model.md) — or an `ExperienceSet`, whose
+tab is used — `experience_rate` builds the credibility-blended indication
+straight from the bound roles, with an optional `by=` for a whole book:
+
+```python
+import ratingmodels as rm
+
+rates = rm.experience_rate(book, by="group_id")   # ExperienceSet -> per-group rates
+# columns: incurred_claims, exposure, pooled_loss_cost, loss_cost, rate
+```
+
+`ExperienceExhibit` assembles the full experience-rating exhibit — developed,
+trended, credibility-weighted — when you want every step shown. Both read the
+roles bound on the object instead of re-declaring columns. See
+[Choosing your input](choosing-your-input.md) for when to use this versus the
+calculation objects below.
+
+## Quickstart: the calculation objects
+
+Use this primitive interface for one-off calculations, or when the inputs come
+from outside an `Experience`. Blend an experience rate with a manual rate and
+read the indicated change:
 
 ```python
 import ratingmodels as rm

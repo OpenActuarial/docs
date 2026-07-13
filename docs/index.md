@@ -131,12 +131,55 @@ Each seam above is runnable end to end — see the worked examples:
 [Example 8: the plan, the actuals, and the miss](worked-example-monitoring.md),
 [Example 9: two lines, one tail](worked-example-dependence.md),
 [Example 10: the pinned ratio, two ways](worked-example-contract.md), and
-[Example 11: every package, one object](worked-example-every-package.md).
+[the ecosystem tour](worked-example-every-package.md).
 
-## A cross-package example
+## From source tables to a whole workflow
 
-The layers compose directly — the study layer reads the block, the primitives
-supply credibility, and the pricing layer blends and indicates:
+The shortest path from raw extracts to an analysis is one construction call:
+three source tables — membership, a claims listing, billing — become one
+[`ExperienceSet`](data-model.md), and the same `book` then routes itself to
+each package at the grain that package needs.
+
+```python
+import actuarialpy as ap
+import experiencestudies as es
+import ratingmodels as rm
+
+# one construction call: membership defines the grain, each Source names its role
+book = ap.ExperienceSet.from_tables(
+    membership,                                  # one row per member-month
+    grain=["member_id", "month"], exposure="member_months",
+    sources=[
+        ap.Source(claim_lines, expense="paid_amount",
+                  date="incurred_date", name="claims"),
+        ap.Source(billing, revenue="billed_premium"),
+    ],
+    date="month", period="M", dimensions="group_id",
+    valuation_date="2026-06-30",
+)
+
+book.reconcile()                          # ties every listing back to the tab
+es.summary(book, "group_id")              # tab -> grouped experience study
+rm.experience_rate(book, by="group_id")   # tab -> credibility-blended indication
+# book["claims"] (claim-line grain) -> severity, frequency, and tail fitting
+```
+
+```text
+ExperienceSet.from_tables(membership, claims, billing)
+├── book.tab       -> experience studies / projection / rating   (member-month grain)
+└── book["claims"] -> severity / frequency / tail fitting          (claim-line grain)
+```
+
+One source definition, several workflows — see [Start here: one data
+definition across the ecosystem](worked-example-every-package.md) for the full
+tour, and [Choosing your input](choosing-your-input.md) for when to reach for
+the object model versus plain pandas.
+
+## A composition on one table
+
+With a single prepared table you wrap it directly — the study layer reads the
+block, the primitives supply credibility, and the pricing layer blends and
+indicates. Every number below is real output:
 
 ```python
 import pandas as pd
@@ -192,12 +235,20 @@ packages (`experiencestudies`, `projectionmodels`, `ratingmodels`) declare
 
 :::{toctree}
 :hidden:
+:caption: Getting started
 :maxdepth: 1
 
 overview
-conventions
-validation
-stability
+choosing-your-input
+worked-example-every-package
+:::
+
+:::{toctree}
+:hidden:
+:caption: The data model
+:maxdepth: 1
+
+data-model
 :::
 
 :::{toctree}
@@ -229,5 +280,14 @@ worked-example-projection
 worked-example-monitoring
 worked-example-dependence
 worked-example-contract
-worked-example-every-package
+:::
+
+:::{toctree}
+:hidden:
+:caption: Reference
+:maxdepth: 1
+
+conventions
+validation
+stability
 :::
