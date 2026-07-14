@@ -72,7 +72,7 @@ napoleon_numpy_docstring = True
 nitpicky = False
 
 # Ambiguous Python cross-references — a short name like ``k`` defined on more
-# than one class across the seven autodoc'd packages (e.g. Buhlmann.k and
+# than one class across the eight autodoc'd packages (e.g. Buhlmann.k and
 # BuhlmannStraub.k) — otherwise fail the strict ``-W`` build even though the
 # reference is incidental. With ``nitpicky = False`` missing references are
 # already silent, so scoping this to ``ref.python`` suppresses only the

@@ -50,6 +50,17 @@ constraints, dislocation reporting, and pricing scenarios with margin
 targets.
 :::
 
+:::{grid-item-card} reservingmodels
+:link: reservingmodels
+:link-type: doc
+
+**Reserving.** Claims development and stochastic reserve estimation —
+chain ladder, Bornhuetter–Ferguson, Benktander, and Cape Cod re-exported
+from `actuarialpy`, Mack standard errors, and the over-dispersed-Poisson
+bootstrap of the full predictive reserve distribution, with residual
+diagnostics and a `.sample` seam into `risksim`.
+:::
+
 :::{grid-item-card} lossmodels
 :link: lossmodels
 :link-type: doc
@@ -87,6 +98,7 @@ flowchart LR
         ES["experiencestudies<br/>experience"]
         PM["projectionmodels<br/>projection"]
         RM["ratingmodels<br/>pricing"]
+        RES["reservingmodels<br/>reserving"]
     end
     ES --> PM
     ES --> RM
@@ -97,6 +109,7 @@ flowchart LR
     LM -. "splice" .-> EL
     LM --> RS["risksim<br/>capital"]
     EL --> RS
+    RES -- "reserve risk" --> RS
     classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
     class CORE core
 :::
@@ -130,7 +143,8 @@ Each seam above is runnable end to end — see the worked examples:
 [Example 7: the renewal cycle, projected](worked-example-projection.md),
 [Example 8: the plan, the actuals, and the miss](worked-example-monitoring.md),
 [Example 9: two lines, one tail](worked-example-dependence.md),
-[Example 10: the pinned ratio, two ways](worked-example-contract.md), and
+[Example 10: the pinned ratio, two ways](worked-example-contract.md),
+[Example 11: the reserve, with a distribution](worked-example-reserving.md), and
 [the ecosystem tour](worked-example-every-package.md).
 
 ## From source tables to a whole workflow
@@ -226,12 +240,13 @@ call prices a whole book; see
 ## Install
 
 ```bash
-pip install actuarialpy experiencestudies projectionmodels ratingmodels lossmodels extremeloss risksim
+pip install actuarialpy experiencestudies projectionmodels ratingmodels reservingmodels lossmodels extremeloss risksim
 ```
 
 Any subset works — pip resolves the declared dependencies: the workflow
-packages (`experiencestudies`, `projectionmodels`, `ratingmodels`) declare
-`actuarialpy`, and `ratingmodels` additionally declares `statsmodels`.
+packages (`experiencestudies`, `projectionmodels`, `ratingmodels`,
+`reservingmodels`) declare `actuarialpy`, and `ratingmodels` additionally
+declares `statsmodels`.
 
 :::{toctree}
 :hidden:
@@ -260,6 +275,7 @@ actuarialpy
 experiencestudies
 projectionmodels
 ratingmodels
+reservingmodels
 lossmodels
 extremeloss
 risksim
@@ -280,6 +296,7 @@ worked-example-projection
 worked-example-monitoring
 worked-example-dependence
 worked-example-contract
+worked-example-reserving
 :::
 
 :::{toctree}

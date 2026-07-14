@@ -1,6 +1,6 @@
 # Overview
 
-The OpenActuarial packages span a connected analytical workflow—from raw experience to portfolio capital—through seven focused, modular libraries. Each package can be installed individually. `actuarialpy` provides the shared calculation primitives, and the experience, projection, and pricing layers build on it.
+The OpenActuarial packages span a connected analytical workflow—from raw experience to portfolio capital—through eight focused, modular libraries. Each package can be installed individually. `actuarialpy` provides the shared calculation primitives, and the experience, projection, and pricing layers build on it.
 
 ## Division of labor
 
@@ -29,6 +29,14 @@ The OpenActuarial packages span a connected analytical workflow—from raw exper
   models, credibility-smoothed factors, validation splits and tables, renewal
   constraints, rate-dislocation reporting, and pricing scenarios with
   closed-form margin solves.
+- **reservingmodels** — the reserving layer: claims development and
+  stochastic reserve estimation. The deterministic engine — chain-ladder
+  development, completion factors, Bornhuetter–Ferguson, Benktander, Cape
+  Cod, and Mack standard errors — is re-exported from `actuarialpy`, where
+  those triangle primitives already live; on top of it, the
+  over-dispersed-Poisson bootstrap of the full predictive reserve
+  distribution, residual diagnostics, and a `.sample` seam so a reserve is
+  a `risksim` portfolio component.
 - **lossmodels** — loss-distribution modeling: severity and frequency fitting
   (complete data or under deductibles and limits), model selection and
   diagnostics, and aggregate loss.
@@ -48,6 +56,7 @@ flowchart LR
         ES["experiencestudies<br/>experience"]
         PM["projectionmodels<br/>projection"]
         RM["ratingmodels<br/>pricing"]
+        RES["reservingmodels<br/>reserving"]
     end
     ES --> PM
     ES --> RM
@@ -58,6 +67,7 @@ flowchart LR
     LM -. "splice" .-> EL
     LM --> RS["risksim<br/>capital"]
     EL --> RS
+    RES -- "reserve risk" --> RS
     classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
     class CORE core
 :::
@@ -81,19 +91,22 @@ picture is below.
 ## Dependencies
 
 The dependency direction is strictly one-way, from the workflow layers down
-to the core. `experiencestudies`, `projectionmodels`, and `ratingmodels` each
-depend on `actuarialpy` and delegate their credibility, trend, completion,
+to the core. `experiencestudies`, `projectionmodels`, `ratingmodels`, and
+`reservingmodels` each depend on `actuarialpy` and delegate their credibility, trend, completion,
 seasonality, and time-value math to it rather than re-implementing;
 `ratingmodels` also depends on `statsmodels`, to which it delegates GLM
-estimation for the same reason. `extremeloss` can optionally pull in
+estimation for the same reason. `reservingmodels` re-exports `actuarialpy`'s
+triangle primitives and Mack standard errors, so it depends on `actuarialpy`
+directly, and it reaches `risksim` through the same `.sample()` protocol used
+by the distribution packages. `extremeloss` can optionally pull in
 `lossmodels` through its `splice` extra for severity splicing. `lossmodels`
 and `extremeloss` stay array-level at the core but each ships an optional
 `integrations/actuarialpy` module (the `actuarialpy` extra) that consumes the
 canonical claims-listing `Experience` -- an optional edge pointing the same
 direction as every other. `risksim`'s core is numpy-only: it consumes fitted models through a formal
 `SupportsSample` protocol -- anything with a `.sample()` method, which every
-`lossmodels` distribution and `extremeloss` tail fit satisfies, along with
-any distribution object from outside the ecosystem -- so its only declared
+`lossmodels` distribution, `extremeloss` tail fit, and `reservingmodels` reserve
+model satisfies, along with any distribution object from outside the ecosystem -- so its only declared
 edge is a dev-extra on `lossmodels` for its own tests. It never touches
 experience, so no edge to `actuarialpy` exists or should.
 
@@ -103,17 +116,20 @@ flowchart LR
     ES["experiencestudies"]
     PM["projectionmodels"]
     RM["ratingmodels"]
+    RES["reservingmodels"]
     LM["lossmodels"]
     EL["extremeloss"]
     RS["risksim"]
     ES -->|requires| AP
     PM -->|requires| AP
     RM -->|requires| AP
+    RES -->|requires| AP
     EL -.->|optional, via splice| LM
     LM -.->|optional, via actuarialpy extra| AP
     EL -.->|optional, via actuarialpy extra| AP
     LM -.->|".sample() protocol, dev extra"| RS
     EL -.->|".sample() protocol"| RS
+    RES -.->|".sample() protocol"| RS
     classDef core fill:#eaf2ff,stroke:#3a6ea5,stroke-width:2px,color:#1a1a1a
 :::
 
@@ -129,8 +145,8 @@ deliberately tiny duck-typed protocol: any severity object exposing
 `ratingmodels.pooling_charge_from_severity`. The seam is two methods, not
 an import. `risksim` runs on the same principle from the other side: its
 `SupportsSample` protocol accepts any object with `.sample()` -- every
-`lossmodels` distribution, every `extremeloss` tail, or any distribution you
-bring from outside the ecosystem -- so the workflow diagram's arrows into
+`lossmodels` distribution, every `extremeloss` tail, every `reservingmodels`
+reserve model, or any distribution you bring from outside the ecosystem -- so the workflow diagram's arrows into
 `risksim` are protocol seams, not imports. The data-object seam works the same way in reverse: the
 `Experience`/`ExperienceSet` contract flows *up* through the layers as data,
 while every import edge keeps pointing *down* -- a package consuming the

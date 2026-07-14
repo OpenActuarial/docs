@@ -23,8 +23,8 @@ ratingmodels changelog).
 ranges in each package's `pyproject.toml` — a floor always, and an
 upper cap where the downstream package is exposed to sibling API
 movement. The dependency direction is deliberately thin and one-way —
-`experiencestudies`, `projectionmodels`, and `ratingmodels` each
-require `actuarialpy`; everything else cooperates through small
+`experiencestudies`, `projectionmodels`, `ratingmodels`, and
+`reservingmodels` each require `actuarialpy`; everything else cooperates through small
 duck-typed protocols (`sf` + `mean_excess`) rather than imports.
 
 **Python.** All packages support Python 3.10–3.14. This sentence can no

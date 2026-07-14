@@ -10,6 +10,7 @@ actuarialpy
 experiencestudies
 projectionmodels
 ratingmodels
+reservingmodels
 lossmodels
 extremeloss
 risksim
